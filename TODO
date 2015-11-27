@@ -1,0 +1,10 @@
+* Use single random number generator (easier to provide single seed value)
+* Read target graph from file
+* Specify evolution parameters in configuration file
+    - Population size
+    - Offspring population
+    - Mutation probability
+* Distributed Workpool
+* Externalize genome representation
+    - Needed for distribution
+    - Multi-stage optimization (feed result into another optimization stage)
