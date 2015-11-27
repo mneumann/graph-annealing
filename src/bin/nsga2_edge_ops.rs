@@ -94,8 +94,10 @@ fn main() {
 
     // create initial random population
     let initial_population: Vec<EdgeOpsGenome> = (0..MU)
-                                                      .map(|_| EdgeOpsGenome::random(&mut rng, RAND_N))
-                                                      .collect();
+                                                     .map(|_| {
+                                                         EdgeOpsGenome::random(&mut rng, RAND_N)
+                                                     })
+                                                     .collect();
 
     // evaluate fitness
     let fitness: Vec<_> = evaluator.fitness(&initial_population[..]);
@@ -129,8 +131,8 @@ fn main() {
             }
         }
         if found_optimum {
-           println!("Found premature optimum in Iteration {}", i);
-           break;
+            println!("Found premature optimum in Iteration {}", i);
+            break;
         }
     }
     println!("===========================================================");
