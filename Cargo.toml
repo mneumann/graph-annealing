@@ -1,0 +1,21 @@
+[package]
+name = "graph_annealing"
+version = "0.1.0"
+authors = ["Michael Neumann <mneumann@ntecs.de>"]
+
+[dependencies]
+petgraph = "*"
+rand = "0.3"
+nalgebra = "*"
+clap = "*"
+crossbeam = "*"
+simple_parallel = "*"
+#"0.2"
+num_cpus = { git = "https://github.com/mneumann/num_cpus.git", rev = "a7be418b4" }
+
+triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
+munkres = { git = "https://github.com/mneumann/munkres-rs.git" }
+graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }
+evo = { git = "https://github.com/mneumann/evo-rs.git" }
+graph-neighbor-matching = { git = "https://github.com/mneumann/graph-neighbor-matching.git" }
+graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
