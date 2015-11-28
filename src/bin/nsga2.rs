@@ -18,7 +18,7 @@ struct Mating {
 }
 
 impl Mate<AdjGenome> for Mating {
-    fn mate<R:Rng>(&mut self, rng: &mut R, p1: &AdjGenome, p2: &AdjGenome) -> AdjGenome {
+    fn mate<R: Rng>(&mut self, rng: &mut R, p1: &AdjGenome, p2: &AdjGenome) -> AdjGenome {
         let male = p1;
         let female = p2;
 

@@ -24,7 +24,11 @@ struct Mating {
 }
 
 impl Mate<EdgeListGenome> for Mating {
-    fn mate<R:Rng>(&mut self, rng: &mut R, p1: &EdgeListGenome, p2: &EdgeListGenome) -> EdgeListGenome {
+    fn mate<R: Rng>(&mut self,
+                    rng: &mut R,
+                    p1: &EdgeListGenome,
+                    p2: &EdgeListGenome)
+                    -> EdgeListGenome {
         let mut child = EdgeListGenome::mate(rng, p1, p2);
         child.mutate(rng, self.prob_mutate_elem);
         child
@@ -93,9 +97,7 @@ fn main() {
     let mut pop = initial_population;
     let mut fit = fitness;
 
-    let mut mating = Mating {
-        prob_mutate_elem: Probability::new(1.0 / N as f32),
-    };
+    let mut mating = Mating { prob_mutate_elem: Probability::new(1.0 / N as f32) };
 
     for _ in 0..NGEN {
         let (new_pop, new_fit) = nsga2::iterate(&mut rng,
