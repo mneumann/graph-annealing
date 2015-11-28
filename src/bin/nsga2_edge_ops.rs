@@ -11,6 +11,7 @@ use std::str::FromStr;
 use clap::{App, Arg};
 use rand::{Rng, SeedableRng};
 use rand::isaac::Isaac64Rng;
+use rand::distributions::{IndependentSample, Range};
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
@@ -24,7 +25,11 @@ struct Mating {
 }
 
 impl Mate<EdgeOpsGenome> for Mating {
-    fn mate<R: Rng>(&mut self, rng: &mut R, p1: &EdgeOpsGenome, p2: &EdgeOpsGenome) -> EdgeOpsGenome {
+    fn mate<R: Rng>(&mut self,
+                    rng: &mut R,
+                    p1: &EdgeOpsGenome,
+                    p2: &EdgeOpsGenome)
+                    -> EdgeOpsGenome {
         let mut child = EdgeOpsGenome::mate(rng, p1, p2);
         child.mutate(rng, self.prob_mutate_elem);
         child
@@ -69,11 +74,34 @@ fn main() {
                                .help("Problem size")
                                .takes_value(true)
                                .required(true))
+                      .arg(Arg::with_name("MU")
+                               .long("mu")
+                               .help("Population size")
+                               .takes_value(true)
+                               .required(true))
+                      .arg(Arg::with_name("LAMBDA")
+                               .long("lambda")
+                               .help("Size of offspring population")
+                               .takes_value(true)
+                               .required(true))
+                      .arg(Arg::with_name("SEED")
+                               .long("seed")
+                               .help("Seed value for Rng")
+                               .takes_value(true)
+                               .required(true))
+                      .arg(Arg::with_name("PMUT")
+                               .long("pmut")
+                               .help("Probability for element mutation")
+                               .takes_value(true)
+                               .required(true))
+                      .arg(Arg::with_name("ILEN")
+                               .long("ilen")
+                               .help("Initial genome length (random range)")
+                               .takes_value(true)
+                               .required(true))
                       .get_matches();
 
-    const MU: usize = 1000; // size of population
-    const LAMBDA: usize = 500; // size of offspring population
-
+    // number of generations
     let NGEN: usize = FromStr::from_str(matches.value_of("NGEN").unwrap()).unwrap();
     println!("NGEN: {}", NGEN);
 
@@ -81,20 +109,50 @@ fn main() {
     let N: usize = FromStr::from_str(matches.value_of("N").unwrap()).unwrap();
     println!("N: {}", N);
 
-    let RAND_N = N;  // max number of initial random edge operations
+    // size of population
+    let MU: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
+    println!("MU: {}", MU);
+
+    // size of offspring population
+    let LAMBDA: usize = FromStr::from_str(matches.value_of("LAMBDA").unwrap()).unwrap();
+    println!("LAMBDA: {}", LAMBDA);
+
+    let seed_str = matches.value_of("SEED").unwrap();
+    let seed: Vec<u64> = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
+    println!("SEED: {:?}", seed);
+
+    let PMUT: f32 = FromStr::from_str(matches.value_of("PMUT").unwrap()).unwrap();
+    println!("PMUT: {:?}", PMUT);
+
+    let ilen_str = matches.value_of("ILEN").unwrap();
+    let ilen: Vec<usize> = ilen_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
+    assert!(ilen.len() == 1 || ilen.len() == 2);
+
+    let ilen_from = ilen[0];
+    let ilen_to = if ilen.len() == 1 {
+        ilen[0]
+    } else {
+        ilen[1]
+    };
+    assert!(ilen_from <= ilen_to);
 
     let mut evaluator = MyEval {
         goal: Goal::new(line_graph(N as u32)),
         pool: Pool::new(ncpus),
     };
 
-    let seed: &[_] = &[45234341, 12343423, 123239];
-    let mut rng: Isaac64Rng = SeedableRng::from_seed(seed);
+    let mut rng: Isaac64Rng = SeedableRng::from_seed(&seed[..]);
 
     // create initial random population
     let initial_population: Vec<EdgeOpsGenome> = (0..MU)
                                                      .map(|_| {
-                                                         EdgeOpsGenome::random(&mut rng, RAND_N)
+                                                         let len = if ilen_from == ilen_to {
+                                                             ilen_from
+                                                         } else {
+                                                             Range::new(ilen_from, ilen_to)
+                                                                 .ind_sample(&mut rng)
+                                                         };
+                                                         EdgeOpsGenome::random(&mut rng, len)
                                                      })
                                                      .collect();
 
@@ -105,9 +163,7 @@ fn main() {
     let mut pop = initial_population;
     let mut fit = fitness;
 
-    let mut mating = Mating {
-        prob_mutate_elem: Probability::new(1.0 / N as f32),
-    };
+    let mut mating = Mating { prob_mutate_elem: Probability::new(PMUT) };
 
     for i in 0..NGEN {
         println!("Iteration: {}", i);

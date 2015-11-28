@@ -13,7 +13,7 @@ run-nsga2-edge: build
 	time cargo run --release --bin nsga2_edge -- --ngen 10000
 
 run-nsga2-edge-ops: build
-	time cargo run --release --bin nsga2_edge_ops -- --ngen 10000 --n 100
+	time cargo run --release --bin nsga2_edge_ops -- --ngen 10000 --n 40 --mu 1000 --lambda 500 --seed 45234341,12343423,123239 --pmut 0.025 --ilen 1,40
 
 reformat:
 	find . -name "*.rs" | xargs -I % ${RUSTFMT} %

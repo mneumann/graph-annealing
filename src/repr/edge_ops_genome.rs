@@ -3,7 +3,7 @@
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
 use rand::Rng;
-use rand::distributions::{IndependentSample, Range, Weighted, WeightedChoice};
+use rand::distributions::{IndependentSample, Weighted, WeightedChoice};
 use petgraph::{Directed, Graph};
 use petgraph::graph::NodeIndex;
 use graph_edge_evolution::{EdgeOperation, GraphBuilder};
@@ -80,9 +80,8 @@ fn generate_random_edge_operation<R: Rng>(rng: &mut R) -> EdgeOperation<f32, ()>
 }
 
 impl EdgeOpsGenome {
-    pub fn random<R: Rng>(rng: &mut R, upper_num_edge_ops: usize) -> EdgeOpsGenome {
-        let num_edge_ops = Range::new(1, upper_num_edge_ops).ind_sample(rng);
-        let edge_ops: Vec<_> = (0..num_edge_ops)
+    pub fn random<R: Rng>(rng: &mut R, len: usize) -> EdgeOpsGenome {
+        let edge_ops: Vec<_> = (0..len)
                                    .map(|_| generate_random_edge_operation(rng))
                                    .collect();
 
