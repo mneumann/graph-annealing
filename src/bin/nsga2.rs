@@ -13,13 +13,12 @@ use graph_annealing::repr::adj_genome::AdjGenome;
 use graph_annealing::helper::{draw_graph, line_graph};
 use graph_annealing::goal::Goal;
 
-struct Mating<R: Rng> {
-    rng: R,
+struct Mating {
     prob_bitflip: Probability,
 }
 
-impl<R:Rng> Mate<AdjGenome> for Mating<R> {
-    fn mate(&mut self, p1: &AdjGenome, p2: &AdjGenome) -> AdjGenome {
+impl Mate<AdjGenome> for Mating {
+    fn mate<R:Rng>(&mut self, rng: &mut R, p1: &AdjGenome, p2: &AdjGenome) -> AdjGenome {
         let male = p1;
         let female = p2;
 
@@ -28,7 +27,7 @@ impl<R:Rng> Mate<AdjGenome> for Mating<R> {
         let total = rows * rows;
         debug_assert!(male.bits.len() == total);
         debug_assert!(female.bits.len() == total);
-        let point = self.rng.gen_range(1, rows - 1); // point == 0 makes no sense, as
+        let point = rng.gen_range(1, rows - 1); // point == 0 makes no sense, as
         // well as rows-1.
 
         // horizontal crossover is easy.
@@ -36,7 +35,7 @@ impl<R:Rng> Mate<AdjGenome> for Mating<R> {
         let (c1, _c2) = crossover_one_point(point * rows, (&male.bits, &female.bits));
         let mut child = AdjGenome::new(c1, rows);
         // if self.rng.gen::<f32>() < 0.5 {
-        child.mutate(&mut self.rng, self.prob_bitflip);
+        child.mutate(rng, self.prob_bitflip);
         // }
         child
     }
@@ -84,7 +83,6 @@ fn main() {
     let mut fit = fitness;
 
     let mut mating = Mating {
-        rng: rand::isaac::Isaac64Rng::new_unseeded(),
         prob_bitflip: Probability::new(1.0 / ((MATRIX_N * MATRIX_N) as f32)),
     };
 

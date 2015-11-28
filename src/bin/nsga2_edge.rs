@@ -19,15 +19,14 @@ use graph_annealing::helper::{draw_graph, line_graph};
 use graph_annealing::goal::Goal;
 use simple_parallel::Pool;
 
-struct Mating<R: Rng> {
-    rng: R,
+struct Mating {
     prob_mutate_elem: Probability,
 }
 
-impl<R:Rng> Mate<EdgeListGenome> for Mating<R> {
-    fn mate(&mut self, p1: &EdgeListGenome, p2: &EdgeListGenome) -> EdgeListGenome {
-        let mut child = EdgeListGenome::mate(&mut self.rng, p1, p2);
-        child.mutate(&mut self.rng, self.prob_mutate_elem);
+impl Mate<EdgeListGenome> for Mating {
+    fn mate<R:Rng>(&mut self, rng: &mut R, p1: &EdgeListGenome, p2: &EdgeListGenome) -> EdgeListGenome {
+        let mut child = EdgeListGenome::mate(rng, p1, p2);
+        child.mutate(rng, self.prob_mutate_elem);
         child
     }
 }
@@ -95,7 +94,6 @@ fn main() {
     let mut fit = fitness;
 
     let mut mating = Mating {
-        rng: rand::isaac::Isaac64Rng::new_unseeded(),
         prob_mutate_elem: Probability::new(1.0 / N as f32),
     };
 
