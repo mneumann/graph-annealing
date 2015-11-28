@@ -10,7 +10,7 @@ dependencies = [
  "graph-neighbor-matching 0.0.1 (git+https://github.com/mneumann/graph-neighbor-matching.git)",
  "munkres 0.0.2 (git+https://github.com/mneumann/munkres-rs.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "num_cpus 0.2.9 (git+https://github.com/mneumann/num_cpus.git?rev=a7be418b4)",
+ "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "petgraph 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple_parallel 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -60,7 +60,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "evo"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/evo-rs.git#8580c011f1d9651b1145c47595f011050b8d704f"
+source = "git+https://github.com/mneumann/evo-rs.git#f0b49940be49fc954278cb7682e8834015b22004"
 dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -150,8 +150,8 @@ dependencies = [
 
 [[package]]
 name = "num_cpus"
-version = "0.2.9"
-source = "git+https://github.com/mneumann/num_cpus.git?rev=a7be418b4#a7be418b41200a0ba4518a09d1e92fe1f0ef154c"
+version = "0.2.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "kernel32-sys 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",

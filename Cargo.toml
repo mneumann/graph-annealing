@@ -10,8 +10,7 @@ nalgebra = "*"
 clap = "*"
 crossbeam = "*"
 simple_parallel = "*"
-#"0.2"
-num_cpus = { git = "https://github.com/mneumann/num_cpus.git", rev = "a7be418b4" }
+num_cpus = "0.2"
 
 triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
 munkres = { git = "https://github.com/mneumann/munkres-rs.git" }
