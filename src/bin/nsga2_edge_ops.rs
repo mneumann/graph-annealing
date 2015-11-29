@@ -91,6 +91,10 @@ fn main() {
                                .help("Size of offspring population")
                                .takes_value(true)
                                .required(true))
+                      .arg(Arg::with_name("K")
+                               .long("k")
+                               .help("Tournament selection (default: 2)")
+                               .takes_value(true))
                       .arg(Arg::with_name("SEED")
                                .long("seed")
                                .help("Seed value for Rng")
@@ -123,6 +127,11 @@ fn main() {
     // size of offspring population
     let LAMBDA: usize = FromStr::from_str(matches.value_of("LAMBDA").unwrap()).unwrap();
     println!("LAMBDA: {}", LAMBDA);
+
+    // tournament selection
+    let K: usize = FromStr::from_str(matches.value_of("K").unwrap_or("2")).unwrap();
+    assert!(K > 0);
+    println!("K: {}", K);
 
     let seed_str = matches.value_of("SEED").unwrap();
     let seed: Vec<u64> = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
@@ -180,7 +189,7 @@ fn main() {
                                                 &mut evaluator,
                                                 MU,
                                                 LAMBDA,
-                                                2,
+                                                K,
                                                 &mut mating);
         pop = new_pop;
         fit = new_fit;
