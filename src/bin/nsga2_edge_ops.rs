@@ -7,6 +7,8 @@ extern crate crossbeam;
 extern crate simple_parallel;
 extern crate num_cpus;
 
+use std::f32;
+use std::fmt::Debug;
 use std::str::FromStr;
 use clap::{App, Arg};
 use rand::{Rng, SeedableRng};
@@ -58,6 +60,11 @@ impl FitnessEval<EdgeOpsGenome, MultiObjective3<f32>> for MyEval {
 
         crossbeam::scope(|scope| pool.map(scope, pop, |ind| fitness(goal, ind)).collect())
     }
+}
+
+#[derive(Debug)]
+struct Stat<T:Debug> {
+   min: T, max: T, avg: T
 }
 
 fn main() {
@@ -177,9 +184,22 @@ fn main() {
         pop = new_pop;
         fit = new_fit;
 
+        let stats: Vec<Stat<f32>> = [0,1,2].iter().map(|&i| {
+            let min = fit.iter().fold(f32::INFINITY, |acc, f| {
+                let x = f.objectives[i];
+                if acc < x { acc } else { x }
+                });
+            let max = fit.iter().fold(0.0, |acc, f| {
+                let x = f.objectives[i];
+                if acc > x { acc } else { x }
+                });
+            let sum = fit.iter().fold(0.0, |acc, f| acc + f.objectives[i]);
+            Stat{min: min, max: max, avg: sum / fit.len() as f32}
+        }).collect(); 
+        println!("stats: {:?}", stats);
         let mut found_optimum = false;
         for f in fit.iter() {
-            if f.objectives[0] < 1.0 && f.objectives[1] < 1.0 && f.objectives[2] < 0.01 {
+            if f.objectives[0] < 1.0 && f.objectives[1] < 3.0 && f.objectives[2] < 0.01 {
                 found_optimum = true;
                 break;
             }
