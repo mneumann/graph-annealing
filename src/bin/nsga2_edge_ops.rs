@@ -14,6 +14,7 @@ use clap::{App, Arg};
 use rand::{Rng, SeedableRng};
 use rand::isaac::Isaac64Rng;
 use rand::distributions::{IndependentSample, Range};
+use rand::os::OsRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
@@ -98,8 +99,7 @@ fn main() {
                       .arg(Arg::with_name("SEED")
                                .long("seed")
                                .help("Seed value for Rng")
-                               .takes_value(true)
-                               .required(true))
+                               .takes_value(true))
                       .arg(Arg::with_name("PMUT")
                                .long("pmut")
                                .help("Probability for element mutation")
@@ -133,8 +133,14 @@ fn main() {
     assert!(K > 0);
     println!("K: {}", K);
 
-    let seed_str = matches.value_of("SEED").unwrap();
-    let seed: Vec<u64> = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
+    let seed: Vec<u64>;
+    if let Some(seed_str) = matches.value_of("SEED") {
+         seed = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
+    } else {
+        println!("Use OsRng to generate seed..");
+        let mut rng = OsRng::new().unwrap();
+        seed = (0..2).map(|_| rng.next_u64()).collect();
+    }
     println!("SEED: {:?}", seed);
 
     let PMUT: f32 = FromStr::from_str(matches.value_of("PMUT").unwrap()).unwrap();

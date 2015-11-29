@@ -1,5 +1,4 @@
 * Use uniform cross-over and different mutation ops.
-* If --seed is omitted, use a random seed.
 * Read target graph from file
 * Distributed Workpool
 * Externalize genome representation
