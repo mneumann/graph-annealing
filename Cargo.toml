@@ -12,6 +12,7 @@ crossbeam = "*"
 simple_parallel = "*"
 num_cpus = "0.2"
 
+pcg = { git = "https://github.com/codahale/pcg.git" }
 triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
 munkres = { git = "https://github.com/mneumann/munkres-rs.git" }
 graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }

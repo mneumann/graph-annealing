@@ -6,6 +6,7 @@ extern crate clap;
 extern crate crossbeam;
 extern crate simple_parallel;
 extern crate num_cpus;
+extern crate pcg;
 
 use std::f32;
 use std::fmt::Debug;
@@ -15,6 +16,7 @@ use rand::{Rng, SeedableRng};
 use rand::isaac::Isaac64Rng;
 use rand::distributions::{IndependentSample, Range};
 use rand::os::OsRng;
+use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
@@ -163,7 +165,9 @@ fn main() {
         pool: Pool::new(ncpus),
     };
 
-    let mut rng: Isaac64Rng = SeedableRng::from_seed(&seed[..]);
+    //let mut rng: Isaac64Rng = SeedableRng::from_seed(&seed[..]);
+    assert!(seed.len() == 2);
+    let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
 
     // create initial random population
     let initial_population: Vec<EdgeOpsGenome> = (0..MU)
