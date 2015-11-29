@@ -124,9 +124,9 @@ dependencies = [
 [[package]]
 name = "munkres"
 version = "0.0.2"
-source = "git+https://github.com/mneumann/munkres-rs.git#a9bf86e22a7ce408c6443445b5beea5dbfd1fbef"
+source = "git+https://github.com/mneumann/munkres-rs.git#1abfbf5ada7ac440e0c8c43755c7072dcaa61aaf"
 dependencies = [
- "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fixedbitset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
