@@ -8,7 +8,8 @@ use rand::isaac::Isaac64Rng;
 
 use evo::{Evaluator, Individual, MinFitness, OpCrossover1, OpMutate, OpSelect,
           OpSelectRandomIndividual, OpVariation, Probability, ProbabilityValue, RatedPopulation,
-          UnratedPopulation, VariationMethod, ea_mu_plus_lambda, tournament_selection_fast};
+          UnratedPopulation, VariationMethod, ea_mu_plus_lambda};
+use evo::selection::tournament_selection_fast;
 use evo::bit_string::crossover_one_point;
 use graph_annealing::repr::adj_genome::AdjGenome;
 use graph_annealing::helper::{draw_graph, line_graph};

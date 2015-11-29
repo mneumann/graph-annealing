@@ -60,7 +60,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "evo"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/evo-rs.git#f0b49940be49fc954278cb7682e8834015b22004"
+source = "git+https://github.com/mneumann/evo-rs.git#2df943eaa7763ebd4df8d54f55f64802f358d478"
 dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
