@@ -35,7 +35,9 @@ impl Mate<EdgeListGenome> for Mating {
     }
 }
 
-fn fitness<N:Clone+Sync,E:Clone+Sync>(goal: &Goal<N,E>, ind: &EdgeListGenome) -> MultiObjective3<f32> {
+fn fitness<N: Clone + Sync, E: Clone + Sync>(goal: &Goal<N, E>,
+                                             ind: &EdgeListGenome)
+                                             -> MultiObjective3<f32> {
     let g = ind.to_graph();
     let cc_dist = goal.strongly_connected_components_distance(&g);
     let nmc = goal.neighbor_matching_score(&g);
@@ -45,8 +47,8 @@ fn fitness<N:Clone+Sync,E:Clone+Sync>(goal: &Goal<N,E>, ind: &EdgeListGenome) ->
                            nmc /* ind.num_edges() as f32 */))
 }
 
-struct MyEval<N,E> {
-    goal: Goal<N,E>,
+struct MyEval<N, E> {
+    goal: Goal<N, E>,
     pool: Pool,
 }
 

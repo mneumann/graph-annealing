@@ -41,7 +41,7 @@ impl Mate<EdgeOpsGenome> for Mating {
     }
 }
 
-fn fitness<N:Clone,E:Clone>(goal: &Goal<N,E>, ind: &EdgeOpsGenome) -> MultiObjective3<f32> {
+fn fitness<N: Clone, E: Clone>(goal: &Goal<N, E>, ind: &EdgeOpsGenome) -> MultiObjective3<f32> {
     let g = ind.to_graph();
     let cc_dist = goal.strongly_connected_components_distance(&g);
     let nmc = goal.neighbor_matching_score(&g);
@@ -51,8 +51,8 @@ fn fitness<N:Clone,E:Clone>(goal: &Goal<N,E>, ind: &EdgeOpsGenome) -> MultiObjec
                            nmc /* ind.num_edges() as f32 */))
 }
 
-struct MyEval<N,E> {
-    goal: Goal<N,E>,
+struct MyEval<N, E> {
+    goal: Goal<N, E>,
     pool: Pool,
 }
 
@@ -66,8 +66,10 @@ impl<N:Clone+Sync,E:Clone+Sync> FitnessEval<EdgeOpsGenome, MultiObjective3<f32>>
 }
 
 #[derive(Debug)]
-struct Stat<T:Debug> {
-   min: T, max: T, avg: T
+struct Stat<T: Debug> {
+    min: T,
+    max: T,
+    avg: T,
 }
 
 fn main() {
@@ -137,7 +139,7 @@ fn main() {
 
     let seed: Vec<u64>;
     if let Some(seed_str) = matches.value_of("SEED") {
-         seed = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
+        seed = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
     } else {
         println!("Use OsRng to generate seed..");
         let mut rng = OsRng::new().unwrap();
@@ -165,7 +167,7 @@ fn main() {
         pool: Pool::new(ncpus),
     };
 
-    //let mut rng: Isaac64Rng = SeedableRng::from_seed(&seed[..]);
+    // let mut rng: Isaac64Rng = SeedableRng::from_seed(&seed[..]);
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
 
@@ -204,18 +206,34 @@ fn main() {
         pop = new_pop;
         fit = new_fit;
 
-        let stats: Vec<Stat<f32>> = [0,1,2].iter().map(|&i| {
-            let min = fit.iter().fold(f32::INFINITY, |acc, f| {
-                let x = f.objectives[i];
-                if acc < x { acc } else { x }
-                });
-            let max = fit.iter().fold(0.0, |acc, f| {
-                let x = f.objectives[i];
-                if acc > x { acc } else { x }
-                });
-            let sum = fit.iter().fold(0.0, |acc, f| acc + f.objectives[i]);
-            Stat{min: min, max: max, avg: sum / fit.len() as f32}
-        }).collect(); 
+        let stats: Vec<Stat<f32>> = [0, 1, 2]
+                                        .iter()
+                                        .map(|&i| {
+                                            let min = fit.iter().fold(f32::INFINITY, |acc, f| {
+                                                let x = f.objectives[i];
+                                                if acc < x {
+                                                    acc
+                                                } else {
+                                                    x
+                                                }
+                                            });
+                                            let max = fit.iter().fold(0.0, |acc, f| {
+                                                let x = f.objectives[i];
+                                                if acc > x {
+                                                    acc
+                                                } else {
+                                                    x
+                                                }
+                                            });
+                                            let sum = fit.iter()
+                                                         .fold(0.0, |acc, f| acc + f.objectives[i]);
+                                            Stat {
+                                                min: min,
+                                                max: max,
+                                                avg: sum / fit.len() as f32,
+                                            }
+                                        })
+                                        .collect();
         println!("stats: {:?}", stats);
         let mut found_optimum = false;
         for f in fit.iter() {

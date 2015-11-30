@@ -15,8 +15,8 @@ use graph_annealing::repr::adj_genome::AdjGenome;
 use graph_annealing::helper::{draw_graph, line_graph};
 use graph_annealing::goal::Goal;
 
-struct MyEval<N,E> {
-    goal: Goal<N,E>,
+struct MyEval<N, E> {
+    goal: Goal<N, E>,
 }
 
 impl<N:Clone+Sync,E:Clone+Sync> Evaluator<AdjGenome, MinFitness<f64>> for MyEval<N,E> {
