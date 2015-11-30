@@ -6,7 +6,7 @@ use std::fs::File;
 use rand::isaac::Isaac64Rng;
 use rand::{Closed01, Rng};
 
-pub fn draw_graph(g: &Graph<(), (), Directed>, filename: &str) {
+pub fn draw_graph<N,E>(g: &Graph<N, E, Directed>, filename: &str) {
     let l = Some(g.edge_count() as f32 / (g.node_count() as f32 * g.node_count() as f32));
     let mut rng = Isaac64Rng::new_unseeded();
     let mut node_positions: Vec<P2d> = Vec::with_capacity(g.node_count());

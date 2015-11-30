@@ -41,18 +41,18 @@ impl Mate<AdjGenome> for Mating {
     }
 }
 
-fn fitness(goal: &Goal, ind: &AdjGenome) -> MultiObjective2<f32> {
+fn fitness<N:Clone,E:Clone>(goal: &Goal<N,E>, ind: &AdjGenome) -> MultiObjective2<f32> {
     let g = ind.to_graph();
     let cc_dist = goal.connected_components_distance(&g);
     let triadic_dist = goal.triadic_distance(g);
     MultiObjective2::from((cc_dist as f32, triadic_dist as f32))
 }
 
-struct MyEval {
-    goal: Goal,
+struct MyEval<N,E> {
+    goal: Goal<N,E>,
 }
 
-impl FitnessEval<AdjGenome, MultiObjective2<f32>> for MyEval {
+impl<N:Clone,E:Clone> FitnessEval<AdjGenome, MultiObjective2<f32>> for MyEval<N,E> {
     fn fitness(&mut self, pop: &[AdjGenome]) -> Vec<MultiObjective2<f32>> {
         pop.iter().map(|ind| fitness(&self.goal, ind)).collect()
     }

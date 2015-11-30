@@ -19,3 +19,4 @@ graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }
 evo = { git = "https://github.com/mneumann/evo-rs.git" }
 graph-neighbor-matching = { git = "https://github.com/mneumann/graph-neighbor-matching.git" }
 graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
+graph-sgf = { git = "https://github.com/mneumann/graph-sgf.git" }

@@ -5,6 +5,7 @@ extern crate triadic_census;
 extern crate graph_layout;
 extern crate graph_neighbor_matching;
 extern crate graph_edge_evolution;
+extern crate graph_sgf;
 
 pub mod goal;
 pub mod helper;

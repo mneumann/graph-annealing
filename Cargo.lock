@@ -8,6 +8,7 @@ dependencies = [
  "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
  "graph-neighbor-matching 0.0.1 (git+https://github.com/mneumann/graph-neighbor-matching.git)",
+ "graph-sgf 0.0.1 (git+https://github.com/mneumann/graph-sgf.git)",
  "munkres 0.0.2 (git+https://github.com/mneumann/munkres-rs.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -61,7 +62,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "evo"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/evo-rs.git#2df943eaa7763ebd4df8d54f55f64802f358d478"
+source = "git+https://github.com/mneumann/evo-rs.git#e4c67a1dd4a30226d649e2a6599f951a59b58191"
 dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -98,6 +99,14 @@ source = "git+https://github.com/mneumann/graph-neighbor-matching.git#f8d2a8cd2c
 dependencies = [
  "munkres 0.0.2 (git+https://github.com/mneumann/munkres-rs.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "graph-sgf"
+version = "0.0.1"
+source = "git+https://github.com/mneumann/graph-sgf.git#30bdeda53402c2467ff36df9f520f246b22e57e1"
+dependencies = [
+ "petgraph 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -206,7 +215,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "triadic-census"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/triadic-census-rs.git#dc55cd9147b5e8838b2afc21fdbb7b19606ae524"
+source = "git+https://github.com/mneumann/triadic-census-rs.git#6890296faf085dd7f93e0211392a8973afb2a4ff"
 dependencies = [
  "fixedbitset 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "petgraph 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",

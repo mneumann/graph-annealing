@@ -15,11 +15,11 @@ use graph_annealing::repr::adj_genome::AdjGenome;
 use graph_annealing::helper::{draw_graph, line_graph};
 use graph_annealing::goal::Goal;
 
-struct MyEval {
-    goal: Goal,
+struct MyEval<N,E> {
+    goal: Goal<N,E>,
 }
 
-impl Evaluator<AdjGenome, MinFitness<f64>> for MyEval {
+impl<N:Clone+Sync,E:Clone+Sync> Evaluator<AdjGenome, MinFitness<f64>> for MyEval<N,E> {
     fn fitness(&self, ind: &AdjGenome) -> MinFitness<f64> {
         let g = ind.to_graph();
 
