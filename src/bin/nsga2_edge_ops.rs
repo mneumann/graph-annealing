@@ -19,8 +19,8 @@ use rand::os::OsRng;
 use pcg::PcgRng;
 
 use evo::Probability;
-use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Op, Toolbox};
+use evo::nsga2::{self, FitnessEval, MultiObjective3};
+use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox};
 use graph_annealing::helper::draw_graph;
 use graph_annealing::goal::Goal;
 use simple_parallel::Pool;
@@ -69,6 +69,11 @@ fn main() {
                       .arg(Arg::with_name("NGEN")
                                .long("ngen")
                                .help("Number of generations to run")
+                               .takes_value(true)
+                               .required(true))
+                      .arg(Arg::with_name("OPS")
+                               .long("ops")
+                               .help("Edge operation and weight specification, e.g. Dup:1,Split:3,Parent:2")
                                .takes_value(true)
                                .required(true))
                       .arg(Arg::with_name("GRAPH")
@@ -158,14 +163,15 @@ fn main() {
     };
 
     // XXX: Parse weighted operation choice from command line
-    let mut toolbox = Toolbox::new(Probability::new(PMUT),
-                                   &[(Op::Dup, 1),
+    let ops = Toolbox::parse_weighted_op_choice_list(matches.value_of("OPS").unwrap()).unwrap();
+    let mut toolbox = Toolbox::new(Probability::new(PMUT), &ops[..]);
+                                   /*&[(Op::Dup, 1),
                                      (Op::Split, 1),
                                      (Op::Loop, 1),
                                      (Op::Merge, 1),
                                      (Op::Next, 1),
                                      (Op::Parent, 1),
-                                     (Op::Reverse, 1)]);
+                                     (Op::Reverse, 1)]); */
 
     let mut evaluator = MyEval {
         goal: Goal::new(graph),

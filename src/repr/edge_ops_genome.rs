@@ -9,13 +9,14 @@ use petgraph::{Directed, Graph};
 use petgraph::graph::NodeIndex;
 use graph_edge_evolution::{EdgeOperation, GraphBuilder};
 use owned_weighted_choice::OwnedWeightedChoice;
+use std::str::FromStr;
 
 #[derive(Clone, Debug)]
 pub struct EdgeOpsGenome {
     edge_ops: Vec<EdgeOperation<f32, ()>>,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Op {
     Dup,
     Split,
@@ -23,7 +24,23 @@ pub enum Op {
     Merge,
     Next,
     Parent,
-    Reverse,
+    Reverse, // XXX Save: Restore
+}
+
+impl FromStr for Op {
+   type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Dup" => Ok(Op::Dup),
+            "Split" => Ok(Op::Split),
+            "Loop" => Ok(Op::Loop),
+            "Merge" => Ok(Op::Merge),
+            "Next" => Ok(Op::Next),
+            "Parent" => Ok(Op::Parent),
+            "Reverse" => Ok(Op::Reverse),
+            _ => Err(format!("Invalid opcode: {}", s)),
+        }
+    }
 }
 
 pub struct Toolbox {
@@ -44,6 +61,23 @@ impl Mate<EdgeOpsGenome> for Toolbox {
         self.mutate(rng, &mut child);
         child
     }
+}
+
+#[test]
+fn test_parse_weighted_op_choice_list() {
+    assert_eq!(Ok(vec![]), Toolbox::parse_weighted_op_choice_list(""));
+    assert_eq!(Ok(vec![(Op::Dup, 1)]),
+               Toolbox::parse_weighted_op_choice_list("Dup"));
+    assert_eq!(Ok(vec![(Op::Dup, 1)]),
+               Toolbox::parse_weighted_op_choice_list("Dup:1"));
+    assert_eq!(Ok(vec![(Op::Dup, 2)]),
+               Toolbox::parse_weighted_op_choice_list("Dup:2"));
+    assert_eq!(Ok(vec![(Op::Dup, 2), (Op::Split, 1)]),
+               Toolbox::parse_weighted_op_choice_list("Dup:2,Split"));
+    assert_eq!(Err("invalid weight: ".to_string()),
+               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:"));
+    assert_eq!(Err("invalid weight: a".to_string()),
+               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:a"));
 }
 
 impl Toolbox {
@@ -68,6 +102,34 @@ impl Toolbox {
                 *edge_op = new_edge_op;
             }
         }
+    }
+
+    pub fn parse_weighted_op_choice_list(s: &str) -> Result<Vec<(Op, u32)>, String> {
+        let mut v = Vec::new();
+        for opstr in s.split(",") {
+            if opstr.is_empty() {
+                continue;
+            }
+            let mut i = opstr.splitn(2, ":");
+            if let Some(ops) = i.next() {
+                match Op::from_str(ops) {
+                    Ok(op) => {
+                        let ws = i.next().unwrap_or("1");
+                        if let Ok(weight) = u32::from_str(ws) {
+                            v.push((op, weight));
+                        } else {
+                            return Err(format!("invalid weight: {}", ws));
+                        }
+                    }
+                    Err(s) => {
+                        return Err(s);
+                    }
+                }
+            } else {
+                return Err("missing op".to_string());
+            }
+        }
+        return Ok(v);
     }
 
     pub fn new(prob_mutate_elem: Probability, weighted_op_choices: &[(Op, u32)]) -> Toolbox {
