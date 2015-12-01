@@ -30,7 +30,7 @@ fn generate_random_edge_operation<R: Rng>(rng: &mut R) -> EdgeOperation<f32, ()>
                          item: Op::Dup,
                      },
                      Weighted {
-                         weight: 3,
+                         weight: 1,
                          item: Op::Split,
                      },
                      Weighted {
@@ -42,15 +42,15 @@ fn generate_random_edge_operation<R: Rng>(rng: &mut R) -> EdgeOperation<f32, ()>
                          item: Op::Merge,
                      },
                      Weighted {
-                         weight: 2,
+                         weight: 1,
                          item: Op::Next,
                      },
                      Weighted {
-                         weight: 2,
+                         weight: 1,
                          item: Op::Parent,
                      },
                      Weighted {
-                         weight: 2,
+                         weight: 1,
                          item: Op::Reverse,
                      }];
     let wc = WeightedChoice::new(&mut items);
