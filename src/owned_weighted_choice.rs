@@ -13,7 +13,7 @@ use rand::{Rng};
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// use rand::distributions::{Weighted, IndependentSample};
 ///
 /// let items = vec!(Weighted { weight: 2, item: 'a' },
