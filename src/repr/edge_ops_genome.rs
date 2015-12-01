@@ -62,7 +62,7 @@ fn generate_random_edge_operation<R: Rng>(rng: &mut R) -> EdgeOperation<f32, ()>
             EdgeOperation::Split { weight: 0.0 }
         }
         Op::Loop => {
-            EdgeOperation::Split { weight: 0.0 }
+            EdgeOperation::Loop { weight: 0.0 }
         }
         Op::Merge => {
             EdgeOperation::Merge { n: rng.gen::<u32>() }
