@@ -20,7 +20,7 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::EdgeOpsGenome;
+use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Op, Toolbox};
 use graph_annealing::helper::draw_graph;
 use graph_annealing::goal::Goal;
 use simple_parallel::Pool;
@@ -30,23 +30,6 @@ use graph_sgf::{PetgraphReader, Unweighted};
 
 use std::io::BufReader;
 use std::fs::File;
-
-
-struct Mating {
-    prob_mutate_elem: Probability,
-}
-
-impl Mate<EdgeOpsGenome> for Mating {
-    fn mate<R: Rng>(&mut self,
-                    rng: &mut R,
-                    p1: &EdgeOpsGenome,
-                    p2: &EdgeOpsGenome)
-                    -> EdgeOpsGenome {
-        let mut child = EdgeOpsGenome::mate(rng, p1, p2);
-        child.mutate(rng, self.prob_mutate_elem);
-        child
-    }
-}
 
 fn fitness<N: Clone, E: Clone>(goal: &Goal<N, E>, ind: &EdgeOpsGenome) -> MultiObjective3<f32> {
     let g = ind.to_graph();
@@ -174,6 +157,16 @@ fn main() {
         graph
     };
 
+    // XXX: Parse weighted operation choice from command line
+    let mut toolbox = Toolbox::new(Probability::new(PMUT),
+                                   &[(Op::Dup, 1),
+                                     (Op::Split, 1),
+                                     (Op::Loop, 1),
+                                     (Op::Merge, 1),
+                                     (Op::Next, 1),
+                                     (Op::Parent, 1),
+                                     (Op::Reverse, 1)]);
+
     let mut evaluator = MyEval {
         goal: Goal::new(graph),
         pool: Pool::new(ncpus),
@@ -191,7 +184,7 @@ fn main() {
                                                              Range::new(ilen_from, ilen_to)
                                                                  .ind_sample(&mut rng)
                                                          };
-                                                         EdgeOpsGenome::random(&mut rng, len)
+                                                         toolbox.random_genome(&mut rng, len)
                                                      })
                                                      .collect();
 
@@ -202,8 +195,6 @@ fn main() {
     let mut pop = initial_population;
     let mut fit = fitness;
 
-    let mut mating = Mating { prob_mutate_elem: Probability::new(PMUT) };
-
     for i in 0..NGEN {
         println!("Iteration: {}", i);
         let (new_pop, new_fit) = nsga2::iterate(&mut rng,
@@ -213,7 +204,7 @@ fn main() {
                                                 MU,
                                                 LAMBDA,
                                                 K,
-                                                &mut mating);
+                                                &mut toolbox);
         pop = new_pop;
         fit = new_fit;
 

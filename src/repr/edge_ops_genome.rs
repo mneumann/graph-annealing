@@ -2,19 +2,21 @@
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
+use evo::nsga2::Mate;
 use rand::Rng;
-use rand::distributions::{IndependentSample, Weighted, WeightedChoice};
+use rand::distributions::{IndependentSample, Weighted};
 use petgraph::{Directed, Graph};
 use petgraph::graph::NodeIndex;
 use graph_edge_evolution::{EdgeOperation, GraphBuilder};
+use owned_weighted_choice::OwnedWeightedChoice;
 
 #[derive(Clone, Debug)]
 pub struct EdgeOpsGenome {
     edge_ops: Vec<EdgeOperation<f32, ()>>,
 }
 
-#[derive(Clone)]
-enum Op {
+#[derive(Copy, Clone)]
+pub enum Op {
     Dup,
     Split,
     Loop,
@@ -24,83 +26,30 @@ enum Op {
     Reverse,
 }
 
-fn generate_random_edge_operation<R: Rng>(rng: &mut R) -> EdgeOperation<f32, ()> {
-    let mut items = [Weighted {
-                         weight: 1,
-                         item: Op::Dup,
-                     },
-                     Weighted {
-                         weight: 1,
-                         item: Op::Split,
-                     },
-                     Weighted {
-                         weight: 1,
-                         item: Op::Loop,
-                     },
-                     Weighted {
-                         weight: 1,
-                         item: Op::Merge,
-                     },
-                     Weighted {
-                         weight: 1,
-                         item: Op::Next,
-                     },
-                     Weighted {
-                         weight: 1,
-                         item: Op::Parent,
-                     },
-                     Weighted {
-                         weight: 1,
-                         item: Op::Reverse,
-                     }];
-    let wc = WeightedChoice::new(&mut items);
-    match wc.ind_sample(rng) {
-        Op::Dup => {
-            EdgeOperation::Duplicate { weight: 0.0 }
-        }
-        Op::Split => {
-            EdgeOperation::Split { weight: 0.0 }
-        }
-        Op::Loop => {
-            EdgeOperation::Loop { weight: 0.0 }
-        }
-        Op::Merge => {
-            EdgeOperation::Merge { n: rng.gen::<u32>() }
-        }
-        Op::Next => {
-            EdgeOperation::Next { n: rng.gen::<u32>() }
-        }
-        Op::Parent => {
-            EdgeOperation::Parent { n: rng.gen::<u32>() }
-        }
-        Op::Reverse => {
-            EdgeOperation::Reverse
-        }
+pub struct Toolbox {
+    weighted_op_choice: OwnedWeightedChoice<Op>,
+    prob_mutate_elem: Probability,
+}
+
+impl Mate<EdgeOpsGenome> for Toolbox {
+    fn mate<R: Rng>(&mut self,
+                    rng: &mut R,
+                    p1: &EdgeOpsGenome,
+                    p2: &EdgeOpsGenome)
+                    -> EdgeOpsGenome {
+
+        let mut child = EdgeOpsGenome {
+            edge_ops: linear_2point_crossover_random(rng, &p1.edge_ops[..], &p2.edge_ops[..]),
+        };
+        self.mutate(rng, &mut child);
+        child
     }
 }
 
-impl EdgeOpsGenome {
-    pub fn random<R: Rng>(rng: &mut R, len: usize) -> EdgeOpsGenome {
-        let edge_ops: Vec<_> = (0..len)
-                                   .map(|_| generate_random_edge_operation(rng))
-                                   .collect();
-
-        EdgeOpsGenome { edge_ops: edge_ops }
-    }
-
-    pub fn len(&self) -> usize {
-        self.edge_ops.len()
-    }
-
-    pub fn mate<R: Rng>(rng: &mut R, p1: &EdgeOpsGenome, p2: &EdgeOpsGenome) -> EdgeOpsGenome {
-        EdgeOpsGenome {
-            edge_ops: linear_2point_crossover_random(rng, &p1.edge_ops[..], &p2.edge_ops[..]),
-        }
-    }
-
-    pub fn mutate<R: Rng>(&mut self, rng: &mut R, mutate_elem_prob: Probability) {
-        for edge_op in self.edge_ops.iter_mut() {
-            if rng.gen::<ProbabilityValue>().is_probable_with(mutate_elem_prob) {
+impl Toolbox {
+    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &mut EdgeOpsGenome) {
+        for edge_op in ind.edge_ops.iter_mut() {
+            if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
                 let new_edge_op = match edge_op {
                     &mut EdgeOperation::Merge{..} => {
                         EdgeOperation::Merge { n: rng.gen::<u32>() }
@@ -119,6 +68,64 @@ impl EdgeOpsGenome {
                 *edge_op = new_edge_op;
             }
         }
+    }
+
+    pub fn new(prob_mutate_elem: Probability, weighted_op_choices: &[(Op, u32)]) -> Toolbox {
+        let mut w = Vec::new();
+        for &(op, weight) in weighted_op_choices {
+            if weight > 0 {
+                // an operation with weight=0 cannot be selected
+                w.push(Weighted {
+                    weight: weight,
+                    item: op,
+                });
+            }
+        }
+        Toolbox {
+            prob_mutate_elem: prob_mutate_elem,
+            weighted_op_choice: OwnedWeightedChoice::new(w),
+        }
+    }
+
+    fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> EdgeOperation<f32, ()> {
+        match self.weighted_op_choice.ind_sample(rng) {
+            Op::Dup => {
+                EdgeOperation::Duplicate { weight: 0.0 }
+            }
+            Op::Split => {
+                EdgeOperation::Split { weight: 0.0 }
+            }
+            Op::Loop => {
+                EdgeOperation::Loop { weight: 0.0 }
+            }
+            Op::Merge => {
+                EdgeOperation::Merge { n: rng.gen::<u32>() }
+            }
+            Op::Next => {
+                EdgeOperation::Next { n: rng.gen::<u32>() }
+            }
+            Op::Parent => {
+                EdgeOperation::Parent { n: rng.gen::<u32>() }
+            }
+            Op::Reverse => {
+                EdgeOperation::Reverse
+            }
+        }
+    }
+
+    pub fn random_genome<R: Rng>(&self, rng: &mut R, len: usize) -> EdgeOpsGenome {
+        let edge_ops: Vec<_> = (0..len)
+                                   .map(|_| self.generate_random_edge_operation(rng))
+                                   .collect();
+
+        EdgeOpsGenome { edge_ops: edge_ops }
+    }
+}
+
+
+impl EdgeOpsGenome {
+    pub fn len(&self) -> usize {
+        self.edge_ops.len()
     }
 
     pub fn to_graph(&self) -> Graph<(), (), Directed, u32> {
