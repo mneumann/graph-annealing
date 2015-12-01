@@ -31,8 +31,10 @@ use graph_sgf::{PetgraphReader, Unweighted};
 use std::io::BufReader;
 use std::fs::File;
 
+const MAX_NODES: u32 = 10_000;
+
 fn fitness<N: Clone, E: Clone>(goal: &Goal<N, E>, ind: &EdgeOpsGenome) -> MultiObjective3<f32> {
-    let g = ind.to_graph();
+    let g = ind.to_graph(MAX_NODES);
     let cc_dist = goal.strongly_connected_components_distance(&g);
     let nmc = goal.neighbor_matching_score(&g);
     let triadic_dist = goal.triadic_distance(g);
@@ -73,7 +75,8 @@ fn main() {
                                .required(true))
                       .arg(Arg::with_name("OPS")
                                .long("ops")
-                               .help("Edge operation and weight specification, e.g. Dup:1,Split:3,Parent:2")
+                               .help("Edge operation and weight specification, e.g. \
+                                      Dup:1,Split:3,Parent:2")
                                .takes_value(true)
                                .required(true))
                       .arg(Arg::with_name("GRAPH")
@@ -265,7 +268,7 @@ fn main() {
             println!("genome: {:?}", pop[rd.idx]);
 
             if fit[rd.idx].objectives[0] < 1.0 {
-                draw_graph(&pop[rd.idx].to_graph(),
+                draw_graph(&pop[rd.idx].to_graph(MAX_NODES),
                            // XXX: name
                            &format!("nsga2edgeops_g{}_f{}_i{}.svg",
                                     NGEN,

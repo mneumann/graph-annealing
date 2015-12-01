@@ -44,7 +44,7 @@ impl FromStr for Op {
 
 #[derive(Clone, Debug)]
 pub struct EdgeOpsGenome {
-    edge_ops: Vec<EdgeOperation<f32, ()>>,
+    edge_ops: Vec<(Op, f32)>,
 }
 
 pub struct Toolbox {
@@ -72,22 +72,7 @@ impl Toolbox {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &mut EdgeOpsGenome) {
         for edge_op in ind.edge_ops.iter_mut() {
             if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
-                let new_edge_op = match edge_op {
-                    &mut EdgeOperation::Merge{..} => {
-                        EdgeOperation::Merge { n: rng.gen::<u32>() }
-                    }
-                    &mut EdgeOperation::Next{..} => {
-                        EdgeOperation::Next { n: rng.gen::<u32>() }
-                    }
-                    &mut EdgeOperation::Parent{..} => {
-                        EdgeOperation::Parent { n: rng.gen::<u32>() }
-                    }
-                    ref op => {
-                        (*op).clone()
-                    }
-                };
-
-                *edge_op = new_edge_op;
+                edge_op.1 = rng.gen::<f32>();
             }
         }
     }
@@ -137,44 +122,16 @@ impl Toolbox {
         }
     }
 
-    fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> EdgeOperation<f32, ()> {
-        match self.weighted_op_choice.ind_sample(rng) {
-            Op::Dup => {
-                EdgeOperation::Duplicate { weight: 0.0 }
-            }
-            Op::Split => {
-                EdgeOperation::Split { weight: 0.0 }
-            }
-            Op::Loop => {
-                EdgeOperation::Loop { weight: 0.0 }
-            }
-            Op::Merge => {
-                EdgeOperation::Merge { n: rng.gen::<u32>() }
-            }
-            Op::Next => {
-                EdgeOperation::Next { n: rng.gen::<u32>() }
-            }
-            Op::Parent => {
-                EdgeOperation::Parent { n: rng.gen::<u32>() }
-            }
-            Op::Reverse => {
-                EdgeOperation::Reverse
-            }
-            Op::Save => {
-                EdgeOperation::Save
-            }
-            Op::Restore => {
-                EdgeOperation::Restore
-            }
-        }
+    fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> (Op, f32) /*EdgeOperation<f32, ()>*/ {
+        (self.weighted_op_choice.ind_sample(rng), rng.gen::<f32>())
     }
 
     pub fn random_genome<R: Rng>(&self, rng: &mut R, len: usize) -> EdgeOpsGenome {
-        let edge_ops: Vec<_> = (0..len)
-                                   .map(|_| self.generate_random_edge_operation(rng))
-                                   .collect();
-
-        EdgeOpsGenome { edge_ops: edge_ops }
+        EdgeOpsGenome {
+            edge_ops: (0..len)
+                          .map(|_| self.generate_random_edge_operation(rng))
+                          .collect(),
+        }
     }
 }
 
@@ -184,10 +141,40 @@ impl EdgeOpsGenome {
         self.edge_ops.len()
     }
 
-    pub fn to_graph(&self) -> Graph<(), (), Directed, u32> {
-        let mut builder = GraphBuilder::new();
-        for op in self.edge_ops.iter() {
-            builder.apply_operation(op.clone());
+    pub fn to_graph(&self, max_node: u32) -> Graph<(), (), Directed, u32> {
+        let mut builder: GraphBuilder<f32, ()> = GraphBuilder::new();
+        for &(op, f) in &self.edge_ops[..] {
+            let n = (max_node as f32 * f) as u32;
+            let graph_op = match op {
+                Op::Dup => {
+                    EdgeOperation::Duplicate { weight: f }
+                }
+                Op::Split => {
+                    EdgeOperation::Split { weight: f }
+                }
+                Op::Loop => {
+                    EdgeOperation::Loop { weight: f }
+                }
+                Op::Merge => {
+                    EdgeOperation::Merge { n: n }
+                }
+                Op::Next => {
+                    EdgeOperation::Next { n: n }
+                }
+                Op::Parent => {
+                    EdgeOperation::Parent { n: n }
+                }
+                Op::Reverse => {
+                    EdgeOperation::Reverse
+                }
+                Op::Save => {
+                    EdgeOperation::Save
+                }
+                Op::Restore => {
+                    EdgeOperation::Restore
+                }
+            };
+            builder.apply_operation(graph_op);
         }
         let edge_list = builder.to_edge_list();
 
