@@ -11,11 +11,6 @@ use graph_edge_evolution::{EdgeOperation, GraphBuilder};
 use owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 
-#[derive(Clone, Debug)]
-pub struct EdgeOpsGenome {
-    edge_ops: Vec<EdgeOperation<f32, ()>>,
-}
-
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Op {
     Dup,
@@ -47,6 +42,11 @@ impl FromStr for Op {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct EdgeOpsGenome {
+    edge_ops: Vec<EdgeOperation<f32, ()>>,
+}
+
 pub struct Toolbox {
     weighted_op_choice: OwnedWeightedChoice<Op>,
     prob_mutate_elem: Probability,
@@ -67,24 +67,6 @@ impl Mate<EdgeOpsGenome> for Toolbox {
     }
 }
 
-#[test]
-fn test_parse_weighted_op_choice_list() {
-    assert_eq!(Ok(vec![]), Toolbox::parse_weighted_op_choice_list(""));
-    assert_eq!(Ok(vec![(Op::Dup, 1)]),
-               Toolbox::parse_weighted_op_choice_list("Dup"));
-    assert_eq!(Ok(vec![(Op::Dup, 1)]),
-               Toolbox::parse_weighted_op_choice_list("Dup:1"));
-    assert_eq!(Ok(vec![(Op::Dup, 2)]),
-               Toolbox::parse_weighted_op_choice_list("Dup:2"));
-    assert_eq!(Ok(vec![(Op::Dup, 2), (Op::Split, 1)]),
-               Toolbox::parse_weighted_op_choice_list("Dup:2,Split"));
-    assert_eq!(Err("Invalid weight: ".to_string()),
-               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:"));
-    assert_eq!(Err("Invalid weight: a".to_string()),
-               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:a"));
-    assert_eq!(Err("Invalid opcode: dup".to_string()),
-               Toolbox::parse_weighted_op_choice_list("dup:2,Split:a"));
-}
 
 impl Toolbox {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &mut EdgeOpsGenome) {
@@ -223,4 +205,23 @@ impl EdgeOpsGenome {
 
         return g;
     }
+}
+
+#[test]
+fn test_parse_weighted_op_choice_list() {
+    assert_eq!(Ok(vec![]), Toolbox::parse_weighted_op_choice_list(""));
+    assert_eq!(Ok(vec![(Op::Dup, 1)]),
+               Toolbox::parse_weighted_op_choice_list("Dup"));
+    assert_eq!(Ok(vec![(Op::Dup, 1)]),
+               Toolbox::parse_weighted_op_choice_list("Dup:1"));
+    assert_eq!(Ok(vec![(Op::Dup, 2)]),
+               Toolbox::parse_weighted_op_choice_list("Dup:2"));
+    assert_eq!(Ok(vec![(Op::Dup, 2), (Op::Split, 1)]),
+               Toolbox::parse_weighted_op_choice_list("Dup:2,Split"));
+    assert_eq!(Err("Invalid weight: ".to_string()),
+               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:"));
+    assert_eq!(Err("Invalid weight: a".to_string()),
+               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:a"));
+    assert_eq!(Err("Invalid opcode: dup".to_string()),
+               Toolbox::parse_weighted_op_choice_list("dup:2,Split:a"));
 }
