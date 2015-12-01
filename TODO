@@ -1,6 +1,10 @@
+* Star graph
+* Value range of Parent, Next and Merge.
+* Improve stat output.
+* Use PushPop1-4 (push state, execute 1-4 instructions, pop state)
+* Mutation Operations: Delete, Insert, Modify.
+* Crossover: linear crossover, uniform crossover.
 * Use Bracketing.
-* Use uniform cross-over and different mutation ops.
-* Read target graph from file
 * Distributed Workpool
 * Externalize genome representation
     - Needed for distribution
