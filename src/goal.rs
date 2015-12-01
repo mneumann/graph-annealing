@@ -3,7 +3,6 @@ use petgraph::graph::NodeIndex;
 use petgraph::algo::{connected_components, scc};
 use triadic_census::{OptDenseDigraph, SimpleDigraph, TriadicCensus};
 use graph_neighbor_matching::neighbor_matching_score;
-use graph_sgf::Unweighted;
 
 pub struct Goal<N, E> {
     target_graph: Graph<N, E, Directed>,

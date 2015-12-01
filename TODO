@@ -1,3 +1,4 @@
+* Use Bracketing.
 * Use uniform cross-over and different mutation ops.
 * Read target graph from file
 * Distributed Workpool

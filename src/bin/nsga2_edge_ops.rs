@@ -7,13 +7,13 @@ extern crate crossbeam;
 extern crate simple_parallel;
 extern crate num_cpus;
 extern crate pcg;
+extern crate graph_sgf;
 
 use std::f32;
 use std::fmt::Debug;
 use std::str::FromStr;
 use clap::{App, Arg};
 use rand::{Rng, SeedableRng};
-use rand::isaac::Isaac64Rng;
 use rand::distributions::{IndependentSample, Range};
 use rand::os::OsRng;
 use pcg::PcgRng;
@@ -21,9 +21,16 @@ use pcg::PcgRng;
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
 use graph_annealing::repr::edge_ops_genome::EdgeOpsGenome;
-use graph_annealing::helper::{draw_graph, line_graph};
+use graph_annealing::helper::draw_graph;
 use graph_annealing::goal::Goal;
 use simple_parallel::Pool;
+
+use petgraph::{Directed, Graph};
+use graph_sgf::{PetgraphReader, Unweighted};
+
+use std::io::BufReader;
+use std::fs::File;
+
 
 struct Mating {
     prob_mutate_elem: Probability,
@@ -81,9 +88,9 @@ fn main() {
                                .help("Number of generations to run")
                                .takes_value(true)
                                .required(true))
-                      .arg(Arg::with_name("N")
-                               .long("n")
-                               .help("Problem size")
+                      .arg(Arg::with_name("GRAPH")
+                               .long("graph")
+                               .help("SGF graph file")
                                .takes_value(true)
                                .required(true))
                       .arg(Arg::with_name("MU")
@@ -119,10 +126,6 @@ fn main() {
     // number of generations
     let NGEN: usize = FromStr::from_str(matches.value_of("NGEN").unwrap()).unwrap();
     println!("NGEN: {}", NGEN);
-
-    // problem size to solve (number of nodes of line-graph)
-    let N: usize = FromStr::from_str(matches.value_of("N").unwrap()).unwrap();
-    println!("N: {}", N);
 
     // size of population
     let MU: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
@@ -162,12 +165,20 @@ fn main() {
     };
     assert!(ilen_from <= ilen_to);
 
+    // read graph
+    let graph_file = matches.value_of("GRAPH").unwrap();
+    println!("Using graph file: {}", graph_file);
+    let graph = {
+        let mut f = BufReader::new(File::open(graph_file).unwrap());
+        let graph: Graph<Unweighted, Unweighted, Directed> = PetgraphReader::from_sgf(&mut f);
+        graph
+    };
+
     let mut evaluator = MyEval {
-        goal: Goal::new(line_graph(N as u32)),
+        goal: Goal::new(graph),
         pool: Pool::new(ncpus),
     };
 
-    // let mut rng: Isaac64Rng = SeedableRng::from_seed(&seed[..]);
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
 
@@ -211,18 +222,18 @@ fn main() {
                                         .map(|&i| {
                                             let min = fit.iter().fold(f32::INFINITY, |acc, f| {
                                                 let x = f.objectives[i];
-                                                if acc < x {
-                                                    acc
-                                                } else {
+                                                if x < acc {
                                                     x
+                                                } else {
+                                                    acc
                                                 }
                                             });
-                                            let max = fit.iter().fold(0.0, |acc, f| {
+                                            let max = fit.iter().fold(-f32::INFINITY, |acc, f| {
                                                 let x = f.objectives[i];
-                                                if acc > x {
-                                                    acc
-                                                } else {
+                                                if x > acc {
                                                     x
+                                                } else {
+                                                    acc
                                                 }
                                             });
                                             let sum = fit.iter()
@@ -264,8 +275,8 @@ fn main() {
 
             if fit[rd.idx].objectives[0] < 1.0 {
                 draw_graph(&pop[rd.idx].to_graph(),
-                           &format!("line_{}_nsga2edge_ops_n{}_f{}_i{}.svg",
-                                    N,
+                           // XXX: name
+                           &format!("nsga2edgeops_g{}_f{}_i{}.svg",
                                     NGEN,
                                     fit[rd.idx].objectives[1] as usize,
                                     j));
