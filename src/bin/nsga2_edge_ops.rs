@@ -162,16 +162,10 @@ fn main() {
         graph
     };
 
-    // XXX: Parse weighted operation choice from command line
+    // Parse weighted operation choice from command line
     let ops = Toolbox::parse_weighted_op_choice_list(matches.value_of("OPS").unwrap()).unwrap();
+    println!("edge ops: {:?}", ops);
     let mut toolbox = Toolbox::new(Probability::new(PMUT), &ops[..]);
-                                   /*&[(Op::Dup, 1),
-                                     (Op::Split, 1),
-                                     (Op::Loop, 1),
-                                     (Op::Merge, 1),
-                                     (Op::Next, 1),
-                                     (Op::Parent, 1),
-                                     (Op::Reverse, 1)]); */
 
     let mut evaluator = MyEval {
         goal: Goal::new(graph),

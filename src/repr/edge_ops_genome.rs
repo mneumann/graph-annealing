@@ -24,7 +24,9 @@ pub enum Op {
     Merge,
     Next,
     Parent,
-    Reverse, // XXX Save: Restore
+    Reverse,
+    Save,
+    Restore,
 }
 
 impl FromStr for Op {
@@ -38,6 +40,8 @@ impl FromStr for Op {
             "Next" => Ok(Op::Next),
             "Parent" => Ok(Op::Parent),
             "Reverse" => Ok(Op::Reverse),
+            "Save" => Ok(Op::Save),
+            "Restore" => Ok(Op::Restore),
             _ => Err(format!("Invalid opcode: {}", s)),
         }
     }
@@ -74,10 +78,12 @@ fn test_parse_weighted_op_choice_list() {
                Toolbox::parse_weighted_op_choice_list("Dup:2"));
     assert_eq!(Ok(vec![(Op::Dup, 2), (Op::Split, 1)]),
                Toolbox::parse_weighted_op_choice_list("Dup:2,Split"));
-    assert_eq!(Err("invalid weight: ".to_string()),
+    assert_eq!(Err("Invalid weight: ".to_string()),
                Toolbox::parse_weighted_op_choice_list("Dup:2,Split:"));
-    assert_eq!(Err("invalid weight: a".to_string()),
+    assert_eq!(Err("Invalid weight: a".to_string()),
                Toolbox::parse_weighted_op_choice_list("Dup:2,Split:a"));
+    assert_eq!(Err("Invalid opcode: dup".to_string()),
+               Toolbox::parse_weighted_op_choice_list("dup:2,Split:a"));
 }
 
 impl Toolbox {
@@ -118,7 +124,7 @@ impl Toolbox {
                         if let Ok(weight) = u32::from_str(ws) {
                             v.push((op, weight));
                         } else {
-                            return Err(format!("invalid weight: {}", ws));
+                            return Err(format!("Invalid weight: {}", ws));
                         }
                     }
                     Err(s) => {
@@ -171,6 +177,12 @@ impl Toolbox {
             }
             Op::Reverse => {
                 EdgeOperation::Reverse
+            }
+            Op::Save => {
+                EdgeOperation::Save
+            }
+            Op::Restore => {
+                EdgeOperation::Restore
             }
         }
     }
