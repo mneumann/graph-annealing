@@ -11,6 +11,7 @@ clap = "*"
 crossbeam = "*"
 simple_parallel = "*"
 num_cpus = "0.2"
+time = "0.1"
 
 pcg = { git = "https://github.com/codahale/pcg.git" }
 triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }

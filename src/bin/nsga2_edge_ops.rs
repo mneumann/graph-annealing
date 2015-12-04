@@ -9,6 +9,7 @@ extern crate num_cpus;
 extern crate pcg;
 extern crate graph_sgf;
 extern crate triadic_census;
+extern crate time;
 
 use std::f32;
 use std::fmt::Debug;
@@ -252,7 +253,6 @@ fn main() {
     };
     assert!(ilen_from <= ilen_to);
 
-
     // read objective functions
     let mut objectives_arr: Vec<FitnessFunction> = Vec::new();
     for s in matches.value_of("OBJECTIVES").unwrap().split(",") {
@@ -352,8 +352,9 @@ fn main() {
     let mut pop = initial_population;
     let mut fit = fitness;
 
-    for i in 0..NGEN {
-        println!("Iteration: {}", i);
+    for iteration in 0..NGEN {
+        print!("# {:>6}", iteration);
+        let before = time::precise_time_ns();
         let (new_pop, new_fit) = nsga2::iterate(&mut rng,
                                                 pop,
                                                 fit,
@@ -362,6 +363,7 @@ fn main() {
                                                 LAMBDA,
                                                 K,
                                                 &mut toolbox);
+        let duration = time::precise_time_ns() - before;
         pop = new_pop;
         fit = new_fit;
 
@@ -370,18 +372,35 @@ fn main() {
         let stat1 = Stat::<f32>::for_objectives(&fit[..], 1);
         let stat2 = Stat::<f32>::for_objectives(&fit[..], 2);
 
-        println!("stat: {:?}, {:?}, {:?}", stat0, stat1, stat2);
+        let duration_ms = (duration as f32) / 1_000_000.0;
 
-        let mut found_optimum = false;
+        let mut num_optima = 0;
         for f in fit.iter() {
             if f.objectives[0] <= threshold_arr[0] && f.objectives[1] <= threshold_arr[1] &&
                f.objectives[2] <= threshold_arr[2] {
-                found_optimum = true;
-                break;
+                num_optima += 1;
             }
         }
-        if found_optimum {
-            println!("Found premature optimum in Iteration {}", i);
+
+        print!(" | ");
+        print!("{:>8.1}", stat0.min);
+        print!("{:>9.1}", stat0.avg);
+        print!("{:>10.1}", stat0.max);
+        print!(" | ");
+        print!("{:>8.1}", stat1.min);
+        print!("{:>9.1}", stat1.avg);
+        print!("{:>10.1}", stat1.max);
+        print!(" | ");
+        print!("{:>8.1}", stat2.min);
+        print!("{:>9.1}", stat2.avg);
+        print!("{:>10.1}", stat2.max);
+
+        print!(" | {:>5} | {:>8.0} ms", num_optima, duration_ms);
+
+        println!("");
+
+        if num_optima > 0 {
+            println!("Found premature optimum in Iteration {}", iteration);
             break;
         }
     }
