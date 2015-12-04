@@ -5,7 +5,7 @@ use evo::crossover::linear_2point_crossover_random;
 use evo::nsga2::Mate;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
-use graph_edge_evolution::{EdgeOperation, GraphBuilder, NthEdgeI};
+use graph_edge_evolution::{EdgeOperation, GraphBuilder, NthEdgeF};
 use owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
@@ -146,7 +146,7 @@ impl EdgeOpsGenome {
     pub fn to_graph(&self, max_degree: u32) -> OptDenseDigraph<(), ()> {
         let mut builder: GraphBuilder<f32, ()> = GraphBuilder::new();
         for &(op, f) in &self.edge_ops[..] {
-            let n = (max_degree as f32 * f) as u32;
+            //let n = (max_degree as f32 * f) as u32;
             let graph_op = match op {
                 Op::Dup => {
                     EdgeOperation::Duplicate { weight: f }
@@ -158,13 +158,13 @@ impl EdgeOpsGenome {
                     EdgeOperation::Loop { weight: f }
                 }
                 Op::Merge => {
-                    EdgeOperation::Merge { n: NthEdgeI(n) }
+                    EdgeOperation::Merge { n: NthEdgeF(f) }
                 }
                 Op::Next => {
-                    EdgeOperation::Next { n: NthEdgeI(n) }
+                    EdgeOperation::Next { n: NthEdgeF(f) }
                 }
                 Op::Parent => {
-                    EdgeOperation::Parent { n: NthEdgeI(n) }
+                    EdgeOperation::Parent { n: NthEdgeF(f) }
                 }
                 Op::Reverse => {
                     EdgeOperation::Reverse
