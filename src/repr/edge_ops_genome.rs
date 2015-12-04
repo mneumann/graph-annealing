@@ -5,7 +5,7 @@ use evo::crossover::linear_2point_crossover_random;
 use evo::nsga2::Mate;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
-use graph_edge_evolution::{EdgeOperation, GraphBuilder};
+use graph_edge_evolution::{EdgeOperation, GraphBuilder, NthEdgeI};
 use owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
@@ -58,6 +58,8 @@ impl Mate<EdgeOpsGenome> for Toolbox {
                     p1: &EdgeOpsGenome,
                     p2: &EdgeOpsGenome)
                     -> EdgeOpsGenome {
+
+        // either mutate or crossover.
 
         let mut child = EdgeOpsGenome {
             edge_ops: linear_2point_crossover_random(rng, &p1.edge_ops[..], &p2.edge_ops[..]),
@@ -156,13 +158,13 @@ impl EdgeOpsGenome {
                     EdgeOperation::Loop { weight: f }
                 }
                 Op::Merge => {
-                    EdgeOperation::Merge { n: n }
+                    EdgeOperation::Merge { n: NthEdgeI(n) }
                 }
                 Op::Next => {
-                    EdgeOperation::Next { n: n }
+                    EdgeOperation::Next { n: NthEdgeI(n) }
                 }
                 Op::Parent => {
-                    EdgeOperation::Parent { n: n }
+                    EdgeOperation::Parent { n: NthEdgeI(n) }
                 }
                 Op::Reverse => {
                     EdgeOperation::Reverse
