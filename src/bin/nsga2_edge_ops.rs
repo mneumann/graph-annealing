@@ -33,9 +33,6 @@ use triadic_census::OptDenseDigraph;
 use std::io::BufReader;
 use std::fs::File;
 
-// maximum connectivity
-const MAX_DEGREE: u32 = 20;
-
 #[derive(Debug, Copy, Clone)]
 enum FitnessFunction {
     Null,
@@ -72,15 +69,18 @@ struct MyEval<N, E> {
     goal: Goal<N, E>,
     pool: Pool,
     fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
+    max_degree: u32,
 }
 
+#[inline]
 fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFunction,
                                                                        FitnessFunction,
                                                                        FitnessFunction),
+                                                   max_degree: u32,
                                                    goal: &Goal<N, E>,
                                                    ind: &EdgeOpsGenome)
                                                    -> MultiObjective3<f32> {
-    let g = ind.to_graph(MAX_DEGREE);
+    let g = ind.to_graph(max_degree);
     MultiObjective3::from((apply_fitness_function(fitness_functions.0, goal, &g),
                            apply_fitness_function(fitness_functions.1, goal, &g),
                            apply_fitness_function(fitness_functions.2, goal, &g)))
@@ -93,9 +93,12 @@ impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, Multi
         let goal = &self.goal;
 
         let fitness_functions = self.fitness_functions;
+        let max_degree = self.max_degree;
 
         crossbeam::scope(|scope| {
-            pool.map(scope, pop, |ind| fitness(fitness_functions, goal, ind))
+            pool.map(scope,
+                     pop,
+                     |ind| fitness(fitness_functions, max_degree, goal, ind))
                 .collect()
         })
     }
@@ -166,6 +169,11 @@ fn main() {
                       .arg(Arg::with_name("THRESHOLD")
                                .long("threshold")
                                .help("Abort if for all fitness[i] <= value[i] (default: 0,0,0)")
+                               .takes_value(true)
+                               .required(false))
+                      .arg(Arg::with_name("MAX_DEGREE")
+                               .long("max-degree")
+                               .help("Maximum degree (default: 20)")
                                .takes_value(true)
                                .required(false))
                       .get_matches();
@@ -273,6 +281,9 @@ fn main() {
         graph
     };
 
+    let MAX_DEGREE: u32 = FromStr::from_str(matches.value_of("MAX_DEGREE").unwrap_or("20"))
+                              .unwrap();
+
     // Parse weighted operation choice from command line
     let ops = Toolbox::parse_weighted_op_choice_list(matches.value_of("OPS").unwrap()).unwrap();
     println!("edge ops: {:?}", ops);
@@ -281,6 +292,7 @@ fn main() {
     let mut evaluator = MyEval {
         goal: Goal::new(OptDenseDigraph::from(graph)),
         pool: Pool::new(ncpus),
+        max_degree: MAX_DEGREE,
         fitness_functions: (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
     };
 
@@ -378,7 +390,7 @@ fn main() {
             println!("genome: {:?}", pop[rd.idx]);
 
             // if fit[rd.idx].objectives[0] < 1.0 {
-            draw_graph((&pop[rd.idx].to_graph(MAX_DEGREE)).ref_graph(),
+            draw_graph((&pop[rd.idx].to_graph(evaluator.max_degree)).ref_graph(),
                        // XXX: name
                        &format!("nsga2edgeops_g{}_f{}_i{}.svg",
                                 NGEN,
