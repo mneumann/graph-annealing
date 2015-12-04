@@ -82,7 +82,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "graph-edge-evolution"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/graph-edge-evolution.git#0a208e9bf1267c96e04cd163936ab28c2e99c398"
+source = "git+https://github.com/mneumann/graph-edge-evolution.git#ecc7e7089149f8463dc5605c85f541aa2bde3a12"
 dependencies = [
  "log 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

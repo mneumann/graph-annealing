@@ -33,30 +33,58 @@ use triadic_census::OptDenseDigraph;
 use std::io::BufReader;
 use std::fs::File;
 
-const MAX_NODES: u32 = 10_000;
+// maximum connectivity
+const MAX_DEGREE: u32 = 20;
 
-fn fitness<N: Clone + Default, E: Clone + Default>(goal: &Goal<N, E>,
-                                                   ind: &EdgeOpsGenome)
-                                                   -> MultiObjective3<f32> {
-    let g = ind.to_graph(MAX_NODES);
-    let cc_dist = goal.connected_components_distance(&g);
-    let nmc = goal.neighbor_matching_score(&g);
-    let triadic_dist = goal.triadic_distance(&g);
-    MultiObjective3::from((cc_dist as f32,
-                           triadic_dist as f32,
-                           nmc /* ind.num_edges() as f32 */))
-}
-
+#[derive(Debug, Copy, Clone)]
 enum FitnessFunction {
+    Null,
     ConnectedComponents,
     StronglyConnectedComponents,
     NeighborMatching,
     TriadicDistance,
 }
 
+fn apply_fitness_function<N: Clone + Default, E: Clone + Default>(fitfun: FitnessFunction,
+                                                                  goal: &Goal<N, E>,
+                                                                  g: &OptDenseDigraph<(), ()>)
+                                                                  -> f32 {
+    match fitfun {
+        FitnessFunction::Null => {
+            0.0
+        }
+        FitnessFunction::ConnectedComponents => {
+            goal.connected_components_distance(g) as f32
+        }
+        FitnessFunction::StronglyConnectedComponents => {
+            goal.strongly_connected_components_distance(g) as f32
+        }
+        FitnessFunction::NeighborMatching => {
+            goal.neighbor_matching_score(g) as f32
+        }
+        FitnessFunction::TriadicDistance => {
+            goal.triadic_distance(g) as f32
+        }
+    }
+}
+
 struct MyEval<N, E> {
     goal: Goal<N, E>,
-    pool: Pool, // fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction)
+    pool: Pool,
+    fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
+}
+
+fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFunction,
+                                                                       FitnessFunction,
+                                                                       FitnessFunction),
+                                                   goal: &Goal<N, E>,
+                                                   ind: &EdgeOpsGenome)
+                                                   -> MultiObjective3<f32> {
+    let g = ind.to_graph(MAX_DEGREE);
+    MultiObjective3::from((apply_fitness_function(fitness_functions.0, goal, &g),
+                           apply_fitness_function(fitness_functions.1, goal, &g),
+                           apply_fitness_function(fitness_functions.2, goal, &g)))
+
 }
 
 impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, MultiObjective3<f32>> for MyEval<N,E> {
@@ -64,7 +92,12 @@ impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, Multi
         let pool = &mut self.pool;
         let goal = &self.goal;
 
-        crossbeam::scope(|scope| pool.map(scope, pop, |ind| fitness(goal, ind)).collect())
+        let fitness_functions = self.fitness_functions;
+
+        crossbeam::scope(|scope| {
+            pool.map(scope, pop, |ind| fitness(fitness_functions, goal, ind))
+                .collect()
+        })
     }
 }
 
@@ -124,6 +157,12 @@ fn main() {
                                .help("Initial genome length (random range)")
                                .takes_value(true)
                                .required(true))
+                      .arg(Arg::with_name("OBJECTIVES")
+                               .long("objectives")
+                               .help("Specify 3 objective functions comma separated (null, cc, \
+                                      scc, nm, td), e.g. cc,nm,td")
+                               .takes_value(true)
+                               .required(true))
                       .get_matches();
 
     // number of generations
@@ -168,6 +207,42 @@ fn main() {
     };
     assert!(ilen_from <= ilen_to);
 
+
+    // read objective functions
+    let mut objectives_arr: Vec<FitnessFunction> = Vec::new();
+    for s in matches.value_of("OBJECTIVES").unwrap().split(",") {
+        objectives_arr.push(match s {
+            "null" => {
+                FitnessFunction::Null
+            }
+            "cc" => {
+                FitnessFunction::ConnectedComponents
+            }
+            "scc" => {
+                FitnessFunction::StronglyConnectedComponents
+            }
+            "nm" => {
+                FitnessFunction::NeighborMatching
+            }
+            "td" => {
+                FitnessFunction::TriadicDistance
+            }
+            _ => {
+                panic!("Invalid objective function");
+            }
+        });
+    }
+
+    while objectives_arr.len() < 3 {
+        objectives_arr.push(FitnessFunction::Null);
+    }
+
+    if objectives_arr.len() > 3 {
+        panic!("Max 3 objectives allowed");
+    }
+
+    println!("objectives={:?}", objectives_arr);
+
     // read graph
     let graph_file = matches.value_of("GRAPH").unwrap();
     println!("Using graph file: {}", graph_file);
@@ -185,6 +260,7 @@ fn main() {
     let mut evaluator = MyEval {
         goal: Goal::new(OptDenseDigraph::from(graph)),
         pool: Pool::new(ncpus),
+        fitness_functions: (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
     };
 
     assert!(seed.len() == 2);
@@ -280,7 +356,7 @@ fn main() {
             println!("genome: {:?}", pop[rd.idx]);
 
             if fit[rd.idx].objectives[0] < 1.0 {
-                draw_graph((&pop[rd.idx].to_graph(MAX_NODES)).ref_graph(),
+                draw_graph((&pop[rd.idx].to_graph(MAX_DEGREE)).ref_graph(),
                            // XXX: name
                            &format!("nsga2edgeops_g{}_f{}_i{}.svg",
                                     NGEN,

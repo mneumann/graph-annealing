@@ -5,8 +5,6 @@ use evo::crossover::linear_2point_crossover_random;
 use evo::nsga2::Mate;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
-use petgraph::{Directed, Graph};
-use petgraph::graph::NodeIndex;
 use graph_edge_evolution::{EdgeOperation, GraphBuilder};
 use owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
