@@ -28,16 +28,18 @@ use simple_parallel::Pool;
 
 use petgraph::{Directed, Graph};
 use graph_sgf::{PetgraphReader, Unweighted};
-use triadic_census::{OptDenseDigraph};
+use triadic_census::OptDenseDigraph;
 
 use std::io::BufReader;
 use std::fs::File;
 
 const MAX_NODES: u32 = 10_000;
 
-fn fitness<N: Clone+Default, E: Clone+Default>(goal: &Goal<N, E>, ind: &EdgeOpsGenome) -> MultiObjective3<f32> {
+fn fitness<N: Clone + Default, E: Clone + Default>(goal: &Goal<N, E>,
+                                                   ind: &EdgeOpsGenome)
+                                                   -> MultiObjective3<f32> {
     let g = ind.to_graph(MAX_NODES);
-    let cc_dist = goal./*strongly_*/connected_components_distance(&g);
+    let cc_dist = goal.connected_components_distance(&g);
     let nmc = goal.neighbor_matching_score(&g);
     let triadic_dist = goal.triadic_distance(&g);
     MultiObjective3::from((cc_dist as f32,
@@ -54,8 +56,7 @@ enum FitnessFunction {
 
 struct MyEval<N, E> {
     goal: Goal<N, E>,
-    pool: Pool,
-    //fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction)
+    pool: Pool, // fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction)
 }
 
 impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, MultiObjective3<f32>> for MyEval<N,E> {

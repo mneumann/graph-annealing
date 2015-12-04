@@ -1,5 +1,5 @@
-use rand::distributions::{Weighted, Sample, IndependentSample, Range};
-use rand::{Rng};
+use rand::distributions::{IndependentSample, Range, Sample, Weighted};
+use rand::Rng;
 
 /// A distribution that selects from a finite collection of weighted items.
 ///
@@ -28,7 +28,7 @@ use rand::{Rng};
 /// ```
 pub struct OwnedWeightedChoice<T> {
     items: Vec<Weighted<T>>,
-    weight_range: Range<u32>
+    weight_range: Range<u32>,
 }
 
 impl<T: Clone> OwnedWeightedChoice<T> {
@@ -40,7 +40,8 @@ impl<T: Clone> OwnedWeightedChoice<T> {
     /// - the total weight is larger than a `u32` can contain.
     pub fn new(mut items: Vec<Weighted<T>>) -> OwnedWeightedChoice<T> {
         // strictly speaking, this is subsumed by the total weight == 0 case
-        assert!(!items.is_empty(), "WeightedChoice::new called with no items");
+        assert!(!items.is_empty(),
+                "WeightedChoice::new called with no items");
 
         let mut running_total: u32 = 0;
 
@@ -50,25 +51,28 @@ impl<T: Clone> OwnedWeightedChoice<T> {
         for item in items.iter_mut() {
             running_total = match running_total.checked_add(item.weight) {
                 Some(n) => n,
-                None => panic!("WeightedChoice::new called with a total weight \
-                               larger than a u32 can contain")
+                None => panic!("WeightedChoice::new called with a total weight larger than a u32 \
+                                can contain"),
             };
 
             item.weight = running_total;
         }
-        assert!(running_total != 0, "WeightedChoice::new called with a total weight of 0");
+        assert!(running_total != 0,
+                "WeightedChoice::new called with a total weight of 0");
 
         OwnedWeightedChoice {
             items: items,
             // we're likely to be generating numbers in this range
             // relatively often, so might as well cache it
-            weight_range: Range::new(0, running_total)
+            weight_range: Range::new(0, running_total),
         }
     }
 }
 
 impl<T: Clone> Sample<T> for OwnedWeightedChoice<T> {
-    fn sample<R: Rng>(&mut self, rng: &mut R) -> T { self.ind_sample(rng) }
+    fn sample<R: Rng>(&mut self, rng: &mut R) -> T {
+        self.ind_sample(rng)
+    }
 }
 
 impl<T: Clone> IndependentSample<T> for OwnedWeightedChoice<T> {

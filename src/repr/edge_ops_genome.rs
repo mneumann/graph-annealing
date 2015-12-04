@@ -179,7 +179,7 @@ impl EdgeOpsGenome {
             builder.apply_operation(graph_op);
         }
 
-        let mut g: OptDenseDigraph<(), ()> = OptDenseDigraph::new(builder.total_number_of_nodes()); // XXX: rename to real_number 
+        let mut g: OptDenseDigraph<(), ()> = OptDenseDigraph::new(builder.total_number_of_nodes()); // XXX: rename to real_number
 
         // maps node_idx to index used within the graph.
         let mut node_map: BTreeMap<usize, usize> = BTreeMap::new(); // XXX: with_capacity
@@ -189,7 +189,7 @@ impl EdgeOpsGenome {
             node_map.insert(node_idx, graph_idx);
         });
 
-        builder.visit_edges(|(a,b), _| {
+        builder.visit_edges(|(a, b), _| {
             g.add_edge(node_map[&a], node_map[&b]);
         });
 

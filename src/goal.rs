@@ -53,18 +53,22 @@ impl<N:Clone+Default,E:Clone+Default> Goal<N,E> {
         TriadicCensus::distance(&self.target_census, &census)
     }
 
-    pub fn connected_components_distance<A:Default, B:Default>(&self, g: &OptDenseDigraph<A, B>) -> usize {
+    pub fn connected_components_distance<A: Default, B: Default>(&self,
+                                                                 g: &OptDenseDigraph<A, B>)
+                                                                 -> usize {
         let cc = connected_components(g.ref_graph()) as isize;
         ((self.target_connected_components as isize) - cc).abs() as usize
     }
-    pub fn strongly_connected_components_distance<A:Default, B:Default>(&self,
-                                                        g: &OptDenseDigraph<A, B>)
-                                                        -> usize {
+    pub fn strongly_connected_components_distance<A: Default, B: Default>(&self,
+                                                                          g: &OptDenseDigraph<A, B>)
+                                                                          -> usize {
         let scc = scc(g.ref_graph()).len() as isize;
         ((self.target_strongly_connected_components as isize) - scc).abs() as usize
     }
 
-    pub fn neighbor_matching_score<A:Default, B:Default>(&self, g: &OptDenseDigraph<A, B>) -> f32 {
+    pub fn neighbor_matching_score<A: Default, B: Default>(&self,
+                                                           g: &OptDenseDigraph<A, B>)
+                                                           -> f32 {
         let (in_b, out_b) = graph_to_edgelist(g.ref_graph());
         let (_iter, score) = neighbor_matching_score(&self.target_in_a[..],
                                                      &in_b[..],
