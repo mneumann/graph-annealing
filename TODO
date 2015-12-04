@@ -1,4 +1,6 @@
-* Star graph
+* Use genome length as criterion
+* Search for repeating sequences and lift them up one layer.
+* Add a pruning step, which removes unneccessary operations.
 * Value range of Parent, Next and Merge.
 * Improve stat output.
 * Use PushPop1-4 (push state, execute 1-4 instructions, pop state)
