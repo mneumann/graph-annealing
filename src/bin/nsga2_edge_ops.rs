@@ -163,6 +163,11 @@ fn main() {
                                       scc, nm, td), e.g. cc,nm,td")
                                .takes_value(true)
                                .required(true))
+                      .arg(Arg::with_name("THRESHOLD")
+                               .long("threshold")
+                               .help("Abort if for all fitness[i] <= value[i] (default: 0,0,0)")
+                               .takes_value(true)
+                               .required(false))
                       .get_matches();
 
     // number of generations
@@ -242,6 +247,22 @@ fn main() {
     }
 
     println!("objectives={:?}", objectives_arr);
+
+
+    // read objective functions
+    let mut threshold_arr: Vec<f32> = Vec::new();
+    for s in matches.value_of("THRESHOLD").unwrap_or("").split(",") {
+        let value: f32 = FromStr::from_str(s).unwrap();
+        threshold_arr.push(value);
+    }
+
+    while threshold_arr.len() < 3 {
+        threshold_arr.push(0.0);
+    }
+
+    if threshold_arr.len() > 3 {
+        panic!("Max 3 threshold values allowed");
+    }
 
     // read graph
     let graph_file = matches.value_of("GRAPH").unwrap();
@@ -330,7 +351,8 @@ fn main() {
         println!("stats: {:?}", stats);
         let mut found_optimum = false;
         for f in fit.iter() {
-            if f.objectives[0] < 1.0 && f.objectives[1] <= 1.0 && f.objectives[2] < 0.01 {
+            if f.objectives[0] <= threshold_arr[0] && f.objectives[1] <= threshold_arr[1] &&
+               f.objectives[2] <= threshold_arr[2] {
                 found_optimum = true;
                 break;
             }
@@ -355,15 +377,15 @@ fn main() {
             println!("fitness: {:?}", fit[rd.idx]);
             println!("genome: {:?}", pop[rd.idx]);
 
-            if fit[rd.idx].objectives[0] < 1.0 {
-                draw_graph((&pop[rd.idx].to_graph(MAX_DEGREE)).ref_graph(),
-                           // XXX: name
-                           &format!("nsga2edgeops_g{}_f{}_i{}.svg",
-                                    NGEN,
-                                    fit[rd.idx].objectives[1] as usize,
-                                    j));
-                j += 1;
-            }
+            // if fit[rd.idx].objectives[0] < 1.0 {
+            draw_graph((&pop[rd.idx].to_graph(MAX_DEGREE)).ref_graph(),
+                       // XXX: name
+                       &format!("nsga2edgeops_g{}_f{}_i{}.svg",
+                                NGEN,
+                                fit[rd.idx].objectives[1] as usize,
+                                j));
+            j += 1;
+            // }
         }
     }
 }
