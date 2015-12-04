@@ -184,8 +184,8 @@ impl EdgeOpsGenome {
             let _ = g.add_node(());
         }
 
-        for (i, node) in edge_list.iter().enumerate() {
-            for &(j, _weight) in node.iter() {
+        for (i, (_node_function, node_edges)) in edge_list.into_iter().enumerate() {
+            for &(j, _weight) in node_edges.iter() {
                 g.add_edge(NodeIndex::new(i), NodeIndex::new(j), ());
             }
         }
