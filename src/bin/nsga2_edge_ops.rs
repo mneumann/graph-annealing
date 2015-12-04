@@ -8,6 +8,7 @@ extern crate simple_parallel;
 extern crate num_cpus;
 extern crate pcg;
 extern crate graph_sgf;
+extern crate triadic_census;
 
 use std::f32;
 use std::fmt::Debug;
@@ -27,28 +28,37 @@ use simple_parallel::Pool;
 
 use petgraph::{Directed, Graph};
 use graph_sgf::{PetgraphReader, Unweighted};
+use triadic_census::{OptDenseDigraph};
 
 use std::io::BufReader;
 use std::fs::File;
 
 const MAX_NODES: u32 = 10_000;
 
-fn fitness<N: Clone, E: Clone>(goal: &Goal<N, E>, ind: &EdgeOpsGenome) -> MultiObjective3<f32> {
+fn fitness<N: Clone+Default, E: Clone+Default>(goal: &Goal<N, E>, ind: &EdgeOpsGenome) -> MultiObjective3<f32> {
     let g = ind.to_graph(MAX_NODES);
-    let cc_dist = goal.strongly_connected_components_distance(&g);
+    let cc_dist = goal./*strongly_*/connected_components_distance(&g);
     let nmc = goal.neighbor_matching_score(&g);
-    let triadic_dist = goal.triadic_distance(g);
+    let triadic_dist = goal.triadic_distance(&g);
     MultiObjective3::from((cc_dist as f32,
                            triadic_dist as f32,
                            nmc /* ind.num_edges() as f32 */))
 }
 
+enum FitnessFunction {
+    ConnectedComponents,
+    StronglyConnectedComponents,
+    NeighborMatching,
+    TriadicDistance,
+}
+
 struct MyEval<N, E> {
     goal: Goal<N, E>,
     pool: Pool,
+    //fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction)
 }
 
-impl<N:Clone+Sync,E:Clone+Sync> FitnessEval<EdgeOpsGenome, MultiObjective3<f32>> for MyEval<N,E> {
+impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, MultiObjective3<f32>> for MyEval<N,E> {
     fn fitness(&mut self, pop: &[EdgeOpsGenome]) -> Vec<MultiObjective3<f32>> {
         let pool = &mut self.pool;
         let goal = &self.goal;
@@ -172,7 +182,7 @@ fn main() {
     let mut toolbox = Toolbox::new(Probability::new(PMUT), &ops[..]);
 
     let mut evaluator = MyEval {
-        goal: Goal::new(graph),
+        goal: Goal::new(OptDenseDigraph::from(graph)),
         pool: Pool::new(ncpus),
     };
 
@@ -243,7 +253,7 @@ fn main() {
         println!("stats: {:?}", stats);
         let mut found_optimum = false;
         for f in fit.iter() {
-            if f.objectives[0] < 1.0 && f.objectives[1] < 3.0 && f.objectives[2] < 0.01 {
+            if f.objectives[0] < 1.0 && f.objectives[1] <= 1.0 && f.objectives[2] < 0.01 {
                 found_optimum = true;
                 break;
             }
@@ -269,7 +279,7 @@ fn main() {
             println!("genome: {:?}", pop[rd.idx]);
 
             if fit[rd.idx].objectives[0] < 1.0 {
-                draw_graph(&pop[rd.idx].to_graph(MAX_NODES),
+                draw_graph((&pop[rd.idx].to_graph(MAX_NODES)).ref_graph(),
                            // XXX: name
                            &format!("nsga2edgeops_g{}_f{}_i{}.svg",
                                     NGEN,

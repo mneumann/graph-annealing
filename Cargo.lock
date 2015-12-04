@@ -82,7 +82,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "graph-edge-evolution"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/graph-edge-evolution.git#f1f2dcb2297056994b8ded9b8c1892befa19cd1c"
+source = "git+https://github.com/mneumann/graph-edge-evolution.git#0a208e9bf1267c96e04cd163936ab28c2e99c398"
 dependencies = [
  "log 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -215,7 +215,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "triadic-census"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/triadic-census-rs.git#6890296faf085dd7f93e0211392a8973afb2a4ff"
+source = "git+https://github.com/mneumann/triadic-census-rs.git#3922341678f7562b5326624810e4b36959ac8032"
 dependencies = [
  "fixedbitset 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "petgraph 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",

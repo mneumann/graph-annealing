@@ -10,6 +10,8 @@ use petgraph::graph::NodeIndex;
 use graph_edge_evolution::{EdgeOperation, GraphBuilder};
 use owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
+use triadic_census::OptDenseDigraph;
+use std::collections::BTreeMap;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Op {
@@ -141,10 +143,10 @@ impl EdgeOpsGenome {
         self.edge_ops.len()
     }
 
-    pub fn to_graph(&self, max_node: u32) -> Graph<(), (), Directed, u32> {
+    pub fn to_graph(&self, max_degree: u32) -> OptDenseDigraph<(), ()> {
         let mut builder: GraphBuilder<f32, ()> = GraphBuilder::new();
         for &(op, f) in &self.edge_ops[..] {
-            let n = (max_node as f32 * f) as u32;
+            let n = (max_degree as f32 * f) as u32;
             let graph_op = match op {
                 Op::Dup => {
                     EdgeOperation::Duplicate { weight: f }
@@ -176,19 +178,20 @@ impl EdgeOpsGenome {
             };
             builder.apply_operation(graph_op);
         }
-        let edge_list = builder.to_edge_list();
 
-        let mut g: Graph<(), (), Directed, u32> = Graph::new();
-        let n = edge_list.len();
-        for _ in 0..n {
-            let _ = g.add_node(());
-        }
+        let mut g: OptDenseDigraph<(), ()> = OptDenseDigraph::new(builder.total_number_of_nodes()); // XXX: rename to real_number 
 
-        for (i, (_node_function, node_edges)) in edge_list.into_iter().enumerate() {
-            for &(j, _weight) in node_edges.iter() {
-                g.add_edge(NodeIndex::new(i), NodeIndex::new(j), ());
-            }
-        }
+        // maps node_idx to index used within the graph.
+        let mut node_map: BTreeMap<usize, usize> = BTreeMap::new(); // XXX: with_capacity
+
+        builder.visit_nodes(|node_idx, _| {
+            let graph_idx = g.add_node();
+            node_map.insert(node_idx, graph_idx);
+        });
+
+        builder.visit_edges(|(a,b), _| {
+            g.add_edge(node_map[&a], node_map[&b]);
+        });
 
         return g;
     }
