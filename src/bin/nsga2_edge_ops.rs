@@ -111,6 +111,38 @@ struct Stat<T: Debug> {
     avg: T,
 }
 
+impl Stat<f32> {
+    fn for_objectives(fit: &[MultiObjective3<f32>], i: usize) -> Stat<f32> {
+        let min = fit.iter().fold(f32::INFINITY, |acc, f| {
+            let x = f.objectives[i];
+            if x < acc {
+                x
+            } else {
+                acc
+            }
+        });
+        let max = fit.iter().fold(-f32::INFINITY, |acc, f| {
+            let x = f.objectives[i];
+            if x > acc {
+                x
+            } else {
+                acc
+            }
+        });
+        let sum = fit.iter()
+                     .fold(0.0, |acc, f| acc + f.objectives[i]);
+        Stat {
+            min: min,
+            max: max,
+            avg: if fit.is_empty() {
+                0.0
+            } else {
+                sum / fit.len() as f32
+            },
+        }
+    }
+}
+
 #[allow(non_snake_case)]
 fn main() {
     let ncpus = num_cpus::get();
@@ -256,7 +288,6 @@ fn main() {
 
     println!("objectives={:?}", objectives_arr);
 
-
     // read objective functions
     let mut threshold_arr: Vec<f32> = Vec::new();
     for s in matches.value_of("THRESHOLD").unwrap_or("").split(",") {
@@ -283,6 +314,8 @@ fn main() {
 
     let MAX_DEGREE: u32 = FromStr::from_str(matches.value_of("MAX_DEGREE").unwrap_or("20"))
                               .unwrap();
+
+    println!("max-degree: {}", MAX_DEGREE);
 
     // Parse weighted operation choice from command line
     let ops = Toolbox::parse_weighted_op_choice_list(matches.value_of("OPS").unwrap()).unwrap();
@@ -332,35 +365,13 @@ fn main() {
         pop = new_pop;
         fit = new_fit;
 
-        let stats: Vec<Stat<f32>> = [0, 1, 2]
-                                        .iter()
-                                        .map(|&i| {
-                                            let min = fit.iter().fold(f32::INFINITY, |acc, f| {
-                                                let x = f.objectives[i];
-                                                if x < acc {
-                                                    x
-                                                } else {
-                                                    acc
-                                                }
-                                            });
-                                            let max = fit.iter().fold(-f32::INFINITY, |acc, f| {
-                                                let x = f.objectives[i];
-                                                if x > acc {
-                                                    x
-                                                } else {
-                                                    acc
-                                                }
-                                            });
-                                            let sum = fit.iter()
-                                                         .fold(0.0, |acc, f| acc + f.objectives[i]);
-                                            Stat {
-                                                min: min,
-                                                max: max,
-                                                avg: sum / fit.len() as f32,
-                                            }
-                                        })
-                                        .collect();
-        println!("stats: {:?}", stats);
+        // calculate a min/max/avg value for each objective.
+        let stat0 = Stat::<f32>::for_objectives(&fit[..], 0);
+        let stat1 = Stat::<f32>::for_objectives(&fit[..], 1);
+        let stat2 = Stat::<f32>::for_objectives(&fit[..], 2);
+
+        println!("stat: {:?}, {:?}, {:?}", stat0, stat1, stat2);
+
         let mut found_optimum = false;
         for f in fit.iter() {
             if f.objectives[0] <= threshold_arr[0] && f.objectives[1] <= threshold_arr[1] &&
