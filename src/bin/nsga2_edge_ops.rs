@@ -64,6 +64,7 @@ struct Stat<T: Debug> {
     avg: T,
 }
 
+#[allow(non_snake_case)]
 fn main() {
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);

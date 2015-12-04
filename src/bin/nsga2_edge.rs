@@ -61,6 +61,7 @@ impl<N:Clone+Sync,E:Clone+Sync> FitnessEval<EdgeListGenome, MultiObjective3<f32>
     }
 }
 
+#[allow(non_snake_case)]
 fn main() {
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);

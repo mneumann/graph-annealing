@@ -5,7 +5,7 @@ use triadic_census::{OptDenseDigraph, SimpleDigraph, TriadicCensus};
 use graph_neighbor_matching::neighbor_matching_score;
 
 pub struct Goal<N, E> {
-    target_graph: Graph<N, E, Directed>,
+    _target_graph: Graph<N, E, Directed>,
     target_census: TriadicCensus,
     target_connected_components: usize,
     target_strongly_connected_components: usize,
@@ -39,7 +39,7 @@ impl<N:Clone,E:Clone> Goal<N,E> {
         let cc = connected_components(&g);
         let scc = scc(&g).len();
         Goal {
-            target_graph: g,
+            _target_graph: g,
             target_census: census,
             target_connected_components: cc,
             target_strongly_connected_components: scc,
