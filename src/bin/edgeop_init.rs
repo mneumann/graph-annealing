@@ -13,7 +13,7 @@ extern crate time;
 extern crate serde_json;
 extern crate sexp;
 
-use sexp::{Atom, Sexp, atom_i, atom_s, list};
+use sexp::{Atom, Sexp, atom_i, atom_f, atom_s, list};
 
 use std::f32;
 use std::fmt::Debug;
@@ -37,27 +37,15 @@ use petgraph::{Directed, Graph};
 use graph_sgf::{PetgraphReader, Unweighted};
 use triadic_census::OptDenseDigraph;
 
-use std::io::BufReader;
+use std::io::{Write, BufReader};
 use std::fs::File;
+use std::string::ToString;
 
 use serde_json::ser::to_string;
 
-//
-// macro_rules! stderr {
-// ($($arg:tt)*) => (
-// match writeln!(&mut ::std::io::stderr(), $($arg)* ) {
-// Ok(_) => {},
-// Err(x) => panic!("Unable to write to stderr (file handle closed?): {}", x),
-// }
-// )
-// }
-//
 
 #[allow(non_snake_case)]
 fn main() {
-    println!("(");
-    let ncpus = num_cpus::get();
-    // stderr!("Using {} CPUs", ncpus);
     let matches = App::new("edgeop_init")
                       .arg(Arg::with_name("OPS")
                                .long("ops")
@@ -79,21 +67,38 @@ fn main() {
                                .help("Initial genome length (random range)")
                                .takes_value(true)
                                .required(true))
+                      .arg(Arg::with_name("OUT")
+                               .long("out")
+                               .help("Write population to file")
+                               .takes_value(true)
+                               .required(false))
                       .get_matches();
+
+    let mut wr: Box<Write> = 
+    match matches.value_of("OUT") {
+        Some(out) => {
+            Box::new(File::create(out).unwrap())
+        }
+        None => {
+            Box::new(std::io::stdout())
+        }
+    };
+
+    writeln!(&mut wr, "(");
 
     // size of population
     let MU: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
-    println!("(MU {})", MU);
+    writeln!(&mut wr, "(MU {})", MU);
 
     let seed: Vec<u64>;
     if let Some(seed_str) = matches.value_of("SEED") {
         seed = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
     } else {
-        // stderr!("Use OsRng to generate seed..");
+        writeln!(&mut std::io::stderr(), "Use OsRng to generate seed..");
         let mut rng = OsRng::new().unwrap();
         seed = (0..2).map(|_| rng.next_u64()).collect();
     }
-    println!("(SEED {})",
+    writeln!(&mut wr, "(SEED {})",
              Sexp::List(seed.iter().map(|&s| atom_i(s as i64)).collect()));
 
     let ilen_str = matches.value_of("ILEN").unwrap();
@@ -107,12 +112,15 @@ fn main() {
         ilen[1]
     };
     assert!(ilen_from <= ilen_to);
-    println!("(ILEN {})",
+    writeln!(&mut wr, "(ILEN {})",
              list(&[atom_i(ilen_from as i64), atom_i(ilen_to as i64)]));
 
     // Parse weighted operation choice from command line
     let ops = parse_weighted_op_list(matches.value_of("OPS").unwrap()).unwrap();
-    // stderr!("edge ops: {:?}", ops);
+    let v = Sexp::List(ops.iter().map(|&(ref op, f)| {
+        list(&[atom_s(&ToString::to_string(op)), atom_f(f as f64)])
+    }).collect());
+    writeln!(&mut wr, "(OPS {})", v);
 
     let w_ops = to_weighted_vec(&ops);
     assert!(w_ops.len() > 0);
@@ -140,14 +148,14 @@ fn main() {
 
 
     // output initial population to stdout.
-    let sexp_pop = Sexp::List(vec![atom_s("Population"), 
+    let sexp_pop = Sexp::List(vec![atom_s("POP"), 
         Sexp::List(initial_population.iter().map(|ind| ind.to_sexp()).collect()),
     ]);
-    println!("{}", sexp_pop);
+    writeln!(&mut wr, "{}", sexp_pop);
 
     // evaluate fitness
     // let fitness: Vec<_> = evaluator.fitness(&initial_population[..]);
     // assert!(fitness.len() == initial_population.len());
 
-    println!(")");
+    writeln!(&mut wr, ")");
 }
