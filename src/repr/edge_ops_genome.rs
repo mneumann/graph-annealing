@@ -353,25 +353,17 @@ impl Toolbox {
         EdgeOpsGenome { edge_ops: mut_ind }
     }
 
-    pub fn new(weighted_op: &[(Op, u32)],
-               weighted_var_op: &[(VarOp, u32)],
-               prob_mutate_elem: Probability,
-               weighted_mut_op: &[(MutOp, u32)])
+    pub fn new(weighted_op: Vec<Weighted<Op>>,
+               weighted_var_op: Vec<Weighted<VarOp>>,
+               weighted_mut_op: Vec<Weighted<MutOp>>,
+               prob_mutate_elem: Probability)
                -> Toolbox {
         
-        let w_ops = to_weighted_vec(weighted_op);
-        let w_var_ops = to_weighted_vec(weighted_var_op);
-        let w_mut_ops = to_weighted_vec(weighted_mut_op);
-
-        assert!(w_ops.len() > 0);
-        assert!(w_var_ops.len() > 0);
-        assert!(w_mut_ops.len() > 0);
-
         Toolbox {
             prob_mutate_elem: prob_mutate_elem,
-            weighted_op: OwnedWeightedChoice::new(w_ops),
-            weighted_var_op: OwnedWeightedChoice::new(w_var_ops),
-            weighted_mut_op: OwnedWeightedChoice::new(w_mut_ops),
+            weighted_op: OwnedWeightedChoice::new(weighted_op),
+            weighted_var_op: OwnedWeightedChoice::new(weighted_var_op),
+            weighted_mut_op: OwnedWeightedChoice::new(weighted_mut_op),
         }
     }
 

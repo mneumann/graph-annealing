@@ -26,7 +26,7 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox, parse_weighted_op_list};
+use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox, parse_weighted_op_list, to_weighted_vec};
 use graph_annealing::helper::draw_graph;
 use graph_annealing::goal::Goal;
 use simple_parallel::Pool;
@@ -333,7 +333,17 @@ fn main() {
     let varops = parse_weighted_op_list(matches.value_of("VAROPS").unwrap()).unwrap();
     println!("var ops: {:?}", varops);
 
-    let mut toolbox = Toolbox::new(&ops[..], &varops[..], Probability::new(MUTP), &mutops[..]);
+
+    let w_ops = to_weighted_vec(&ops);
+    assert!(w_ops.len() > 0);
+
+    let w_var_ops = to_weighted_vec(&varops);
+    assert!(w_var_ops.len() > 0);
+
+    let w_mut_ops = to_weighted_vec(&mutops);
+    assert!(w_mut_ops.len() > 0);
+
+    let mut toolbox = Toolbox::new(w_ops, w_var_ops, w_mut_ops, Probability::new(MUTP));
 
     let mut evaluator = MyEval {
         goal: Goal::new(OptDenseDigraph::from(graph)),
