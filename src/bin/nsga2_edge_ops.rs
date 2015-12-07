@@ -188,6 +188,12 @@ fn main() {
                                .help("Probability for element mutation")
                                .takes_value(true)
                                .required(true))
+                      .arg(Arg::with_name("MUTOPS")
+                               .long("mutops")
+                               .help("Mutation operation and weight specification, e.g. \
+                                      Insert:1,Remove:1,Replace:2,ModifyOp:0,ModifyParam:2,Copy:0")
+                               .takes_value(true)
+                               .required(true))
                       .arg(Arg::with_name("ILEN")
                                .long("ilen")
                                .help("Initial genome length (random range)")
@@ -240,6 +246,10 @@ fn main() {
 
     let PMUT: f32 = FromStr::from_str(matches.value_of("PMUT").unwrap()).unwrap();
     println!("PMUT: {:?}", PMUT);
+
+    // Parse weighted operation choice from command line
+    let mutops = Toolbox::parse_weighted_mutops(matches.value_of("MUTOPS").unwrap()).unwrap();
+    println!("mut ops: {:?}", mutops);
 
     let ilen_str = matches.value_of("ILEN").unwrap();
     let ilen: Vec<usize> = ilen_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
@@ -320,7 +330,9 @@ fn main() {
     // Parse weighted operation choice from command line
     let ops = Toolbox::parse_weighted_op_choice_list(matches.value_of("OPS").unwrap()).unwrap();
     println!("edge ops: {:?}", ops);
-    let mut toolbox = Toolbox::new(Probability::new(PMUT), &ops[..]);
+
+
+    let mut toolbox = Toolbox::new(&ops[..], Probability::new(PMUT), &mutops[..]);
 
     let mut evaluator = MyEval {
         goal: Goal::new(OptDenseDigraph::from(graph)),

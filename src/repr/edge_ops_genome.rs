@@ -25,7 +25,7 @@ pub enum Op {
 }
 
 impl FromStr for Op {
-   type Err = String;
+    type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Dup" => Ok(Op::Dup),
@@ -42,6 +42,39 @@ impl FromStr for Op {
     }
 }
 
+
+/// Element-wise Mutation operation.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum MutOp {
+    /// No mutation (copy element)
+    Copy,
+    /// Insert new operation
+    Insert,
+    /// Remove an operation
+    Remove,
+    /// Modify the operation
+    ModifyOp,
+    /// Modify a parameter value
+    ModifyParam,
+    /// Modify both operation and parameter
+    Replace,
+}
+
+impl FromStr for MutOp {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Copy" => Ok(MutOp::Copy),
+            "Insert" => Ok(MutOp::Insert),
+            "Remove" => Ok(MutOp::Remove),
+            "ModifyOp" => Ok(MutOp::ModifyOp),
+            "ModifyParam" => Ok(MutOp::ModifyParam),
+            "Replace" => Ok(MutOp::Replace),
+            _ => Err(format!("Invalid opcode: {}", s)),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct EdgeOpsGenome {
     edge_ops: Vec<(Op, f32)>,
@@ -49,6 +82,7 @@ pub struct EdgeOpsGenome {
 
 pub struct Toolbox {
     weighted_op_choice: OwnedWeightedChoice<Op>,
+    weighted_mut_op: OwnedWeightedChoice<MutOp>,
     prob_mutate_elem: Probability,
 }
 
@@ -59,26 +93,59 @@ impl Mate<EdgeOpsGenome> for Toolbox {
                     p2: &EdgeOpsGenome)
                     -> EdgeOpsGenome {
 
-        // either mutate or crossover.
+        // XXX: either mutate or crossover, or both?
 
-        let mut child = EdgeOpsGenome {
+        let child = EdgeOpsGenome {
             edge_ops: linear_2point_crossover_random(rng, &p1.edge_ops[..], &p2.edge_ops[..]),
         };
-        self.mutate(rng, &mut child);
-        child
+        let mutated_child = self.mutate(rng, child);
+        mutated_child
     }
 }
 
 
 impl Toolbox {
-    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &mut EdgeOpsGenome) {
-        for edge_op in ind.edge_ops.iter_mut() {
+    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: EdgeOpsGenome) -> EdgeOpsGenome {
+        let mut mut_ind = Vec::with_capacity(ind.len()+1);
+
+        for edge_op in ind.edge_ops.iter() {
+            let new_op = 
             if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
-                edge_op.1 = rng.gen::<f32>();
-            }
+                match self.weighted_mut_op.ind_sample(rng) {
+                    MutOp::Copy => {
+                        edge_op.clone()
+                    }
+                    MutOp::Insert => {
+                        // Insert a new op before the current operation
+                        mut_ind.push(self.generate_random_edge_operation(rng));
+                        edge_op.clone()
+                    }
+                    MutOp::Remove => {
+                        // remove current operation
+                        continue;
+                    }
+                    MutOp::ModifyOp => {
+                        (self.weighted_op_choice.ind_sample(rng), edge_op.1)
+                    }
+                    MutOp::ModifyParam => {
+                        (edge_op.0, rng.gen::<f32>())
+                    }
+                    MutOp::Replace => {
+                        self.generate_random_edge_operation(rng)
+                    }
+                }
+            } else {
+                edge_op.clone()
+            };
+            mut_ind.push(new_op);
+        }
+
+        EdgeOpsGenome {
+            edge_ops: mut_ind
         }
     }
 
+    // XXX: Refactor
     pub fn parse_weighted_op_choice_list(s: &str) -> Result<Vec<(Op, u32)>, String> {
         let mut v = Vec::new();
         for opstr in s.split(",") {
@@ -107,20 +174,65 @@ impl Toolbox {
         return Ok(v);
     }
 
-    pub fn new(prob_mutate_elem: Probability, weighted_op_choices: &[(Op, u32)]) -> Toolbox {
-        let mut w = Vec::new();
+    // XXX: Refactor
+    pub fn parse_weighted_mutops(s: &str) -> Result<Vec<(MutOp, u32)>, String> {
+        let mut v = Vec::new();
+        for opstr in s.split(",") {
+            if opstr.is_empty() {
+                continue;
+            }
+            let mut i = opstr.splitn(2, ":");
+            if let Some(ops) = i.next() {
+                match MutOp::from_str(ops) {
+                    Ok(op) => {
+                        let ws = i.next().unwrap_or("1");
+                        if let Ok(weight) = u32::from_str(ws) {
+                            v.push((op, weight));
+                        } else {
+                            return Err(format!("Invalid weight: {}", ws));
+                        }
+                    }
+                    Err(s) => {
+                        return Err(s);
+                    }
+                }
+            } else {
+                return Err("missing op".to_string());
+            }
+        }
+        return Ok(v);
+    }
+
+    pub fn new(weighted_op_choices: &[(Op, u32)], prob_mutate_elem: Probability, weighed_mut_op: &[(MutOp, u32)]) -> Toolbox {
+        let mut w_ops = Vec::new();
         for &(op, weight) in weighted_op_choices {
             if weight > 0 {
                 // an operation with weight=0 cannot be selected
-                w.push(Weighted {
+                w_ops.push(Weighted {
                     weight: weight,
                     item: op,
                 });
             }
         }
+
+        let mut w_mut_ops = Vec::new();
+        for &(op, weight) in weighed_mut_op {
+            if weight > 0 {
+                // an operation with weight=0 cannot be selected
+                w_mut_ops.push(Weighted {
+                    weight: weight,
+                    item: op,
+                });
+            }
+        }
+
+        assert!(w_ops.len() > 0);
+        assert!(w_mut_ops.len() > 0);
+
         Toolbox {
             prob_mutate_elem: prob_mutate_elem,
-            weighted_op_choice: OwnedWeightedChoice::new(w),
+            weighted_op_choice: OwnedWeightedChoice::new(w_ops),
+            weighted_mut_op: OwnedWeightedChoice::new(w_mut_ops),
         }
     }
 

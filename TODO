@@ -3,7 +3,6 @@
 * Add a pruning step, which removes unneccessary operations.
 * Value range of Parent, Next and Merge.
 * Use PushPop1-4 (push state, execute 1-4 instructions, pop state)
-* Mutation Operations: Delete, Insert, Modify.
 * Crossover: linear crossover, uniform crossover.
 * Use Bracketing.
 * Distributed Workpool
