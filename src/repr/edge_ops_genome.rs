@@ -255,10 +255,9 @@ impl EdgeOpsGenome {
         self.edge_ops.len()
     }
 
-    pub fn to_graph(&self, max_degree: u32) -> OptDenseDigraph<(), ()> {
+    pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
         let mut builder: GraphBuilder<f32, ()> = GraphBuilder::new();
         for &(op, f) in &self.edge_ops[..] {
-            //let n = (max_degree as f32 * f) as u32;
             let graph_op = match op {
                 Op::Dup => {
                     EdgeOperation::Duplicate { weight: f }
