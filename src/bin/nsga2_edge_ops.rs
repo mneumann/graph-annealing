@@ -13,7 +13,7 @@ extern crate time;
 extern crate serde_json;
 extern crate sexp;
 
-use sexp::{Atom, Sexp, atom_s};
+use sexp::{Atom, Sexp, atom_i, atom_s, list};
 
 use std::f32;
 use std::fmt::Debug;
@@ -26,7 +26,8 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox, parse_weighted_op_list, to_weighted_vec};
+use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox, parse_weighted_op_list,
+                                             to_weighted_vec};
 use graph_annealing::helper::draw_graph;
 use graph_annealing::goal::Goal;
 use simple_parallel::Pool;
@@ -332,7 +333,6 @@ fn main() {
     // Parse weighted variation operators from command line
     let varops = parse_weighted_op_list(matches.value_of("VAROPS").unwrap()).unwrap();
     println!("var ops: {:?}", varops);
-
 
     let w_ops = to_weighted_vec(&ops);
     assert!(w_ops.len() > 0);
