@@ -195,6 +195,20 @@ pub fn parse_weighted_op_list<T>(s: &str) -> Result<Vec<(T, u32)>, String>
     return Ok(v);
 }
 
+pub fn to_weighted_vec<T:Clone>(ops: &[(T,u32)]) -> Vec<Weighted<T>> {
+    let mut w = Vec::with_capacity(ops.len());
+    for &(ref op, weight) in ops {
+        if weight > 0 {
+            // an operation with weight=0 cannot be selected
+            w.push(Weighted {
+                weight: weight,
+                item: op.clone(),
+            });
+        }
+    }
+    w
+}
+
 impl EdgeOpsGenome {
     pub fn len(&self) -> usize {
         self.edge_ops.len()
@@ -301,8 +315,6 @@ impl EdgeOpsGenome {
     }
 }
 
-
-
 impl Toolbox {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &EdgeOpsGenome) -> EdgeOpsGenome {
         let mut mut_ind = Vec::with_capacity(ind.len() + 1);
@@ -344,41 +356,12 @@ impl Toolbox {
     pub fn new(weighted_op: &[(Op, u32)],
                weighted_var_op: &[(VarOp, u32)],
                prob_mutate_elem: Probability,
-               weighed_mut_op: &[(MutOp, u32)])
+               weighted_mut_op: &[(MutOp, u32)])
                -> Toolbox {
-        let mut w_ops = Vec::new();
-        for &(op, weight) in weighted_op {
-            if weight > 0 {
-                // an operation with weight=0 cannot be selected
-                w_ops.push(Weighted {
-                    weight: weight,
-                    item: op,
-                });
-            }
-        }
-
-        let mut w_var_ops = Vec::new();
-        for &(op, weight) in weighted_var_op {
-            if weight > 0 {
-                // an operation with weight=0 cannot be selected
-                w_var_ops.push(Weighted {
-                    weight: weight,
-                    item: op,
-                });
-            }
-        }
-
-
-        let mut w_mut_ops = Vec::new();
-        for &(op, weight) in weighed_mut_op {
-            if weight > 0 {
-                // an operation with weight=0 cannot be selected
-                w_mut_ops.push(Weighted {
-                    weight: weight,
-                    item: op,
-                });
-            }
-        }
+        
+        let w_ops = to_weighted_vec(weighted_op);
+        let w_var_ops = to_weighted_vec(weighted_var_op);
+        let w_mut_ops = to_weighted_vec(weighted_mut_op);
 
         assert!(w_ops.len() > 0);
         assert!(w_var_ops.len() > 0);
