@@ -75,35 +75,80 @@ impl FromStr for MutOp {
     }
 }
 
+
+/// Variation operators
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum VarOp {
+    /// No variation. Reproduce exactly
+    Copy,
+
+    /// Mutate
+    Mutate,
+
+    /// 2-point Linear crossover
+    LinearCrossover2,
+
+    /// Uniform crossover
+    UniformCrossover,
+}
+
+impl FromStr for VarOp {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Copy" => Ok(VarOp::Copy),
+            "Mutate" => Ok(VarOp::Mutate),
+            "LinearCrossover2" => Ok(VarOp::LinearCrossover2),
+            "UniformCrossover" => Ok(VarOp::UniformCrossover),
+            _ => Err(format!("Invalid opcode: {}", s)),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct EdgeOpsGenome {
     edge_ops: Vec<(Op, f32)>,
 }
 
 pub struct Toolbox {
-    weighted_op_choice: OwnedWeightedChoice<Op>,
+    weighted_op: OwnedWeightedChoice<Op>,
+    weighted_var_op: OwnedWeightedChoice<VarOp>,
     weighted_mut_op: OwnedWeightedChoice<MutOp>,
     prob_mutate_elem: Probability,
 }
 
 impl Mate<EdgeOpsGenome> for Toolbox {
+    // p1 is potentially "better" than p2
     fn mate<R: Rng>(&mut self,
                     rng: &mut R,
                     p1: &EdgeOpsGenome,
                     p2: &EdgeOpsGenome)
                     -> EdgeOpsGenome {
 
-        // XXX: either mutate or crossover, or both?
-
-        let child = EdgeOpsGenome {
-            edge_ops: linear_2point_crossover_random(rng, &p1.edge_ops[..], &p2.edge_ops[..]),
-        };
-        let mutated_child = self.mutate(rng, child);
-        mutated_child
+        match self.weighted_var_op.ind_sample(rng) {
+            VarOp::Copy => {
+                p1.clone()
+            }
+            VarOp::Mutate => {
+                self.mutate(rng, p1)
+            }
+            VarOp::LinearCrossover2 => {
+                EdgeOpsGenome {
+                    edge_ops: linear_2point_crossover_random(rng,
+                                                             &p1.edge_ops[..],
+                                                             &p2.edge_ops[..]),
+                }
+            }
+            VarOp::UniformCrossover => {
+                panic!("TODO");
+            }
+        }
     }
 }
 
-pub fn parse_weighted_op_list<T>(s: &str) -> Result<Vec<(T, u32)>, String> where T:FromStr<Err=String> {
+pub fn parse_weighted_op_list<T>(s: &str) -> Result<Vec<(T, u32)>, String>
+    where T: FromStr<Err = String>
+{
     let mut v = Vec::new();
     for opstr in s.split(",") {
         if opstr.is_empty() {
@@ -132,7 +177,7 @@ pub fn parse_weighted_op_list<T>(s: &str) -> Result<Vec<(T, u32)>, String> where
 }
 
 impl Toolbox {
-    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: EdgeOpsGenome) -> EdgeOpsGenome {
+    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &EdgeOpsGenome) -> EdgeOpsGenome {
         let mut mut_ind = Vec::with_capacity(ind.len() + 1);
 
         for edge_op in ind.edge_ops.iter() {
@@ -151,7 +196,7 @@ impl Toolbox {
                         continue;
                     }
                     MutOp::ModifyOp => {
-                        (self.weighted_op_choice.ind_sample(rng), edge_op.1)
+                        (self.weighted_op.ind_sample(rng), edge_op.1)
                     }
                     MutOp::ModifyParam => {
                         (edge_op.0, rng.gen::<f32>())
@@ -169,12 +214,13 @@ impl Toolbox {
         EdgeOpsGenome { edge_ops: mut_ind }
     }
 
-    pub fn new(weighted_op_choices: &[(Op, u32)],
+    pub fn new(weighted_op: &[(Op, u32)],
+               weighted_var_op: &[(VarOp, u32)],
                prob_mutate_elem: Probability,
                weighed_mut_op: &[(MutOp, u32)])
                -> Toolbox {
         let mut w_ops = Vec::new();
-        for &(op, weight) in weighted_op_choices {
+        for &(op, weight) in weighted_op {
             if weight > 0 {
                 // an operation with weight=0 cannot be selected
                 w_ops.push(Weighted {
@@ -183,6 +229,18 @@ impl Toolbox {
                 });
             }
         }
+
+        let mut w_var_ops = Vec::new();
+        for &(op, weight) in weighted_var_op {
+            if weight > 0 {
+                // an operation with weight=0 cannot be selected
+                w_var_ops.push(Weighted {
+                    weight: weight,
+                    item: op,
+                });
+            }
+        }
+
 
         let mut w_mut_ops = Vec::new();
         for &(op, weight) in weighed_mut_op {
@@ -196,17 +254,19 @@ impl Toolbox {
         }
 
         assert!(w_ops.len() > 0);
+        assert!(w_var_ops.len() > 0);
         assert!(w_mut_ops.len() > 0);
 
         Toolbox {
             prob_mutate_elem: prob_mutate_elem,
-            weighted_op_choice: OwnedWeightedChoice::new(w_ops),
+            weighted_op: OwnedWeightedChoice::new(w_ops),
+            weighted_var_op: OwnedWeightedChoice::new(w_var_ops),
             weighted_mut_op: OwnedWeightedChoice::new(w_mut_ops),
         }
     }
 
     fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> (Op, f32) /*EdgeOperation<f32, ()>*/ {
-        (self.weighted_op_choice.ind_sample(rng), rng.gen::<f32>())
+        (self.weighted_op.ind_sample(rng), rng.gen::<f32>())
     }
 
     pub fn random_genome<R: Rng>(&self, rng: &mut R, len: usize) -> EdgeOpsGenome {
@@ -279,19 +339,21 @@ impl EdgeOpsGenome {
 
 #[test]
 fn test_parse_weighted_op_choice_list() {
-    assert_eq!(Ok(vec![]), Toolbox::parse_weighted_op_choice_list(""));
+    fn parse_weighted_op_choice_list(s: &str) -> Result<Vec<(Op, u32)>, String> {
+        parse_weighted_op_list(s)
+    }
+    assert_eq!(Ok(vec![]), parse_weighted_op_choice_list(""));
+    assert_eq!(Ok(vec![(Op::Dup, 1)]), parse_weighted_op_choice_list("Dup"));
     assert_eq!(Ok(vec![(Op::Dup, 1)]),
-               Toolbox::parse_weighted_op_choice_list("Dup"));
-    assert_eq!(Ok(vec![(Op::Dup, 1)]),
-               Toolbox::parse_weighted_op_choice_list("Dup:1"));
+               parse_weighted_op_choice_list("Dup:1"));
     assert_eq!(Ok(vec![(Op::Dup, 2)]),
-               Toolbox::parse_weighted_op_choice_list("Dup:2"));
+               parse_weighted_op_choice_list("Dup:2"));
     assert_eq!(Ok(vec![(Op::Dup, 2), (Op::Split, 1)]),
-               Toolbox::parse_weighted_op_choice_list("Dup:2,Split"));
+               parse_weighted_op_choice_list("Dup:2,Split"));
     assert_eq!(Err("Invalid weight: ".to_string()),
-               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:"));
+               parse_weighted_op_choice_list("Dup:2,Split:"));
     assert_eq!(Err("Invalid weight: a".to_string()),
-               Toolbox::parse_weighted_op_choice_list("Dup:2,Split:a"));
+               parse_weighted_op_choice_list("Dup:2,Split:a"));
     assert_eq!(Err("Invalid opcode: dup".to_string()),
-               Toolbox::parse_weighted_op_choice_list("dup:2,Split:a"));
+               parse_weighted_op_choice_list("dup:2,Split:a"));
 }

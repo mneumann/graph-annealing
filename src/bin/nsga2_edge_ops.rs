@@ -178,9 +178,10 @@ fn main() {
                                .long("seed")
                                .help("Seed value for Rng")
                                .takes_value(true))
-                      .arg(Arg::with_name("MUTP")
-                               .long("mutp")
-                               .help("Probability for element mutation")
+                      .arg(Arg::with_name("VAROPS")
+                               .long("varops")
+                               .help("Variation operators and weight specification, e.g. \
+                                      Mutate:1,LinearCrossover2:1,UniformCrossover:2,Copy:0")
                                .takes_value(true)
                                .required(true))
                       .arg(Arg::with_name("MUTOPS")
@@ -188,6 +189,11 @@ fn main() {
                                .help("Mutation operation and weight specification, e.g. \
                                       Insert:1,Remove:1,Replace:2,ModifyOp:0,ModifyParam:2,Copy:\
                                       0")
+                               .takes_value(true)
+                               .required(true))
+                      .arg(Arg::with_name("MUTP")
+                               .long("mutp")
+                               .help("Probability for element mutation")
                                .takes_value(true)
                                .required(true))
                       .arg(Arg::with_name("ILEN")
@@ -317,7 +323,11 @@ fn main() {
     let ops = parse_weighted_op_list(matches.value_of("OPS").unwrap()).unwrap();
     println!("edge ops: {:?}", ops);
 
-    let mut toolbox = Toolbox::new(&ops[..], Probability::new(MUTP), &mutops[..]);
+    // Parse weighted variation operators from command line
+    let varops = parse_weighted_op_list(matches.value_of("VAROPS").unwrap()).unwrap();
+    println!("var ops: {:?}", varops);
+
+    let mut toolbox = Toolbox::new(&ops[..], &varops[..], Probability::new(MUTP), &mutops[..]);
 
     let mut evaluator = MyEval {
         goal: Goal::new(OptDenseDigraph::from(graph)),

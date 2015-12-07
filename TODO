@@ -2,7 +2,6 @@
 * Search for repeating sequences and lift them up one layer.
 * Add a pruning step, which removes unneccessary operations.
 * Use PushPop1-4 (push state, execute 1-4 instructions, pop state)
-* Crossover: linear crossover, uniform crossover.
 * Use Bracketing.
 * Distributed Workpool
 * Externalize genome representation
