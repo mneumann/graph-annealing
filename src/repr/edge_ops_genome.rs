@@ -106,11 +106,10 @@ impl Mate<EdgeOpsGenome> for Toolbox {
 
 impl Toolbox {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: EdgeOpsGenome) -> EdgeOpsGenome {
-        let mut mut_ind = Vec::with_capacity(ind.len()+1);
+        let mut mut_ind = Vec::with_capacity(ind.len() + 1);
 
         for edge_op in ind.edge_ops.iter() {
-            let new_op = 
-            if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
+            let new_op = if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
                 match self.weighted_mut_op.ind_sample(rng) {
                     MutOp::Copy => {
                         edge_op.clone()
@@ -140,9 +139,7 @@ impl Toolbox {
             mut_ind.push(new_op);
         }
 
-        EdgeOpsGenome {
-            edge_ops: mut_ind
-        }
+        EdgeOpsGenome { edge_ops: mut_ind }
     }
 
     // XXX: Refactor
@@ -203,7 +200,10 @@ impl Toolbox {
         return Ok(v);
     }
 
-    pub fn new(weighted_op_choices: &[(Op, u32)], prob_mutate_elem: Probability, weighed_mut_op: &[(MutOp, u32)]) -> Toolbox {
+    pub fn new(weighted_op_choices: &[(Op, u32)],
+               prob_mutate_elem: Probability,
+               weighed_mut_op: &[(MutOp, u32)])
+               -> Toolbox {
         let mut w_ops = Vec::new();
         for &(op, weight) in weighted_op_choices {
             if weight > 0 {

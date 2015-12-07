@@ -94,9 +94,7 @@ impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, Multi
         let fitness_functions = self.fitness_functions;
 
         crossbeam::scope(|scope| {
-            pool.map(scope,
-                     pop,
-                     |ind| fitness(fitness_functions, goal, ind))
+            pool.map(scope, pop, |ind| fitness(fitness_functions, goal, ind))
                 .collect()
         })
     }
@@ -188,7 +186,8 @@ fn main() {
                       .arg(Arg::with_name("MUTOPS")
                                .long("mutops")
                                .help("Mutation operation and weight specification, e.g. \
-                                      Insert:1,Remove:1,Replace:2,ModifyOp:0,ModifyParam:2,Copy:0")
+                                      Insert:1,Remove:1,Replace:2,ModifyOp:0,ModifyParam:2,Copy:\
+                                      0")
                                .takes_value(true)
                                .required(true))
                       .arg(Arg::with_name("ILEN")
