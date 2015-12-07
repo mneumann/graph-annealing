@@ -10,6 +10,7 @@ extern crate pcg;
 extern crate graph_sgf;
 extern crate triadic_census;
 extern crate time;
+extern crate serde_json;
 
 use std::f32;
 use std::fmt::Debug;
@@ -33,6 +34,8 @@ use triadic_census::OptDenseDigraph;
 
 use std::io::BufReader;
 use std::fs::File;
+
+use serde_json::ser::to_string;
 
 #[derive(Debug, Copy, Clone)]
 enum FitnessFunction {
@@ -350,6 +353,14 @@ fn main() {
                                                          toolbox.random_genome(&mut rng, len)
                                                      })
                                                      .collect();
+
+
+    // output initial population to stdout.
+    for ind in initial_population.iter() {
+        let json = ind.to_json();
+        let s = to_string(&json).unwrap();
+        println!("{}", s);
+    }
 
     // evaluate fitness
     let fitness: Vec<_> = evaluator.fitness(&initial_population[..]);
