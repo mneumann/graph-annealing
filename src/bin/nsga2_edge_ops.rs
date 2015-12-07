@@ -22,7 +22,7 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox};
+use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox, parse_weighted_op_list};
 use graph_annealing::helper::draw_graph;
 use graph_annealing::goal::Goal;
 use simple_parallel::Pool;
@@ -239,7 +239,7 @@ fn main() {
     println!("MUTP: {:?}", MUTP);
 
     // Parse weighted operation choice from command line
-    let mutops = Toolbox::parse_weighted_mutops(matches.value_of("MUTOPS").unwrap()).unwrap();
+    let mutops = parse_weighted_op_list(matches.value_of("MUTOPS").unwrap()).unwrap();
     println!("mut ops: {:?}", mutops);
 
     let ilen_str = matches.value_of("ILEN").unwrap();
@@ -314,9 +314,8 @@ fn main() {
     };
 
     // Parse weighted operation choice from command line
-    let ops = Toolbox::parse_weighted_op_choice_list(matches.value_of("OPS").unwrap()).unwrap();
+    let ops = parse_weighted_op_list(matches.value_of("OPS").unwrap()).unwrap();
     println!("edge ops: {:?}", ops);
-
 
     let mut toolbox = Toolbox::new(&ops[..], Probability::new(MUTP), &mutops[..]);
 

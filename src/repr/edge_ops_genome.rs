@@ -103,6 +103,33 @@ impl Mate<EdgeOpsGenome> for Toolbox {
     }
 }
 
+pub fn parse_weighted_op_list<T>(s: &str) -> Result<Vec<(T, u32)>, String> where T:FromStr<Err=String> {
+    let mut v = Vec::new();
+    for opstr in s.split(",") {
+        if opstr.is_empty() {
+            continue;
+        }
+        let mut i = opstr.splitn(2, ":");
+        if let Some(ops) = i.next() {
+            match T::from_str(ops) {
+                Ok(op) => {
+                    let ws = i.next().unwrap_or("1");
+                    if let Ok(weight) = u32::from_str(ws) {
+                        v.push((op, weight));
+                    } else {
+                        return Err(format!("Invalid weight: {}", ws));
+                    }
+                }
+                Err(s) => {
+                    return Err(s);
+                }
+            }
+        } else {
+            return Err("missing op".to_string());
+        }
+    }
+    return Ok(v);
+}
 
 impl Toolbox {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: EdgeOpsGenome) -> EdgeOpsGenome {
@@ -140,64 +167,6 @@ impl Toolbox {
         }
 
         EdgeOpsGenome { edge_ops: mut_ind }
-    }
-
-    // XXX: Refactor
-    pub fn parse_weighted_op_choice_list(s: &str) -> Result<Vec<(Op, u32)>, String> {
-        let mut v = Vec::new();
-        for opstr in s.split(",") {
-            if opstr.is_empty() {
-                continue;
-            }
-            let mut i = opstr.splitn(2, ":");
-            if let Some(ops) = i.next() {
-                match Op::from_str(ops) {
-                    Ok(op) => {
-                        let ws = i.next().unwrap_or("1");
-                        if let Ok(weight) = u32::from_str(ws) {
-                            v.push((op, weight));
-                        } else {
-                            return Err(format!("Invalid weight: {}", ws));
-                        }
-                    }
-                    Err(s) => {
-                        return Err(s);
-                    }
-                }
-            } else {
-                return Err("missing op".to_string());
-            }
-        }
-        return Ok(v);
-    }
-
-    // XXX: Refactor
-    pub fn parse_weighted_mutops(s: &str) -> Result<Vec<(MutOp, u32)>, String> {
-        let mut v = Vec::new();
-        for opstr in s.split(",") {
-            if opstr.is_empty() {
-                continue;
-            }
-            let mut i = opstr.splitn(2, ":");
-            if let Some(ops) = i.next() {
-                match MutOp::from_str(ops) {
-                    Ok(op) => {
-                        let ws = i.next().unwrap_or("1");
-                        if let Ok(weight) = u32::from_str(ws) {
-                            v.push((op, weight));
-                        } else {
-                            return Err(format!("Invalid weight: {}", ws));
-                        }
-                    }
-                    Err(s) => {
-                        return Err(s);
-                    }
-                }
-            } else {
-                return Err("missing op".to_string());
-            }
-        }
-        return Ok(v);
     }
 
     pub fn new(weighted_op_choices: &[(Op, u32)],
