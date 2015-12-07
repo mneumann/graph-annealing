@@ -178,8 +178,8 @@ fn main() {
                                .long("seed")
                                .help("Seed value for Rng")
                                .takes_value(true))
-                      .arg(Arg::with_name("PMUT")
-                               .long("pmut")
+                      .arg(Arg::with_name("MUTP")
+                               .long("mutp")
                                .help("Probability for element mutation")
                                .takes_value(true)
                                .required(true))
@@ -235,8 +235,8 @@ fn main() {
     }
     println!("SEED: {:?}", seed);
 
-    let PMUT: f32 = FromStr::from_str(matches.value_of("PMUT").unwrap()).unwrap();
-    println!("PMUT: {:?}", PMUT);
+    let MUTP: f32 = FromStr::from_str(matches.value_of("MUTP").unwrap()).unwrap();
+    println!("MUTP: {:?}", MUTP);
 
     // Parse weighted operation choice from command line
     let mutops = Toolbox::parse_weighted_mutops(matches.value_of("MUTOPS").unwrap()).unwrap();
@@ -318,7 +318,7 @@ fn main() {
     println!("edge ops: {:?}", ops);
 
 
-    let mut toolbox = Toolbox::new(&ops[..], Probability::new(PMUT), &mutops[..]);
+    let mut toolbox = Toolbox::new(&ops[..], Probability::new(MUTP), &mutops[..]);
 
     let mut evaluator = MyEval {
         goal: Goal::new(OptDenseDigraph::from(graph)),
