@@ -12,6 +12,7 @@ use std::string::ToString;
 use triadic_census::OptDenseDigraph;
 use std::collections::BTreeMap;
 use serde_json::Value;
+use sexp::{Atom, Sexp};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Op {
@@ -216,6 +217,18 @@ impl EdgeOpsGenome {
         let mut map = BTreeMap::new();
         map.insert("edge_ops".to_string(), Value::Array(edge_ops));
         Value::Object(map)
+    }
+
+    pub fn to_sexp(&self) -> Sexp {
+        let edge_ops: Vec<Sexp> = self.edge_ops
+                                      .iter()
+                                      .map(|&(ref op, param)| {
+                                          Sexp::List(vec![Sexp::Atom(Atom::S(op.to_string())),
+                                                          Sexp::Atom(Atom::F(param as f64))])
+                                      })
+                                      .collect();
+
+        Sexp::List(vec![Sexp::Atom(Atom::S("EdgeOpsGenome".to_string())), Sexp::List(edge_ops)])
     }
 
     pub fn from_json(val: &Value) -> EdgeOpsGenome {

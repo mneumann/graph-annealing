@@ -11,6 +11,9 @@ extern crate graph_sgf;
 extern crate triadic_census;
 extern crate time;
 extern crate serde_json;
+extern crate sexp;
+
+use sexp::{Atom, Sexp, atom_s};
 
 use std::f32;
 use std::fmt::Debug;
@@ -356,11 +359,10 @@ fn main() {
 
 
     // output initial population to stdout.
-    for ind in initial_population.iter() {
-        let json = ind.to_json();
-        let s = to_string(&json).unwrap();
-        println!("{}", s);
-    }
+    let sexp_pop = Sexp::List(vec![atom_s("Population"), 
+        Sexp::List(initial_population.iter().map(|ind| ind.to_sexp()).collect()),
+    ]);
+    println!("{}", sexp_pop);
 
     // evaluate fitness
     let fitness: Vec<_> = evaluator.fitness(&initial_population[..]);

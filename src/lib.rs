@@ -7,6 +7,7 @@ extern crate graph_neighbor_matching;
 extern crate graph_edge_evolution;
 extern crate graph_sgf;
 extern crate serde_json;
+extern crate sexp;
 
 pub mod goal;
 pub mod helper;
