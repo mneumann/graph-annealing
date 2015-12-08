@@ -1,50 +1,25 @@
 extern crate rand;
-extern crate evo;
-extern crate petgraph;
 extern crate graph_annealing;
 extern crate clap;
-extern crate crossbeam;
-extern crate simple_parallel;
-extern crate num_cpus;
 extern crate pcg;
-extern crate graph_sgf;
-extern crate triadic_census;
-extern crate time;
-extern crate serde_json;
 extern crate sexp;
 
-use sexp::{Atom, Sexp, atom_i, atom_f, atom_s, list};
-
-use std::f32;
-use std::fmt::Debug;
+use sexp::{Sexp, atom_f, atom_i, atom_s, list};
 use std::str::FromStr;
 use clap::{App, Arg};
 use rand::{Rng, SeedableRng};
 use rand::distributions::{IndependentSample, Range};
 use rand::os::OsRng;
 use pcg::PcgRng;
-
-use evo::Probability;
-use evo::nsga2::{self, FitnessEval, MultiObjective3};
 use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, parse_weighted_op_list, random_genome,
                                              to_weighted_vec};
-use graph_annealing::helper::draw_graph;
-use graph_annealing::goal::Goal;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use simple_parallel::Pool;
-
-use petgraph::{Directed, Graph};
-use graph_sgf::{PetgraphReader, Unweighted};
-use triadic_census::OptDenseDigraph;
-
-use std::io::{Write, BufReader};
+use std::io::Write;
 use std::fs::File;
 use std::string::ToString;
 
-use serde_json::ser::to_string;
-
-
 #[allow(non_snake_case)]
+#[allow(unused_must_use)]
 fn main() {
     let matches = App::new("edgeop_init")
                       .arg(Arg::with_name("OPS")
@@ -74,8 +49,7 @@ fn main() {
                                .required(false))
                       .get_matches();
 
-    let mut wr: Box<Write> = 
-    match matches.value_of("OUT") {
+    let mut wr: Box<Write> = match matches.value_of("OUT") {
         Some(out) => {
             Box::new(File::create(out).unwrap())
         }
@@ -84,11 +58,12 @@ fn main() {
         }
     };
 
-    writeln!(&mut wr, "(");
-
+    writeln!(&mut wr, "(POPULATION");
+    writeln!(&mut wr, "  (PARAMS");
+     
     // size of population
     let MU: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
-    writeln!(&mut wr, "(MU {})", MU);
+    writeln!(&mut wr, "    (MU {})", MU);
 
     let seed: Vec<u64>;
     if let Some(seed_str) = matches.value_of("SEED") {
@@ -98,7 +73,8 @@ fn main() {
         let mut rng = OsRng::new().unwrap();
         seed = (0..2).map(|_| rng.next_u64()).collect();
     }
-    writeln!(&mut wr, "(SEED {})",
+    writeln!(&mut wr,
+             "    (SEED {})",
              Sexp::List(seed.iter().map(|&s| atom_i(s as i64)).collect()));
 
     let ilen_str = matches.value_of("ILEN").unwrap();
@@ -112,15 +88,18 @@ fn main() {
         ilen[1]
     };
     assert!(ilen_from <= ilen_to);
-    writeln!(&mut wr, "(ILEN {})",
+    writeln!(&mut wr,
+             "    (ILEN {})",
              list(&[atom_i(ilen_from as i64), atom_i(ilen_to as i64)]));
 
     // Parse weighted operation choice from command line
     let ops = parse_weighted_op_list(matches.value_of("OPS").unwrap()).unwrap();
-    let v = Sexp::List(ops.iter().map(|&(ref op, f)| {
-        list(&[atom_s(&ToString::to_string(op)), atom_f(f as f64)])
-    }).collect());
-    writeln!(&mut wr, "(OPS {})", v);
+    let v = Sexp::List(ops.iter()
+                          .map(|&(ref op, f)| {
+                              list(&[atom_s(&ToString::to_string(op)), atom_f(f as f64)])
+                          })
+                          .collect());
+    writeln!(&mut wr, "    (OPS {})", v);
 
     let w_ops = to_weighted_vec(&ops);
     assert!(w_ops.len() > 0);
@@ -129,6 +108,9 @@ fn main() {
 
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
+
+    
+    writeln!(&mut wr, "  )");
 
     // we use the toolbox only for creating a new genome.
     // let mut toolbox = Toolbox::new(w_ops, vec![], vec![], Probability::new(0.0));
@@ -147,11 +129,12 @@ fn main() {
                                                      .collect();
 
 
-    // output initial population to stdout.
-    let sexp_pop = Sexp::List(vec![atom_s("POP"), 
-        Sexp::List(initial_population.iter().map(|ind| ind.to_sexp()).collect()),
-    ]);
-    writeln!(&mut wr, "{}", sexp_pop);
+    // output initial population
+    writeln!(&mut wr, "  (GENOMES");
+    for ind in initial_population.iter() {
+        writeln!(&mut wr, "    {}", ind.to_sexp());
+    }
+    writeln!(&mut wr, "  )");
 
     // evaluate fitness
     // let fitness: Vec<_> = evaluator.fitness(&initial_population[..]);
