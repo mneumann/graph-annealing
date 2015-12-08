@@ -59,11 +59,12 @@ fn main() {
     };
 
     writeln!(&mut wr, "(POPULATION");
-    writeln!(&mut wr, "  (PARAMS");
+    writeln!(&mut wr, "  (INSTRUCTIONS");
+    writeln!(&mut wr, "    (CREATE");
      
     // size of population
     let MU: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
-    writeln!(&mut wr, "    (MU {})", MU);
+    writeln!(&mut wr, "      (MU {})", MU);
 
     let seed: Vec<u64>;
     if let Some(seed_str) = matches.value_of("SEED") {
@@ -74,7 +75,7 @@ fn main() {
         seed = (0..2).map(|_| rng.next_u64()).collect();
     }
     writeln!(&mut wr,
-             "    (SEED {})",
+             "      (SEED {})",
              Sexp::List(seed.iter().map(|&s| atom_i(s as i64)).collect()));
 
     let ilen_str = matches.value_of("ILEN").unwrap();
@@ -89,7 +90,7 @@ fn main() {
     };
     assert!(ilen_from <= ilen_to);
     writeln!(&mut wr,
-             "    (ILEN {})",
+             "      (ILEN {})",
              list(&[atom_i(ilen_from as i64), atom_i(ilen_to as i64)]));
 
     // Parse weighted operation choice from command line
@@ -99,7 +100,7 @@ fn main() {
                               list(&[atom_s(&ToString::to_string(op)), atom_f(f as f64)])
                           })
                           .collect());
-    writeln!(&mut wr, "    (OPS {})", v);
+    writeln!(&mut wr, "      (OPS {})", v);
 
     let w_ops = to_weighted_vec(&ops);
     assert!(w_ops.len() > 0);
@@ -110,6 +111,7 @@ fn main() {
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
 
     
+    writeln!(&mut wr, "    )");
     writeln!(&mut wr, "  )");
 
     // we use the toolbox only for creating a new genome.
