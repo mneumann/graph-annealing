@@ -1,4 +1,6 @@
-// Edge Operation L-System Genome
+// Edge Operation Genome
+
+mod edgeop;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
@@ -13,54 +15,7 @@ use triadic_census::OptDenseDigraph;
 use std::collections::BTreeMap;
 use serde_json::Value;
 use sexp::{Atom, Sexp};
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum Op {
-    Dup,
-    Split,
-    Loop,
-    Merge,
-    Next,
-    Parent,
-    Reverse,
-    Save,
-    Restore,
-}
-
-impl ToString for Op {
-    fn to_string(&self) -> String {
-        match *self {
-            Op::Dup => "Dup".to_string(),
-            Op::Split => "Split".to_string(),
-            Op::Loop => "Loop".to_string(),
-            Op::Merge => "Merge".to_string(),
-            Op::Next => "Next".to_string(),
-            Op::Parent => "Parent".to_string(),
-            Op::Reverse => "Reverse".to_string(),
-            Op::Save => "Save".to_string(),
-            Op::Restore => "Restore".to_string(),
-        }
-    }
-}
-
-impl FromStr for Op {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Dup" => Ok(Op::Dup),
-            "Split" => Ok(Op::Split),
-            "Loop" => Ok(Op::Loop),
-            "Merge" => Ok(Op::Merge),
-            "Next" => Ok(Op::Next),
-            "Parent" => Ok(Op::Parent),
-            "Reverse" => Ok(Op::Reverse),
-            "Save" => Ok(Op::Save),
-            "Restore" => Ok(Op::Restore),
-            _ => Err(format!("Invalid opcode: {}", s)),
-        }
-    }
-}
-
+use self::edgeop::EdgeOp;
 
 /// Element-wise Mutation operation.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -125,24 +80,24 @@ impl FromStr for VarOp {
 }
 
 #[derive(Clone, Debug)]
-pub struct Genome {
-    edge_ops: Vec<(Op, f32)>,
+pub struct EdgeOpsGenome {
+    edge_ops: Vec<(EdgeOp, f32)>,
 }
 
 pub struct Toolbox {
-    weighted_op: OwnedWeightedChoice<Op>,
+    weighted_op: OwnedWeightedChoice<EdgeOp>,
     weighted_var_op: OwnedWeightedChoice<VarOp>,
     weighted_mut_op: OwnedWeightedChoice<MutOp>,
     prob_mutate_elem: Probability,
 }
 
-impl Mate<Genome> for Toolbox {
+impl Mate<EdgeOpsGenome> for Toolbox {
     // p1 is potentially "better" than p2
     fn mate<R: Rng>(&mut self,
                     rng: &mut R,
-                    p1: &Genome,
-                    p2: &Genome)
-                    -> Genome {
+                    p1: &EdgeOpsGenome,
+                    p2: &EdgeOpsGenome)
+                    -> EdgeOpsGenome {
 
         match self.weighted_var_op.ind_sample(rng) {
             VarOp::Copy => {
@@ -152,7 +107,7 @@ impl Mate<Genome> for Toolbox {
                 self.mutate(rng, p1)
             }
             VarOp::LinearCrossover2 => {
-                Genome {
+                EdgeOpsGenome {
                     edge_ops: linear_2point_crossover_random(rng,
                                                              &p1.edge_ops[..],
                                                              &p2.edge_ops[..]),
@@ -165,7 +120,7 @@ impl Mate<Genome> for Toolbox {
     }
 }
 
-impl Genome {
+impl EdgeOpsGenome {
     pub fn len(&self) -> usize {
         self.edge_ops.len()
     }
@@ -198,15 +153,15 @@ impl Genome {
                                       })
                                       .collect();
 
-        Sexp::List(vec![Sexp::Atom(Atom::S("EdgeOpsLSysGenome".to_string())), Sexp::List(edge_ops)])
+        Sexp::List(vec![Sexp::Atom(Atom::S("EdgeOpsGenome".to_string())), Sexp::List(edge_ops)])
     }
 
-    pub fn from_json(val: &Value) -> Genome {
+    pub fn from_json(val: &Value) -> EdgeOpsGenome {
         let edge_ops = val.find("edge_ops").unwrap();
         let edge_ops = edge_ops.as_array().unwrap();
         let edge_ops = edge_ops.iter()
                                .map(|gene| {
-                                   let op = Op::from_str(gene.find("op")
+                                   let op = EdgeOp::from_str(gene.find("op")
                                                              .unwrap()
                                                              .as_string()
                                                              .unwrap())
@@ -215,38 +170,38 @@ impl Genome {
                                    (op, param as f32)
                                })
                                .collect();
-        Genome { edge_ops: edge_ops }
+        EdgeOpsGenome { edge_ops: edge_ops }
     }
 
     pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
         let mut builder: GraphBuilder<f32, ()> = GraphBuilder::new();
         for &(op, f) in &self.edge_ops[..] {
             let graph_op = match op {
-                Op::Dup => {
+                EdgeOp::Dup => {
                     EdgeOperation::Duplicate { weight: f }
                 }
-                Op::Split => {
+                EdgeOp::Split => {
                     EdgeOperation::Split { weight: f }
                 }
-                Op::Loop => {
+                EdgeOp::Loop => {
                     EdgeOperation::Loop { weight: f }
                 }
-                Op::Merge => {
+                EdgeOp::Merge => {
                     EdgeOperation::Merge { n: NthEdgeF(f) }
                 }
-                Op::Next => {
+                EdgeOp::Next => {
                     EdgeOperation::Next { n: NthEdgeF(f) }
                 }
-                Op::Parent => {
+                EdgeOp::Parent => {
                     EdgeOperation::Parent { n: NthEdgeF(f) }
                 }
-                Op::Reverse => {
+                EdgeOp::Reverse => {
                     EdgeOperation::Reverse
                 }
-                Op::Save => {
+                EdgeOp::Save => {
                     EdgeOperation::Save
                 }
-                Op::Restore => {
+                EdgeOp::Restore => {
                     EdgeOperation::Restore
                 }
             };
@@ -274,11 +229,11 @@ impl Genome {
 #[inline]
 pub fn random_genome<R>(rng: &mut R,
                         len: usize,
-                        weighted_op: &OwnedWeightedChoice<Op>)
-                        -> Genome
+                        weighted_op: &OwnedWeightedChoice<EdgeOp>)
+                        -> EdgeOpsGenome
     where R: Rng
 {
-    Genome {
+    EdgeOpsGenome {
         edge_ops: (0..len)
                       .map(|_| generate_random_edge_operation(weighted_op, rng))
                       .collect(),
@@ -286,14 +241,14 @@ pub fn random_genome<R>(rng: &mut R,
 }
 
 #[inline]
-pub fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<Op>,
+pub fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
                                               rng: &mut R)
-                                              -> (Op, f32) {
+                                              -> (EdgeOp, f32) {
     (weighted_op.ind_sample(rng), rng.gen::<f32>())
 }
 
 impl Toolbox {
-    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
+    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &EdgeOpsGenome) -> EdgeOpsGenome {
         let mut mut_ind = Vec::with_capacity(ind.len() + 1);
 
         for edge_op in ind.edge_ops.iter() {
@@ -327,10 +282,10 @@ impl Toolbox {
             mut_ind.push(new_op);
         }
 
-        Genome { edge_ops: mut_ind }
+        EdgeOpsGenome { edge_ops: mut_ind }
     }
 
-    pub fn new(weighted_op: Vec<Weighted<Op>>,
+    pub fn new(weighted_op: Vec<Weighted<EdgeOp>>,
                weighted_var_op: Vec<Weighted<VarOp>>,
                weighted_mut_op: Vec<Weighted<MutOp>>,
                prob_mutate_elem: Probability)
@@ -344,11 +299,11 @@ impl Toolbox {
         }
     }
 
-    fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> (Op, f32) {
+    fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> (EdgeOp, f32) {
         generate_random_edge_operation(&self.weighted_op, rng)
     }
 
-    pub fn random_genome<R:Rng>(&self, rng: &mut R, len: usize) -> Genome {
+    pub fn random_genome<R:Rng>(&self, rng: &mut R, len: usize) -> EdgeOpsGenome {
         random_genome(rng, len, &self.weighted_op)
     }
 }

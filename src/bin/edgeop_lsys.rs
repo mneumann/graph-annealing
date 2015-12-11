@@ -15,7 +15,7 @@ extern crate sexp;
 extern crate lindenmayer_system;
 extern crate graph_edge_evolution;
 
-#[path="genome/edgeop_lsys.rs"]
+#[path="genome/genome_edgeop_lsys.rs"]
 mod genome;
 
 use sexp::{Sexp, atom_s};

@@ -14,7 +14,7 @@ extern crate serde_json;
 extern crate sexp;
 extern crate graph_edge_evolution;
 
-#[path="genome/edgeop.rs"]
+#[path="genome/genome_edgeop.rs"]
 mod genome;
 
 use sexp::{Sexp, atom_s};
