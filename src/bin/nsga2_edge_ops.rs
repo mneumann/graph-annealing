@@ -13,7 +13,7 @@ extern crate time;
 extern crate serde_json;
 extern crate sexp;
 
-use sexp::{Atom, Sexp, atom_i, atom_s, list};
+use sexp::{Sexp, atom_s};
 
 use std::f32;
 use std::fmt::Debug;
@@ -38,8 +38,6 @@ use triadic_census::OptDenseDigraph;
 
 use std::io::BufReader;
 use std::fs::File;
-
-use serde_json::ser::to_string;
 
 #[derive(Debug, Copy, Clone)]
 enum FitnessFunction {
