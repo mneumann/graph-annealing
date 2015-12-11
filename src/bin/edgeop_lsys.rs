@@ -13,6 +13,10 @@ extern crate time;
 extern crate serde_json;
 extern crate sexp;
 extern crate lindenmayer_system;
+extern crate graph_edge_evolution;
+
+#[path="genome/edgeop_lsys.rs"]
+mod genome;
 
 use sexp::{Sexp, atom_s};
 
@@ -25,7 +29,7 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
-use graph_annealing::repr::edge_ops_lsys_genome::{Genome, Toolbox};
+use genome::{Genome, Toolbox};
 use graph_annealing::helper::{draw_graph, parse_weighted_op_list, to_weighted_vec};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;

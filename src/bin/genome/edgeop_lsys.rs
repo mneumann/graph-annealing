@@ -6,7 +6,7 @@ use evo::nsga2::Mate;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
 use graph_edge_evolution::{EdgeOperation, GraphBuilder, NthEdgeF};
-use owned_weighted_choice::OwnedWeightedChoice;
+use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 use std::string::ToString;
 use triadic_census::OptDenseDigraph;
