@@ -25,7 +25,7 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox};
+use graph_annealing::repr::edge_ops_lsys_genome::{Genome, Toolbox};
 use graph_annealing::helper::{draw_graph, parse_weighted_op_list, to_weighted_vec};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;
@@ -81,7 +81,7 @@ fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFu
                                                                        FitnessFunction,
                                                                        FitnessFunction),
                                                    goal: &Goal<N, E>,
-                                                   ind: &EdgeOpsGenome)
+                                                   ind: &Genome)
                                                    -> MultiObjective3<f32> {
     let g = ind.to_graph();
     MultiObjective3::from((apply_fitness_function(fitness_functions.0, goal, &g),
@@ -90,8 +90,8 @@ fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFu
 
 }
 
-impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, MultiObjective3<f32>> for MyEval<N,E> {
-    fn fitness(&mut self, pop: &[EdgeOpsGenome]) -> Vec<MultiObjective3<f32>> {
+impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<Genome, MultiObjective3<f32>> for MyEval<N,E> {
+    fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
         let pool = &mut self.pool;
         let goal = &self.goal;
 
@@ -314,7 +314,7 @@ fn main() {
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
 
     // create initial random population
-    let initial_population: Vec<EdgeOpsGenome> = (0..MU)
+    let initial_population: Vec<Genome> = (0..MU)
                                                      .map(|_| {
                                                          let len = if ilen_from == ilen_to {
                                                              ilen_from

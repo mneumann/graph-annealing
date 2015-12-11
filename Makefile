@@ -17,3 +17,7 @@ run-edgeop: build
 
 reformat:
 	find . -name "*.rs" | xargs -I % ${RUSTFMT} %
+
+clean:
+	rm -rf target
+	find . -name "*.bk" | xargs -I % rm %
