@@ -15,8 +15,6 @@ extern crate sexp;
 
 use sexp::{Sexp, atom_s};
 
-use std::f32;
-use std::fmt::Debug;
 use std::str::FromStr;
 use clap::{App, Arg};
 use rand::{Rng, SeedableRng};
@@ -30,6 +28,7 @@ use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox, parse_weigh
                                              to_weighted_vec};
 use graph_annealing::helper::draw_graph;
 use graph_annealing::goal::Goal;
+use graph_annealing::stat::Stat;
 use simple_parallel::Pool;
 
 use petgraph::{Directed, Graph};
@@ -102,45 +101,6 @@ impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<EdgeOpsGenome, Multi
             pool.map(scope, pop, |ind| fitness(fitness_functions, goal, ind))
                 .collect()
         })
-    }
-}
-
-#[derive(Debug)]
-struct Stat<T: Debug> {
-    min: T,
-    max: T,
-    avg: T,
-}
-
-impl Stat<f32> {
-    fn for_objectives(fit: &[MultiObjective3<f32>], i: usize) -> Stat<f32> {
-        let min = fit.iter().fold(f32::INFINITY, |acc, f| {
-            let x = f.objectives[i];
-            if x < acc {
-                x
-            } else {
-                acc
-            }
-        });
-        let max = fit.iter().fold(-f32::INFINITY, |acc, f| {
-            let x = f.objectives[i];
-            if x > acc {
-                x
-            } else {
-                acc
-            }
-        });
-        let sum = fit.iter()
-                     .fold(0.0, |acc, f| acc + f.objectives[i]);
-        Stat {
-            min: min,
-            max: max,
-            avg: if fit.is_empty() {
-                0.0
-            } else {
-                sum / fit.len() as f32
-            },
-        }
     }
 }
 
@@ -395,9 +355,9 @@ fn main() {
         fit = new_fit;
 
         // calculate a min/max/avg value for each objective.
-        let stat0 = Stat::<f32>::for_objectives(&fit[..], 0);
-        let stat1 = Stat::<f32>::for_objectives(&fit[..], 1);
-        let stat2 = Stat::<f32>::for_objectives(&fit[..], 2);
+        let stat0: Stat<f32> = Stat::for_objectives(&fit[..], 0);
+        let stat1: Stat<f32> = Stat::for_objectives(&fit[..], 1);
+        let stat2: Stat<f32> = Stat::for_objectives(&fit[..], 2);
 
         let duration_ms = (duration as f32) / 1_000_000.0;
 
