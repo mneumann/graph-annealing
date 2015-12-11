@@ -33,6 +33,7 @@ use genome::{Genome, Toolbox};
 use graph_annealing::helper::{draw_graph, parse_weighted_op_list, to_weighted_vec};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;
+use graph_annealing::fitness_function::FitnessFunction;
 use simple_parallel::Pool;
 
 use petgraph::{Directed, Graph};
@@ -41,15 +42,6 @@ use triadic_census::OptDenseDigraph;
 
 use std::io::BufReader;
 use std::fs::File;
-
-#[derive(Debug, Copy, Clone)]
-enum FitnessFunction {
-    Null,
-    ConnectedComponents,
-    StronglyConnectedComponents,
-    NeighborMatching,
-    TriadicDistance,
-}
 
 fn apply_fitness_function<N: Clone + Default, E: Clone + Default>(fitfun: FitnessFunction,
                                                                   goal: &Goal<N, E>,
@@ -231,29 +223,7 @@ fn main() {
     assert!(ilen_from <= ilen_to);
 
     // read objective functions
-    let mut objectives_arr: Vec<FitnessFunction> = Vec::new();
-    for s in matches.value_of("OBJECTIVES").unwrap().split(",") {
-        objectives_arr.push(match s {
-            "null" => {
-                FitnessFunction::Null
-            }
-            "cc" => {
-                FitnessFunction::ConnectedComponents
-            }
-            "scc" => {
-                FitnessFunction::StronglyConnectedComponents
-            }
-            "nm" => {
-                FitnessFunction::NeighborMatching
-            }
-            "td" => {
-                FitnessFunction::TriadicDistance
-            }
-            _ => {
-                panic!("Invalid objective function");
-            }
-        });
-    }
+    let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES").unwrap().split(",").map(|s| FitnessFunction::from_str(s).unwrap()).collect();
 
     while objectives_arr.len() < 3 {
         objectives_arr.push(FitnessFunction::Null);
