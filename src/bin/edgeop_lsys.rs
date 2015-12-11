@@ -43,29 +43,6 @@ use triadic_census::OptDenseDigraph;
 use std::io::BufReader;
 use std::fs::File;
 
-fn apply_fitness_function<N: Clone + Default, E: Clone + Default>(fitfun: FitnessFunction,
-                                                                  goal: &Goal<N, E>,
-                                                                  g: &OptDenseDigraph<(), ()>)
-                                                                  -> f32 {
-    match fitfun {
-        FitnessFunction::Null => {
-            0.0
-        }
-        FitnessFunction::ConnectedComponents => {
-            goal.connected_components_distance(g) as f32
-        }
-        FitnessFunction::StronglyConnectedComponents => {
-            goal.strongly_connected_components_distance(g) as f32
-        }
-        FitnessFunction::NeighborMatching => {
-            goal.neighbor_matching_score(g) as f32
-        }
-        FitnessFunction::TriadicDistance => {
-            goal.triadic_distance(g) as f32
-        }
-    }
-}
-
 struct MyEval<N, E> {
     goal: Goal<N, E>,
     pool: Pool,
@@ -80,9 +57,9 @@ fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFu
                                                    ind: &Genome)
                                                    -> MultiObjective3<f32> {
     let g = ind.to_graph();
-    MultiObjective3::from((apply_fitness_function(fitness_functions.0, goal, &g),
-                           apply_fitness_function(fitness_functions.1, goal, &g),
-                           apply_fitness_function(fitness_functions.2, goal, &g)))
+    MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
+                           goal.apply_fitness_function(fitness_functions.1, &g),
+                           goal.apply_fitness_function(fitness_functions.2, &g)))
 
 }
 

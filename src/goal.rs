@@ -3,6 +3,7 @@ use petgraph::graph::NodeIndex;
 use petgraph::algo::{connected_components, scc};
 use triadic_census::{OptDenseDigraph, TriadicCensus};
 use graph_neighbor_matching::neighbor_matching_score;
+use super::fitness_function::FitnessFunction;
 
 pub struct Goal<N, E> {
     _target_graph: OptDenseDigraph<N, E>,
@@ -45,6 +46,26 @@ impl<N:Clone+Default,E:Clone+Default> Goal<N,E> {
             target_strongly_connected_components: scc,
             target_in_a: in_a,
             target_out_a: out_a,
+        }
+    }
+
+    pub fn apply_fitness_function(&self, fitfun: FitnessFunction, g: &OptDenseDigraph<(), ()>) -> f32 {
+        match fitfun {
+            FitnessFunction::Null => {
+                0.0
+            }
+            FitnessFunction::ConnectedComponents => {
+                self.connected_components_distance(g) as f32
+            }
+            FitnessFunction::StronglyConnectedComponents => {
+                self.strongly_connected_components_distance(g) as f32
+            }
+            FitnessFunction::NeighborMatching => {
+                self.neighbor_matching_score(g) as f32
+            }
+            FitnessFunction::TriadicDistance => {
+                self.triadic_distance(g) as f32
+            }
         }
     }
 
