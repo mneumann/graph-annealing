@@ -10,15 +10,11 @@ extern crate pcg;
 extern crate graph_sgf;
 extern crate triadic_census;
 extern crate time;
-extern crate serde_json;
-extern crate sexp;
 extern crate lindenmayer_system;
 extern crate graph_edge_evolution;
 
 #[path="genome/genome_edgeop_lsys.rs"]
 mod genome;
-
-use sexp::{Sexp, atom_s};
 
 use std::str::FromStr;
 use clap::{App, Arg};
@@ -279,10 +275,7 @@ fn main() {
 
 
     // output initial population to stdout.
-    let sexp_pop = Sexp::List(vec![atom_s("Population"), 
-        Sexp::List(initial_population.iter().map(|ind| ind.to_sexp()).collect()),
-    ]);
-    println!("{}", sexp_pop);
+    println!("Population: {:?}", initial_population);
 
     // evaluate fitness
     let fitness: Vec<_> = evaluator.fitness(&initial_population[..]);

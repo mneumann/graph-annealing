@@ -10,13 +10,10 @@ use rand::distributions::{IndependentSample, Weighted};
 use graph_edge_evolution::{EdgeOperation, GraphBuilder, NthEdgeF};
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
-use std::string::ToString;
 use triadic_census::OptDenseDigraph;
 use std::collections::BTreeMap;
-use serde_json::Value;
-use sexp::{Atom, Sexp};
-use lindenmayer_system::System;
-use lindenmayer_system::symbol::DSym;
+use lindenmayer_system::{System, Symbol};
+use lindenmayer_system::symbol::Sym2;
 use self::edgeop::EdgeOp;
 
 /// Element-wise Mutation operation.
@@ -81,9 +78,13 @@ impl FromStr for VarOp {
     }
 }
 
+// We use 2-ary symbols, i.e. symbols with two parameters.
+type Sym = Sym2<u32, f32>;
+
 #[derive(Clone, Debug)]
 pub struct Genome {
     edge_ops: Vec<(EdgeOp, f32)>,
+    axiom: Sym,
 }
 
 pub struct Toolbox {
@@ -113,6 +114,7 @@ impl Mate<Genome> for Toolbox {
                     edge_ops: linear_2point_crossover_random(rng,
                                                              &p1.edge_ops[..],
                                                              &p2.edge_ops[..]),
+                    axiom: Symbol::new(0), // XXX
                 }
             }
             VarOp::UniformCrossover => {
@@ -125,54 +127,6 @@ impl Mate<Genome> for Toolbox {
 impl Genome {
     pub fn len(&self) -> usize {
         self.edge_ops.len()
-    }
-
-    pub fn to_json(&self) -> Value {
-        let edge_ops: Vec<Value> = self.edge_ops
-                                       .iter()
-                                       .map(|&(ref op, param)| {
-                                           let mut gene = BTreeMap::new();
-                                           gene.insert("op".to_string(),
-                                                       Value::String(op.to_string()));
-                                           gene.insert("param".to_string(),
-                                                       Value::F64(param as f64));
-                                           Value::Object(gene)
-                                           // Value::Array(vec![Value::String(op.to_string()),
-                                           // Value::F64(param as f64)])
-                                       })
-                                       .collect();
-        let mut map = BTreeMap::new();
-        map.insert("edge_ops".to_string(), Value::Array(edge_ops));
-        Value::Object(map)
-    }
-
-    pub fn to_sexp(&self) -> Sexp {
-        let edge_ops: Vec<Sexp> = self.edge_ops
-                                      .iter()
-                                      .map(|&(ref op, param)| {
-                                          Sexp::List(vec![Sexp::Atom(Atom::S(op.to_string())),
-                                                          Sexp::Atom(Atom::F(param as f64))])
-                                      })
-                                      .collect();
-
-        Sexp::List(vec![Sexp::Atom(Atom::S("EdgeOpsLSysGenome".to_string())), Sexp::List(edge_ops)])
-    }
-
-    pub fn from_json(val: &Value) -> Genome {
-        let edge_ops = val.find("edge_ops").unwrap();
-        let edge_ops = edge_ops.as_array().unwrap();
-        let edge_ops = edge_ops.iter()
-                               .map(|gene| {
-                                   let op = EdgeOp::from_str(gene.find("op")
-                                                             .unwrap()
-                                                             .as_string()
-                                                             .unwrap())
-                                                .unwrap();
-                                   let param = gene.find("param").unwrap().as_f64().unwrap();
-                                   (op, param as f32)
-                               })
-                               .collect();
-        Genome { edge_ops: edge_ops }
     }
 
     pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
@@ -239,6 +193,7 @@ pub fn random_genome<R>(rng: &mut R,
         edge_ops: (0..len)
                       .map(|_| generate_random_edge_operation(weighted_op, rng))
                       .collect(),
+        axiom: Symbol::new(0),
     }
 }
 
@@ -284,7 +239,7 @@ impl Toolbox {
             mut_ind.push(new_op);
         }
 
-        Genome { edge_ops: mut_ind }
+        Genome { edge_ops: mut_ind, axiom: Symbol::new(0) }
     }
 
     pub fn new(weighted_op: Vec<Weighted<EdgeOp>>,
