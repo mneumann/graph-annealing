@@ -25,9 +25,8 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox, parse_weighted_op_list,
-                                             to_weighted_vec};
-use graph_annealing::helper::draw_graph;
+use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox};
+use graph_annealing::helper::{draw_graph, parse_weighted_op_list, to_weighted_vec};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;
 use simple_parallel::Pool;
