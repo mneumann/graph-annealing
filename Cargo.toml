@@ -13,7 +13,10 @@ simple_parallel = "*"
 num_cpus = "0.2"
 time = "0.1"
 
+serde = "*"
 serde_json = "0.6"
+serde_macros = "*"
+
 sexp = "1.1"
 
 pcg = { git = "https://github.com/codahale/pcg.git" }
