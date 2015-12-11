@@ -12,6 +12,10 @@ extern crate triadic_census;
 extern crate time;
 extern crate serde_json;
 extern crate sexp;
+extern crate graph_edge_evolution;
+
+#[path="genome/edgeop.rs"]
+mod genome;
 
 use sexp::{Sexp, atom_s};
 
@@ -24,7 +28,7 @@ use pcg::PcgRng;
 
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
-use graph_annealing::repr::edge_ops_genome::{EdgeOpsGenome, Toolbox};
+use genome::{EdgeOpsGenome, Toolbox};
 use graph_annealing::helper::{draw_graph, to_weighted_vec, parse_weighted_op_list};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;
