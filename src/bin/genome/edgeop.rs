@@ -55,33 +55,15 @@ pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
     let mut builder: GraphBuilder<f32, ()> = GraphBuilder::new();
     for &(op, f) in edgeops {
         let graph_op = match op {
-            EdgeOp::Dup => {
-                EdgeOperation::Duplicate { weight: f }
-            }
-            EdgeOp::Split => {
-                EdgeOperation::Split { weight: f }
-            }
-            EdgeOp::Loop => {
-                EdgeOperation::Loop { weight: f }
-            }
-            EdgeOp::Merge => {
-                EdgeOperation::Merge { n: NthEdgeF(f) }
-            }
-            EdgeOp::Next => {
-                EdgeOperation::Next { n: NthEdgeF(f) }
-            }
-            EdgeOp::Parent => {
-                EdgeOperation::Parent { n: NthEdgeF(f) }
-            }
-            EdgeOp::Reverse => {
-                EdgeOperation::Reverse
-            }
-            EdgeOp::Save => {
-                EdgeOperation::Save
-            }
-            EdgeOp::Restore => {
-                EdgeOperation::Restore
-            }
+            EdgeOp::Dup => EdgeOperation::Duplicate { weight: f },
+            EdgeOp::Split => EdgeOperation::Split { weight: f },
+            EdgeOp::Loop => EdgeOperation::Loop { weight: f },
+            EdgeOp::Merge => EdgeOperation::Merge { n: NthEdgeF(f) },
+            EdgeOp::Next => EdgeOperation::Next { n: NthEdgeF(f) },
+            EdgeOp::Parent => EdgeOperation::Parent { n: NthEdgeF(f) },
+            EdgeOp::Reverse => EdgeOperation::Reverse,
+            EdgeOp::Save => EdgeOperation::Save,
+            EdgeOp::Restore => EdgeOperation::Restore,
         };
         builder.apply_operation(graph_op);
     }

@@ -129,7 +129,13 @@ pub fn random_expr<R>(rng: &mut R,
             Expr::Const(1.0 / n)
         }
 
-        ExprOp::Param => Expr::Arg(rng.gen_range(0, num_params)),
+        ExprOp::Param => {
+            if num_params > 0 {
+                Expr::Arg(rng.gen_range(0, num_params))
+            } else {
+                Expr::Const(Zero::zero())
+            }
+        }
 
         ExprOp::Reciprocz => {
             if max_depth > 0 {

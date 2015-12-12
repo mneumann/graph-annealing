@@ -1,7 +1,7 @@
 // Edge Operation L-System Genome
 
 mod edgeop;
-mod exprop;
+mod expr_op;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
@@ -11,9 +11,12 @@ use rand::distributions::{IndependentSample, Weighted};
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
-use lindenmayer_system::{System, Symbol, SymbolString};
+use lindenmayer_system::{Symbol, SymbolString, System};
 use lindenmayer_system::symbol::Sym2;
-use self::edgeop::{edgeops_to_graph, EdgeOp};
+use lindenmayer_system::expr::Expr;
+use self::edgeop::{EdgeOp, edgeops_to_graph};
+use self::expr_op::{ExprOp, random_expr};
+use std::ops::Range;
 
 /// Element-wise Mutation operation.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -96,19 +99,11 @@ pub struct Toolbox {
 
 impl Mate<Genome> for Toolbox {
     // p1 is potentially "better" than p2
-    fn mate<R: Rng>(&mut self,
-                    rng: &mut R,
-                    p1: &Genome,
-                    p2: &Genome)
-                    -> Genome {
+    fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
 
         match self.weighted_var_op.ind_sample(rng) {
-            VarOp::Copy => {
-                p1.clone()
-            }
-            VarOp::Mutate => {
-                self.mutate(rng, p1)
-            }
+            VarOp::Copy => p1.clone(),
+            VarOp::Mutate => self.mutate(rng, p1),
             VarOp::LinearCrossover2 => {
                 Genome {
                     edge_ops: linear_2point_crossover_random(rng,
@@ -137,32 +132,79 @@ impl Genome {
     }
 }
 
+pub struct SymbolGenerator {
+    pub max_expr_depth: usize,
+    pub weighted_op: OwnedWeightedChoice<ExprOp>,
+    pub weighted_op_max_depth: OwnedWeightedChoice<ExprOp>,
+
+    pub terminal_symbols: Range<u32>,
+    pub nonterminal_symbols: Range<u32>,
+
+    /// The probability with which a terminal value is choosen.
+    pub prob_terminal: Probability,
+}
+
+impl SymbolGenerator {
+    /// Generates a random production (right hand-side of a rule).
+    pub fn gen_symbolstring<R, S>(&self,
+                                  rng: &mut R,
+                                  len: usize,
+                                  arity: usize,
+                                  num_params: usize)
+                                  -> SymbolString<S>
+        where R: Rng,
+              S: Symbol<A = u32, T = f32>
+    {
+        SymbolString((0..len)
+                         .into_iter()
+                         .map(|_| self.gen_symbol(rng, arity, num_params))
+                         .collect())
+    }
+
+    pub fn gen_symbol<R, S>(&self, rng: &mut R, arity: usize, num_params: usize) -> S
+        where R: Rng,
+              S: Symbol<A = u32, T = f32>
+    {
+        S::from_iter(self.gen_symbol_value(rng),
+                     (0..arity).into_iter().map(|_| self.gen_arg(rng, num_params)))
+
+    }
+
+    fn gen_arg<R: Rng>(&self, rng: &mut R, num_params: usize) -> Expr<f32> {
+        random_expr(rng,
+                    num_params,
+                    self.max_expr_depth,
+                    &self.weighted_op,
+                    &self.weighted_op_max_depth)
+    }
+
+    fn gen_symbol_value<R: Rng>(&self, rng: &mut R) -> u32 {
+        if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_terminal) {
+            // generate a terminal symbol value.
+            rng.gen_range::<u32>(self.terminal_symbols.start, self.terminal_symbols.end)
+        } else {
+            // generate a symbol value in the range of non-terminal symbols
+            rng.gen_range::<u32>(self.nonterminal_symbols.start, self.nonterminal_symbols.end)
+        }
+    }
+}
+
+
 // When we need a value within (0, 1], we simply cut off the integer part.
 // Max depth.
 
-/*
- * Generates a random production (right hand-side of a rule).
- * Parameters are:
- *
- *     - Symbol arity
- *     - Length
- *     - Expression complexity: Either
- */
-//pub fn random_production
-
-/*
- * There are many parameters that influence the creation of a random
- * genome:
- *
- *     - Number of rules
- *     - Arity of symbols
- *     - Axiom and Length
- *     - Length of a production rule
- *     - Number of (condition, successor) pairs per rule.
- *     - Complexity of expression in Symbol
- * 
- *     - Number of Iterations.
- */
+// There are many parameters that influence the creation of a random
+// genome:
+//
+//     - Number of rules
+//     - Arity of symbols
+//     - Axiom and Length
+//     - Length of a production rule
+//     - Number of (condition, successor) pairs per rule.
+//     - Complexity of expression in Symbol
+//
+//     - Number of Iterations.
+//
 pub fn random_genome<R>(rng: &mut R,
                         len: usize,
                         weighted_op: &OwnedWeightedChoice<EdgeOp>)
@@ -192,9 +234,7 @@ impl Toolbox {
         for edge_op in ind.edge_ops.iter() {
             let new_op = if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
                 match self.weighted_mut_op.ind_sample(rng) {
-                    MutOp::Copy => {
-                        edge_op.clone()
-                    }
+                    MutOp::Copy => edge_op.clone(),
                     MutOp::Insert => {
                         // Insert a new op before the current operation
                         mut_ind.push(self.generate_random_edge_operation(rng));
@@ -204,15 +244,9 @@ impl Toolbox {
                         // remove current operation
                         continue;
                     }
-                    MutOp::ModifyOp => {
-                        (self.weighted_op.ind_sample(rng), edge_op.1)
-                    }
-                    MutOp::ModifyParam => {
-                        (edge_op.0, rng.gen::<f32>())
-                    }
-                    MutOp::Replace => {
-                        self.generate_random_edge_operation(rng)
-                    }
+                    MutOp::ModifyOp => (self.weighted_op.ind_sample(rng), edge_op.1),
+                    MutOp::ModifyParam => (edge_op.0, rng.gen::<f32>()),
+                    MutOp::Replace => self.generate_random_edge_operation(rng),
                 }
             } else {
                 edge_op.clone()
@@ -220,7 +254,11 @@ impl Toolbox {
             mut_ind.push(new_op);
         }
 
-        Genome { edge_ops: mut_ind, axiom: SymbolString(vec![]), system: System::new() }
+        Genome {
+            edge_ops: mut_ind,
+            axiom: SymbolString(vec![]),
+            system: System::new(),
+        }
     }
 
     pub fn new(weighted_op: Vec<Weighted<EdgeOp>>,
@@ -241,7 +279,7 @@ impl Toolbox {
         generate_random_edge_operation(&self.weighted_op, rng)
     }
 
-    pub fn random_genome<R:Rng>(&self, rng: &mut R, len: usize) -> Genome {
+    pub fn random_genome<R: Rng>(&self, rng: &mut R, len: usize) -> Genome {
         random_genome(rng, len, &self.weighted_op)
     }
 }
