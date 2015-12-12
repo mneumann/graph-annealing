@@ -137,7 +137,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lindenmayer-system"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/lindenmayer-system.git#c10c31c7f86a259d587702e35fbe1764c4df07e1"
+source = "git+https://github.com/mneumann/lindenmayer-system.git#1b8a355511cad7ad7df0c4494ca44c9f125dd0e6"
 dependencies = [
  "turtle 0.1.0 (git+https://github.com/mneumann/turtle-rs.git)",
 ]

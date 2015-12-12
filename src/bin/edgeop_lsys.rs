@@ -1,3 +1,5 @@
+#![feature(zero_one)]
+
 extern crate rand;
 extern crate evo;
 extern crate petgraph;

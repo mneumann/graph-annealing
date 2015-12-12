@@ -1,6 +1,7 @@
 // Edge Operation L-System Genome
 
 mod edgeop;
+mod exprop;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
@@ -82,7 +83,8 @@ type Sym = Sym2<u32, f32>;
 #[derive(Clone, Debug)]
 pub struct Genome {
     edge_ops: Vec<(EdgeOp, f32)>,
-    axiom: Sym,
+    axiom: SymbolString<Sym>,
+    system: System<Sym>,
 }
 
 pub struct Toolbox {
@@ -112,7 +114,8 @@ impl Mate<Genome> for Toolbox {
                     edge_ops: linear_2point_crossover_random(rng,
                                                              &p1.edge_ops[..],
                                                              &p2.edge_ops[..]),
-                    axiom: Symbol::new(0), // XXX
+                    axiom: SymbolString(vec![]),
+                    system: System::new(),
                 }
             }
             VarOp::UniformCrossover => {
@@ -121,6 +124,8 @@ impl Mate<Genome> for Toolbox {
         }
     }
 }
+
+
 
 impl Genome {
     pub fn len(&self) -> usize {
@@ -132,7 +137,32 @@ impl Genome {
     }
 }
 
-#[inline]
+// When we need a value within (0, 1], we simply cut off the integer part.
+// Max depth.
+
+/*
+ * Generates a random production (right hand-side of a rule).
+ * Parameters are:
+ *
+ *     - Symbol arity
+ *     - Length
+ *     - Expression complexity: Either
+ */
+//pub fn random_production
+
+/*
+ * There are many parameters that influence the creation of a random
+ * genome:
+ *
+ *     - Number of rules
+ *     - Arity of symbols
+ *     - Axiom and Length
+ *     - Length of a production rule
+ *     - Number of (condition, successor) pairs per rule.
+ *     - Complexity of expression in Symbol
+ * 
+ *     - Number of Iterations.
+ */
 pub fn random_genome<R>(rng: &mut R,
                         len: usize,
                         weighted_op: &OwnedWeightedChoice<EdgeOp>)
@@ -143,7 +173,8 @@ pub fn random_genome<R>(rng: &mut R,
         edge_ops: (0..len)
                       .map(|_| generate_random_edge_operation(weighted_op, rng))
                       .collect(),
-        axiom: Symbol::new(0),
+        axiom: SymbolString(vec![]),
+        system: System::new(),
     }
 }
 
@@ -189,7 +220,7 @@ impl Toolbox {
             mut_ind.push(new_op);
         }
 
-        Genome { edge_ops: mut_ind, axiom: Symbol::new(0) }
+        Genome { edge_ops: mut_ind, axiom: SymbolString(vec![]), system: System::new() }
     }
 
     pub fn new(weighted_op: Vec<Weighted<EdgeOp>>,
