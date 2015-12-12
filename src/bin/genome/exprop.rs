@@ -4,8 +4,10 @@ use rand::{Closed01, Open01, Rng};
 use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
 use std::f32::consts;
+use std::str::FromStr;
+use std::string::ToString;
 
-#[derive(Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum ExprOp {
     /// 0.0
     Zero,
@@ -44,10 +46,52 @@ pub enum ExprOp {
     Divz,
 }
 
+impl ToString for ExprOp {
+    fn to_string(&self) -> String {
+        match *self {
+            ExprOp::Zero => "Zero".to_string(),
+            ExprOp::One => "One".to_string(),
+            ExprOp::Euler => "Euler".to_string(),
+            ExprOp::Pi => "Pi".to_string(),
+            ExprOp::ConstClosed01 => "ConstClosed01".to_string(),
+            ExprOp::ConstOpen01Reciproc => "ConstOpen01Reciproc".to_string(),
+            ExprOp::Param => "Param".to_string(),
+            ExprOp::Reciprocz => "Reciprocz".to_string(),
+            ExprOp::Add => "Add".to_string(),
+            ExprOp::Sub => "Sub".to_string(),
+            ExprOp::Mul => "Mul".to_string(),
+            ExprOp::Divz => "Divz".to_string(),
+        }
+    }
+}
+
+impl FromStr for ExprOp {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Zero" => Ok(ExprOp::Zero),
+            "One" => Ok(ExprOp::One),
+            "Euler" => Ok(ExprOp::Euler),
+            "Pi" => Ok(ExprOp::Pi),
+            "ConstClosed01" => Ok(ExprOp::ConstClosed01),
+            "ConstOpen01Reciproc" => Ok(ExprOp::ConstOpen01Reciproc),
+            "Param" => Ok(ExprOp::Param),
+            "Reciprocz" => Ok(ExprOp::Reciprocz),
+            "Add" => Ok(ExprOp::Add),
+            "Sub" => Ok(ExprOp::Sub),
+            "Mul" => Ok(ExprOp::Mul),
+            "Divz" => Ok(ExprOp::Divz),
+            _ => Err(format!("Invalid expression opcode: {}", s)),
+        }
+    }
+}
+
 /// Generates a random expression according to the parameters:
 ///
-///     max_depth: maximum recursion depth.
+///     rng: Random number generator to use
 ///     num_params: number of parameters.
+///     max_depth: maximum recursion depth.
+///     weighted_op: Used to choose an expression when the max recursion depth is NOT reached.
 ///     weighted_op_max_depth: Used to choose an expression when the max recursion depth is reached.
 ///
 pub fn random_expr<R>(rng: &mut R,
@@ -66,14 +110,19 @@ pub fn random_expr<R>(rng: &mut R,
 
     match choose_from.ind_sample(rng) {
         ExprOp::Zero => Expr::Const(Zero::zero()),
+
         ExprOp::One => Expr::Const(One::one()),
+
         ExprOp::Euler => Expr::Const(consts::E),
+
         ExprOp::Pi => Expr::Const(consts::PI),
+
         ExprOp::ConstClosed01 => {
             let n = rng.gen::<Closed01<f32>>().0;
             debug_assert!(n >= 0.0 && n <= 1.0);
             Expr::Const(n)
         }
+
         ExprOp::ConstOpen01Reciproc => {
             let n = rng.gen::<Open01<f32>>().0;
             debug_assert!(n > 0.0 && n < 1.0);
