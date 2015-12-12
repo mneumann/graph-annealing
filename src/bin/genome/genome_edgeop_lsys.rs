@@ -2,21 +2,23 @@
 
 mod edgeop;
 mod expr_op;
+mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
 use evo::nsga2::Mate;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
+use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
-use lindenmayer_system::{Symbol, SymbolString, System};
+use lindenmayer_system::{Alphabet, Symbol, SymbolString, System};
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ExprOp, random_expr};
-use std::ops::Range;
+use self::cond_op::{CondOp, random_cond};
 
 /// Element-wise Mutation operation.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -80,8 +82,85 @@ impl FromStr for VarOp {
     }
 }
 
+// The alphabet of terminal and non-terminals we use.
+// Non-terminals are our rules, while terminals are the EdgeOps.  
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum EdgeAlphabet {
+    Terminal(EdgeOp),
+    NonTerminal(u32),
+}
+
+impl Alphabet for EdgeAlphabet {}
+
 // We use 2-ary symbols, i.e. symbols with two parameters.
-type Sym = Sym2<u32, f32>;
+type Sym = Sym2<EdgeAlphabet, f32>;
+
+pub struct SymbolGenerator {
+    pub max_expr_depth: usize,
+    pub expr_weighted_op: OwnedWeightedChoice<ExprOp>,
+    pub expr_weighted_op_max_depth: OwnedWeightedChoice<ExprOp>,
+
+    // terminal symbols
+    pub edge_weighted_op: OwnedWeightedChoice<EdgeOp>,
+
+    pub nonterminal_symbols: Range<u32>,
+
+    /// The probability with which a terminal value is choosen.
+    pub prob_terminal: Probability,
+}
+
+impl SymbolGenerator {
+    /// Generates a random production (right hand-side of a rule).
+    pub fn gen_symbolstring<R, S>(&self,
+                                  rng: &mut R,
+                                  len: usize,
+                                  arity: usize,
+                                  num_params: usize)
+                                  -> SymbolString<S>
+        where R: Rng,
+              S: Symbol<A = EdgeAlphabet, T = f32>
+    {
+        SymbolString((0..len)
+                         .into_iter()
+                         .map(|_| self.gen_symbol(rng, arity, num_params))
+                         .collect())
+    }
+
+    pub fn gen_symbol<R, S>(&self, rng: &mut R, arity: usize, num_params: usize) -> S
+        where R: Rng,
+              S: Symbol<A = EdgeAlphabet, T = f32>
+    {
+        S::from_iter(self.gen_symbol_value(rng),
+                     (0..arity).into_iter().map(|_| self.gen_expr(rng, num_params)))
+
+    }
+
+    fn gen_expr<R: Rng>(&self, rng: &mut R, num_params: usize) -> Expr<f32> {
+        random_expr(rng,
+                    num_params,
+                    self.max_expr_depth,
+                    &self.expr_weighted_op,
+                    &self.expr_weighted_op_max_depth)
+    }
+
+    fn gen_terminal<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
+        EdgeAlphabet::Terminal(self.edge_weighted_op.ind_sample(rng))
+    }
+
+    pub fn gen_nonterminal<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
+        EdgeAlphabet::NonTerminal(self.nonterminal_symbols.ind_sample(rng))
+    }
+
+    fn gen_symbol_value<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
+        if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_terminal) {
+            self.gen_terminal(rng)
+        } else {
+            self.gen_nonterminal(rng)
+        }
+    }
+}
+
+
 
 #[derive(Clone, Debug)]
 pub struct Genome {
@@ -129,63 +208,6 @@ impl Genome {
 
     pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
         edgeops_to_graph(&self.edge_ops)
-    }
-}
-
-pub struct SymbolGenerator {
-    pub max_expr_depth: usize,
-    pub weighted_op: OwnedWeightedChoice<ExprOp>,
-    pub weighted_op_max_depth: OwnedWeightedChoice<ExprOp>,
-
-    pub terminal_symbols: Range<u32>,
-    pub nonterminal_symbols: Range<u32>,
-
-    /// The probability with which a terminal value is choosen.
-    pub prob_terminal: Probability,
-}
-
-impl SymbolGenerator {
-    /// Generates a random production (right hand-side of a rule).
-    pub fn gen_symbolstring<R, S>(&self,
-                                  rng: &mut R,
-                                  len: usize,
-                                  arity: usize,
-                                  num_params: usize)
-                                  -> SymbolString<S>
-        where R: Rng,
-              S: Symbol<A = u32, T = f32>
-    {
-        SymbolString((0..len)
-                         .into_iter()
-                         .map(|_| self.gen_symbol(rng, arity, num_params))
-                         .collect())
-    }
-
-    pub fn gen_symbol<R, S>(&self, rng: &mut R, arity: usize, num_params: usize) -> S
-        where R: Rng,
-              S: Symbol<A = u32, T = f32>
-    {
-        S::from_iter(self.gen_symbol_value(rng),
-                     (0..arity).into_iter().map(|_| self.gen_arg(rng, num_params)))
-
-    }
-
-    fn gen_arg<R: Rng>(&self, rng: &mut R, num_params: usize) -> Expr<f32> {
-        random_expr(rng,
-                    num_params,
-                    self.max_expr_depth,
-                    &self.weighted_op,
-                    &self.weighted_op_max_depth)
-    }
-
-    fn gen_symbol_value<R: Rng>(&self, rng: &mut R) -> u32 {
-        if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_terminal) {
-            // generate a terminal symbol value.
-            rng.gen_range::<u32>(self.terminal_symbols.start, self.terminal_symbols.end)
-        } else {
-            // generate a symbol value in the range of non-terminal symbols
-            rng.gen_range::<u32>(self.nonterminal_symbols.start, self.nonterminal_symbols.end)
-        }
     }
 }
 
