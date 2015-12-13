@@ -1,5 +1,7 @@
 // Edge Operation L-System Genome
 
+
+
 mod edgeop;
 mod expr_op;
 mod cond_op;
@@ -13,7 +15,7 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
-use lindenmayer_system::{Alphabet, Symbol, SymbolString, System};
+use lindenmayer_system::{Alphabet, Symbol, SymbolString, System, Condition};
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
@@ -21,65 +23,34 @@ use self::expr_op::{ExprOp, random_expr};
 use self::cond_op::{CondOp, random_cond};
 
 /// Element-wise Mutation operation.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum MutOp {
-    /// No mutation (copy element)
+defops!{MutOp;
+    // No mutation (copy element)
     Copy,
-    /// Insert new operation
+    // Insert new operation
     Insert,
-    /// Remove an operation
+    // Remove an operation
     Remove,
-    /// Modify the operation
+    // Modify the operation
     ModifyOp,
-    /// Modify a parameter value
+    // Modify a parameter value
     ModifyParam,
-    /// Modify both operation and parameter
-    Replace,
+    // Modify both operation and parameter
+    Replace
 }
-
-impl FromStr for MutOp {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Copy" => Ok(MutOp::Copy),
-            "Insert" => Ok(MutOp::Insert),
-            "Remove" => Ok(MutOp::Remove),
-            "ModifyOp" => Ok(MutOp::ModifyOp),
-            "ModifyParam" => Ok(MutOp::ModifyParam),
-            "Replace" => Ok(MutOp::Replace),
-            _ => Err(format!("Invalid opcode: {}", s)),
-        }
-    }
-}
-
 
 /// Variation operators
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum VarOp {
-    /// No variation. Reproduce exactly
+defops!{VarOp;
+    // No variation. Reproduce exactly
     Copy,
 
-    /// Mutate
+    // Mutate
     Mutate,
 
-    /// 2-point Linear crossover
+    // 2-point Linear crossover
     LinearCrossover2,
 
-    /// Uniform crossover
-    UniformCrossover,
-}
-
-impl FromStr for VarOp {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Copy" => Ok(VarOp::Copy),
-            "Mutate" => Ok(VarOp::Mutate),
-            "LinearCrossover2" => Ok(VarOp::LinearCrossover2),
-            "UniformCrossover" => Ok(VarOp::UniformCrossover),
-            _ => Err(format!("Invalid opcode: {}", s)),
-        }
-    }
+    // Uniform crossover
+    UniformCrossover
 }
 
 // The alphabet of terminal and non-terminals we use.
@@ -158,6 +129,33 @@ impl SymbolGenerator {
             self.gen_nonterminal(rng)
         }
     }
+
+
+    /// Generate a simple condition like:
+    ///     Arg(n) [>= or <=] Const(y)
+    ///     
+    fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, arity: usize) -> Condition<f32> {
+        let lhs = if arity > 0 {
+            Expr::Arg(rng.gen_range(0, arity))
+        } else {
+            Expr::Const(0.0)
+        };
+
+        //let rhs = Expr::Const
+
+        if rng.gen::<bool>() {
+            Condition::True
+        } else {
+            Condition::False
+        }
+    }
+
+    // As Axiom we use rule with number 0. The parameters are fixed (given on command line).
+
+    // Generate a random rule with `symbol` and `arity` parameters.
+    // 
+    //fn gen_rule<R: Rng>(&self, symbol: EdgeAlphabet, arity: usize) {
+    //}
 }
 
 
@@ -227,12 +225,13 @@ impl Genome {
 //
 //     - Number of Iterations.
 //
-pub fn random_genome<R>(rng: &mut R,
+fn random_genome<R>(rng: &mut R,
                         len: usize,
                         weighted_op: &OwnedWeightedChoice<EdgeOp>)
                         -> Genome
     where R: Rng
 {
+    //
     Genome {
         edge_ops: (0..len)
                       .map(|_| generate_random_edge_operation(weighted_op, rng))
@@ -243,7 +242,7 @@ pub fn random_genome<R>(rng: &mut R,
 }
 
 #[inline]
-pub fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
+fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
                                               rng: &mut R)
                                               -> (EdgeOp, f32) {
     (weighted_op.ind_sample(rng), rng.gen::<f32>())

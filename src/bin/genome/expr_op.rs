@@ -4,87 +4,65 @@ use rand::{Closed01, Open01, Rng};
 use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
 use std::f32::consts;
-use std::str::FromStr;
-use std::string::ToString;
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum ExprOp {
-    /// 0.0
+defops!{ConstExprOp;
+    // 0.0
     Zero,
 
-    /// 1.0
+    // 1.0
     One,
 
-    /// Eulers number
+    // Eulers number
     Euler,
 
-    /// Pi
+    // Pi
     Pi,
 
-    /// A constant value in [0, 1]
+    // A constant value in [0, 1]
     ConstClosed01,
 
-    /// A constant value in (1, inf), i.e. 1.0 / (0, 1)
+    // A constant value in (1, inf), i.e. 1.0 / (0, 1)
+    ConstOpen01Reciproc
+}
+
+defops!{ExprOp;
+    // 0.0
+    Zero,
+
+    // 1.0
+    One,
+
+    // Eulers number
+    Euler,
+
+    // Pi
+    Pi,
+
+    // A constant value in [0, 1]
+    ConstClosed01,
+
+    // A constant value in (1, inf), i.e. 1.0 / (0, 1)
     ConstOpen01Reciproc,
 
-    /// References a parameter
+    // References a parameter
     Param,
 
-    /// 1.0 / x using safe division.
+    // 1.0 / x using safe division.
     Reciprocz,
 
-    /// Addition
+    // Addition
     Add,
 
-    /// Subtraction
+    // Subtraction
     Sub,
 
-    /// Multiplication
+    // Multiplication
     Mul,
 
-    /// Safe division
-    Divz,
+    // Safe division
+    Divz
 }
 
-impl ToString for ExprOp {
-    fn to_string(&self) -> String {
-        match *self {
-            ExprOp::Zero => "Zero".to_string(),
-            ExprOp::One => "One".to_string(),
-            ExprOp::Euler => "Euler".to_string(),
-            ExprOp::Pi => "Pi".to_string(),
-            ExprOp::ConstClosed01 => "ConstClosed01".to_string(),
-            ExprOp::ConstOpen01Reciproc => "ConstOpen01Reciproc".to_string(),
-            ExprOp::Param => "Param".to_string(),
-            ExprOp::Reciprocz => "Reciprocz".to_string(),
-            ExprOp::Add => "Add".to_string(),
-            ExprOp::Sub => "Sub".to_string(),
-            ExprOp::Mul => "Mul".to_string(),
-            ExprOp::Divz => "Divz".to_string(),
-        }
-    }
-}
-
-impl FromStr for ExprOp {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Zero" => Ok(ExprOp::Zero),
-            "One" => Ok(ExprOp::One),
-            "Euler" => Ok(ExprOp::Euler),
-            "Pi" => Ok(ExprOp::Pi),
-            "ConstClosed01" => Ok(ExprOp::ConstClosed01),
-            "ConstOpen01Reciproc" => Ok(ExprOp::ConstOpen01Reciproc),
-            "Param" => Ok(ExprOp::Param),
-            "Reciprocz" => Ok(ExprOp::Reciprocz),
-            "Add" => Ok(ExprOp::Add),
-            "Sub" => Ok(ExprOp::Sub),
-            "Mul" => Ok(ExprOp::Mul),
-            "Divz" => Ok(ExprOp::Divz),
-            _ => Err(format!("Invalid expression opcode: {}", s)),
-        }
-    }
-}
 
 /// Generates a random expression according to the parameters:
 ///

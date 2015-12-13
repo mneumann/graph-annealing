@@ -17,65 +17,34 @@ use sexp::{Atom, Sexp};
 use self::edgeop::{edgeops_to_graph, EdgeOp};
 
 /// Element-wise Mutation operation.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum MutOp {
-    /// No mutation (copy element)
+defops!{MutOp;
+    // No mutation (copy element)
     Copy,
-    /// Insert new operation
+    // Insert new operation
     Insert,
-    /// Remove an operation
+    // Remove an operation
     Remove,
-    /// Modify the operation
+    // Modify the operation
     ModifyOp,
-    /// Modify a parameter value
+    // Modify a parameter value
     ModifyParam,
-    /// Modify both operation and parameter
-    Replace,
+    // Modify both operation and parameter
+    Replace
 }
-
-impl FromStr for MutOp {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Copy" => Ok(MutOp::Copy),
-            "Insert" => Ok(MutOp::Insert),
-            "Remove" => Ok(MutOp::Remove),
-            "ModifyOp" => Ok(MutOp::ModifyOp),
-            "ModifyParam" => Ok(MutOp::ModifyParam),
-            "Replace" => Ok(MutOp::Replace),
-            _ => Err(format!("Invalid opcode: {}", s)),
-        }
-    }
-}
-
 
 /// Variation operators
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum VarOp {
-    /// No variation. Reproduce exactly
+defops!{VarOp;
+    // No variation. Reproduce exactly
     Copy,
 
-    /// Mutate
+    // Mutate
     Mutate,
 
-    /// 2-point Linear crossover
+    // 2-point Linear crossover
     LinearCrossover2,
 
-    /// Uniform crossover
-    UniformCrossover,
-}
-
-impl FromStr for VarOp {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Copy" => Ok(VarOp::Copy),
-            "Mutate" => Ok(VarOp::Mutate),
-            "LinearCrossover2" => Ok(VarOp::LinearCrossover2),
-            "UniformCrossover" => Ok(VarOp::UniformCrossover),
-            _ => Err(format!("Invalid opcode: {}", s)),
-        }
-    }
+    // Uniform crossover
+    UniformCrossover
 }
 
 #[derive(Clone, Debug)]

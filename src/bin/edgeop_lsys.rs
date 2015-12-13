@@ -3,6 +3,7 @@
 extern crate rand;
 extern crate evo;
 extern crate petgraph;
+#[macro_use]
 extern crate graph_annealing;
 extern crate clap;
 extern crate crossbeam;

@@ -4,11 +4,8 @@ use rand::{Closed01, Open01, Rng};
 use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
 use std::f32::consts;
-use std::str::FromStr;
-use std::string::ToString;
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum CondOp {
+defops!{CondOp;
     True,
     False,
     Not,
@@ -18,43 +15,7 @@ pub enum CondOp {
     Less,
     Greater,
     LessEqual,
-    GreaterEqual,
-}
-
-impl ToString for CondOp {
-    fn to_string(&self) -> String {
-        match *self {
-            CondOp::True=> "True".to_string(),
-            CondOp::False  => "False".to_string(),
-            CondOp::Not => "Not".to_string(),
-            CondOp::And => "And".to_string(),
-            CondOp::Or => "Or".to_string(),
-            CondOp::Equal => "Equal".to_string(),
-            CondOp::Less => "Less".to_string(),
-            CondOp::Greater => "Greater".to_string(),
-            CondOp::LessEqual => "LessEqual".to_string(),
-            CondOp::GreaterEqual => "GreaterEqual".to_string(),
-        }
-    }
-}
-
-impl FromStr for CondOp {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "True" => Ok(CondOp::True),
-            "False" => Ok(CondOp::False),
-            "Not" => Ok(CondOp::Not),
-            "And" => Ok(CondOp::And),
-            "Or" => Ok(CondOp::Or),
-            "Equal" => Ok(CondOp::Equal),
-            "Less" => Ok(CondOp::Less),
-            "Greater" => Ok(CondOp::Greater),
-            "LessEqual" => Ok(CondOp::LessEqual),
-            "GreaterEqual" => Ok(CondOp::GreaterEqual),
-            _ => Err(format!("Invalid condition opcode: {}", s)),
-        }
-    }
+    GreaterEqual
 }
 
 /// Generates a random condition according to the parameters:
