@@ -326,10 +326,6 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
 
 
 impl Genome {
-    pub fn len(&self) -> usize {
-        0 // XXX
-    }
-
     /// Develops
     pub fn to_edge_ops(&self, _axiom_args: &[Expr<f32>], _iterations: usize) -> Vec<(EdgeOp, f32)> {
         vec![]
