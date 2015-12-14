@@ -15,11 +15,11 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
-use lindenmayer_system::{Alphabet, Symbol, SymbolString, System, Condition};
+use lindenmayer_system::{Alphabet, Symbol, SymbolString, System, LSystem, Condition};
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{ExprOp, random_expr};
+use self::expr_op::{ConstExprOp, ExprOp, random_const_expr, random_expr};
 use self::cond_op::{CondOp, random_cond};
 
 /// Element-wise Mutation operation.
@@ -78,6 +78,8 @@ pub struct SymbolGenerator {
 
     /// The probability with which a terminal value is choosen.
     pub prob_terminal: Probability,
+
+    pub const_expr_weighted_op: OwnedWeightedChoice<ConstExprOp>,
 }
 
 impl SymbolGenerator {
@@ -130,10 +132,8 @@ impl SymbolGenerator {
         }
     }
 
-
     /// Generate a simple condition like:
-    ///     Arg(n) [>= or <=] Const(y)
-    ///     
+    ///     Arg(n) or 0.0 [>=] or [<=] constant expr
     fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, arity: usize) -> Condition<f32> {
         let lhs = if arity > 0 {
             Expr::Arg(rng.gen_range(0, arity))
@@ -141,16 +141,14 @@ impl SymbolGenerator {
             Expr::Const(0.0)
         };
 
-        //let rhs = Expr::Const
+        let rhs = random_const_expr(rng, &self.const_expr_weighted_op);
 
         if rng.gen::<bool>() {
-            Condition::True
+            Condition::GreaterEqual(Box::new(lhs), Box::new(rhs))
         } else {
-            Condition::False
+            Condition::LessEqual(Box::new(lhs), Box::new(rhs))
         }
     }
-
-    // As Axiom we use rule with number 0. The parameters are fixed (given on command line).
 
     // Generate a random rule with `symbol` and `arity` parameters.
     // 
@@ -159,11 +157,26 @@ impl SymbolGenerator {
 }
 
 
+// When we need a value within (0, 1], we simply cut off the integer part.
+// Max depth.
 
+
+// # Genome interpretation:
+//
+//     * We use rule with number 0 as axiom.
+//       The arguments for the axiom are fixed and passed in from the command line.
+//       For simplicity, these arguments are duplicated in each Genome in `axiom_params`. 
+//       One could also apply genetic operations onto these.
+//
+//
 #[derive(Clone, Debug)]
 pub struct Genome {
-    edge_ops: Vec<(EdgeOp, f32)>,
-    axiom: SymbolString<Sym>,
+    /// Arguments for the axiom rule.
+    axiom_args: Vec<Expr<f32>>,
+
+    /// Maximum number of iterations of the L-system  (XXX: Limit also based on generated length)
+    iterations: usize,
+
     system: System<Sym>,
 }
 
@@ -172,6 +185,9 @@ pub struct Toolbox {
     weighted_var_op: OwnedWeightedChoice<VarOp>,
     weighted_mut_op: OwnedWeightedChoice<MutOp>,
     prob_mutate_elem: Probability,
+
+    axiom_args: Vec<Expr<f32>>,
+    iterations: usize,
 }
 
 impl Mate<Genome> for Toolbox {
@@ -183,10 +199,12 @@ impl Mate<Genome> for Toolbox {
             VarOp::Mutate => self.mutate(rng, p1),
             VarOp::LinearCrossover2 => {
                 Genome {
-                    edge_ops: linear_2point_crossover_random(rng,
+                    /*edge_ops: linear_2point_crossover_random(rng,
                                                              &p1.edge_ops[..],
-                                                             &p2.edge_ops[..]),
-                    axiom: SymbolString(vec![]),
+                                                             &p2.edge_ops[..]),*/
+                    axiom_args: self.axiom_args.clone(),
+                    iterations: self.iterations,
+
                     system: System::new(),
                 }
             }
@@ -201,45 +219,18 @@ impl Mate<Genome> for Toolbox {
 
 impl Genome {
     pub fn len(&self) -> usize {
-        self.edge_ops.len()
+        0 // XXX
+    }
+
+    pub fn to_edge_ops(&self) -> Vec<(EdgeOp, f32)> {
+        vec![]
     }
 
     pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
-        edgeops_to_graph(&self.edge_ops)
+        edgeops_to_graph(&self.to_edge_ops())
     }
 }
 
-
-// When we need a value within (0, 1], we simply cut off the integer part.
-// Max depth.
-
-// There are many parameters that influence the creation of a random
-// genome:
-//
-//     - Number of rules
-//     - Arity of symbols
-//     - Axiom and Length
-//     - Length of a production rule
-//     - Number of (condition, successor) pairs per rule.
-//     - Complexity of expression in Symbol
-//
-//     - Number of Iterations.
-//
-fn random_genome<R>(rng: &mut R,
-                        len: usize,
-                        weighted_op: &OwnedWeightedChoice<EdgeOp>)
-                        -> Genome
-    where R: Rng
-{
-    //
-    Genome {
-        edge_ops: (0..len)
-                      .map(|_| generate_random_edge_operation(weighted_op, rng))
-                      .collect(),
-        axiom: SymbolString(vec![]),
-        system: System::new(),
-    }
-}
 
 #[inline]
 fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
@@ -250,6 +241,7 @@ fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<Edge
 
 impl Toolbox {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
+        /*
         let mut mut_ind = Vec::with_capacity(ind.len() + 1);
 
         for edge_op in ind.edge_ops.iter() {
@@ -274,10 +266,11 @@ impl Toolbox {
             };
             mut_ind.push(new_op);
         }
+        */
 
         Genome {
-            edge_ops: mut_ind,
-            axiom: SymbolString(vec![]),
+            axiom_args: self.axiom_args.clone(),
+            iterations: self.iterations,
             system: System::new(),
         }
     }
@@ -293,6 +286,8 @@ impl Toolbox {
             weighted_op: OwnedWeightedChoice::new(weighted_op),
             weighted_var_op: OwnedWeightedChoice::new(weighted_var_op),
             weighted_mut_op: OwnedWeightedChoice::new(weighted_mut_op),
+            axiom_args: vec![],
+            iterations: 10,
         }
     }
 
@@ -300,7 +295,27 @@ impl Toolbox {
         generate_random_edge_operation(&self.weighted_op, rng)
     }
 
-    pub fn random_genome<R: Rng>(&self, rng: &mut R, len: usize) -> Genome {
-        random_genome(rng, len, &self.weighted_op)
+
+    // There are many parameters that influence the creation of a random
+    // genome:
+    //
+    //     - Number of rules
+    //     - Arity of symbols
+    //     - Axiom and Length
+    //     - Length of a production rule
+    //     - Number of (condition, successor) pairs per rule.
+    //     - Complexity of expression in Symbol
+    //
+    //     - Number of Iterations.
+    //
+    //     There are many
+    //
+    pub fn random_genome<R: Rng>(&self, rng: &mut R) -> Genome {
+        Genome {
+            axiom_args: self.axiom_args.clone(),
+            iterations: self.iterations, 
+            system: System::new(),
+        }
+
     }
 }

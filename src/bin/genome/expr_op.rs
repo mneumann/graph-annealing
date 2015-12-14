@@ -63,6 +63,40 @@ defops!{ExprOp;
     Divz
 }
 
+/// Generates a random constant expression according to the parameters:
+///
+///     rng: Random number generator to use
+///     weighted_const_op: Used to choose a const expression
+///
+pub fn random_const_expr<R>(rng: &mut R,
+                      weighted_const_op: &OwnedWeightedChoice<ConstExprOp>)
+                      -> Expr<f32>
+    where R: Rng
+{
+    match weighted_const_op.ind_sample(rng) {
+        ConstExprOp::Zero => Expr::Const(Zero::zero()),
+
+        ConstExprOp::One => Expr::Const(One::one()),
+
+        ConstExprOp::Euler => Expr::Const(consts::E),
+
+        ConstExprOp::Pi => Expr::Const(consts::PI),
+
+        ConstExprOp::ConstClosed01 => {
+            let n = rng.gen::<Closed01<f32>>().0;
+            debug_assert!(n >= 0.0 && n <= 1.0);
+            Expr::Const(n)
+        }
+
+        ConstExprOp::ConstOpen01Reciproc => {
+            let n = rng.gen::<Open01<f32>>().0;
+            debug_assert!(n > 0.0 && n < 1.0);
+            Expr::Const(1.0 / n)
+        }
+    }
+}
+
+
 
 /// Generates a random expression according to the parameters:
 ///

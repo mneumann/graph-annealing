@@ -272,7 +272,7 @@ fn main() {
                                                              Range::new(ilen_from, ilen_to)
                                                                  .ind_sample(&mut rng)
                                                          };
-                                                         toolbox.random_genome(&mut rng, len)
+                                                         toolbox.random_genome(&mut rng)
                                                      })
                                                      .collect();
 
