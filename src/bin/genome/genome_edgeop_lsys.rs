@@ -15,7 +15,7 @@ use graph_annealing::fitness_function::FitnessFunction;
 use graph_annealing::goal::Goal;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
-use lindenmayer_system::{Alphabet, Condition, Symbol, SymbolString, System};
+use lindenmayer_system::{Alphabet, Condition, Symbol, SymbolString, LSystem, Rule, apply_first_rule};
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
@@ -23,6 +23,7 @@ use self::expr_op::{ConstExprOp, ExprOp, random_const_expr, random_expr};
 use self::cond_op::{CondOp, random_cond};
 use simple_parallel::Pool;
 use crossbeam;
+use std::collections::BTreeMap;
 
 /// Element-wise Mutation operation.
 defops!{MutOp;
@@ -55,18 +56,50 @@ defops!{VarOp;
     UniformCrossover
 }
 
+type RuleId = u32;
+
 // The alphabet of terminal and non-terminals we use.
 // Non-terminals are our rules, while terminals are the EdgeOps.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum EdgeAlphabet {
+enum EdgeAlphabet {
     Terminal(EdgeOp),
-    NonTerminal(u32),
+    NonTerminal(RuleId),
 }
 
 impl Alphabet for EdgeAlphabet {}
 
 // We use 2-ary symbols, i.e. symbols with two parameters.
 type Sym = Sym2<EdgeAlphabet, f32>;
+
+/// Rules can only be stored for NonTerminals
+#[derive(Clone, Debug)]
+struct System {
+    rules: BTreeMap<RuleId, Vec<Rule<Sym>>>,
+}
+
+impl System {
+    fn new() -> System {
+        System {
+            rules: BTreeMap::new(),
+        }
+    }
+}
+
+impl LSystem<Sym> for System {
+    fn apply_first_rule(&self, sym: &Sym) -> Option<SymbolString<Sym>> {
+        match sym.symbol() {
+            // We don't store rules for terminal symbols.
+            &EdgeAlphabet::Terminal(_) => {
+                None
+            }
+
+            &EdgeAlphabet::NonTerminal(id) => {
+                self.rules.get(&id).and_then(|rules| apply_first_rule(&rules[..], sym))
+            }
+        }
+    }
+}
+
 
 pub struct SymbolGenerator {
     pub max_expr_depth: usize,
@@ -122,7 +155,7 @@ impl SymbolGenerator {
         EdgeAlphabet::Terminal(self.edge_weighted_op.ind_sample(rng))
     }
 
-    pub fn gen_nonterminal<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
+    fn gen_nonterminal<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
         EdgeAlphabet::NonTerminal(self.nonterminal_symbols.ind_sample(rng))
     }
 
@@ -173,7 +206,7 @@ impl SymbolGenerator {
 //
 #[derive(Clone, Debug)]
 pub struct Genome {
-    system: System<Sym>,
+    system: System,
 }
 
 pub struct Toolbox<N, E> {
@@ -326,9 +359,14 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
 
 
 impl Genome {
-    /// Develops
-    pub fn to_edge_ops(&self, _axiom_args: &[Expr<f32>], _iterations: usize) -> Vec<(EdgeOp, f32)> {
-        vec![]
+    /// Develops the L-system into a vector of edge operations
+    pub fn to_edge_ops(&self, axiom_args: &[Expr<f32>], iterations: usize) -> Vec<(EdgeOp, f32)> {
+        let mut edge_ops = vec![];
+
+
+        //system
+
+        return edge_ops;
     }
 }
 
