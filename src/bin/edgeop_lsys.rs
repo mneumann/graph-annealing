@@ -17,7 +17,7 @@ extern crate lindenmayer_system;
 extern crate graph_edge_evolution;
 
 #[path="genome/genome_edgeop_lsys.rs"]
-mod genome;
+pub mod genome;
 
 use std::str::FromStr;
 use clap::{App, Arg};
@@ -38,6 +38,7 @@ use graph_sgf::{PetgraphReader, Unweighted};
 use triadic_census::OptDenseDigraph;
 use std::io::BufReader;
 use std::fs::File;
+use genome::edgeop::edgeops_to_graph;
 
 #[allow(non_snake_case)]
 fn main() {
@@ -314,7 +315,11 @@ fn main() {
             println!("genome: {:?}", pop[rd.idx]);
 
             // if fit[rd.idx].objectives[0] < 1.0 {
-            draw_graph((&pop[rd.idx].to_graph()).ref_graph(),
+            let ind = &pop[rd.idx];
+            let edge_ops = ind.to_edge_ops(&toolbox.axiom_args, toolbox.iterations);
+            let g = edgeops_to_graph(&edge_ops);
+
+            draw_graph(g.ref_graph(),
                        // XXX: name
                        &format!("nsga2edgeops_g{}_f{}_i{}.svg",
                                 NGEN,

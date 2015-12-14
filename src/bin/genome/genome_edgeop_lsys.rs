@@ -1,6 +1,6 @@
 // Edge Operation L-System Genome
 
-mod edgeop;
+pub mod edgeop;
 mod expr_op;
 mod cond_op;
 
@@ -15,7 +15,7 @@ use graph_annealing::fitness_function::FitnessFunction;
 use graph_annealing::goal::Goal;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
-use lindenmayer_system::{Alphabet, Condition, LSystem, Symbol, SymbolString, System};
+use lindenmayer_system::{Alphabet, Condition, Symbol, SymbolString, System};
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
@@ -173,12 +173,6 @@ impl SymbolGenerator {
 //
 #[derive(Clone, Debug)]
 pub struct Genome {
-    /// Arguments for the axiom rule.
-    axiom_args: Vec<Expr<f32>>,
-
-    /// Maximum number of iterations of the L-system  (XXX: Limit also based on generated length)
-    iterations: usize,
-
     system: System<Sym>,
 }
 
@@ -192,8 +186,11 @@ pub struct Toolbox<N, E> {
     weighted_mut_op: OwnedWeightedChoice<MutOp>,
     prob_mutate_elem: Probability,
 
-    axiom_args: Vec<Expr<f32>>,
-    iterations: usize,
+    /// Arguments to the axiom rule.
+    pub axiom_args: Vec<Expr<f32>>,
+
+    /// Maximum number of iterations of the L-system  (XXX: Limit also based on generated length)
+    pub iterations: usize,
 }
 
 impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
@@ -247,8 +244,6 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
         //
 
         Genome {
-            axiom_args: self.axiom_args.clone(),
-            iterations: self.iterations,
             system: System::new(),
         }
     }
@@ -274,8 +269,6 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     //
     pub fn random_genome<R: Rng>(&self, rng: &mut R) -> Genome {
         Genome {
-            axiom_args: self.axiom_args.clone(),
-            iterations: self.iterations,
             system: System::new(),
         }
 
@@ -283,15 +276,21 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
 }
 
 impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<N,E> {
+    /// Evaluates the fitness of a Genome population.
     fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
         let pool = &mut self.pool;
         let goal = &self.goal;
+        let axiom_args = &self.axiom_args[..];
+        let iterations = self.iterations;
 
         let fitness_functions = self.fitness_functions;
 
         crossbeam::scope(|scope| {
             pool.map(scope, pop, |ind| {
-                let g = ind.to_graph();
+                let edge_ops = ind.to_edge_ops(axiom_args, iterations);
+                let g = edgeops_to_graph(&edge_ops);
+
+                //let g = ind.to_graph();
                 MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
                                        goal.apply_fitness_function(fitness_functions.1, &g),
                                        goal.apply_fitness_function(fitness_functions.2, &g)))
@@ -315,9 +314,6 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
                     // edge_ops: linear_2point_crossover_random(rng,
                     // &p1.edge_ops[..],
                     // &p2.edge_ops[..]),
-                    axiom_args: self.axiom_args.clone(),
-                    iterations: self.iterations,
-
                     system: System::new(),
                 }
             }
@@ -335,12 +331,8 @@ impl Genome {
     }
 
     /// Develops
-    pub fn to_edge_ops(&self) -> Vec<(EdgeOp, f32)> {
+    pub fn to_edge_ops(&self, _axiom_args: &[Expr<f32>], _iterations: usize) -> Vec<(EdgeOp, f32)> {
         vec![]
-    }
-
-    pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
-        edgeops_to_graph(&self.to_edge_ops())
     }
 }
 
