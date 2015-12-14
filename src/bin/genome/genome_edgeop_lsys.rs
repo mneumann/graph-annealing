@@ -281,9 +281,11 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
         }
     }
 
+    /*
     fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> (EdgeOp, f32) {
         generate_random_edge_operation(&self.weighted_op, rng)
     }
+    */
 
 
     // There are many parameters that influence the creation of a random
@@ -361,19 +363,38 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
 impl Genome {
     /// Develops the L-system into a vector of edge operations
     pub fn to_edge_ops(&self, axiom_args: &[Expr<f32>], iterations: usize) -> Vec<(EdgeOp, f32)> {
-        let mut edge_ops = vec![];
+        let axiom = SymbolString(vec![Sym2::new_parametric(EdgeAlphabet::NonTerminal(0), (axiom_args[0].clone(), axiom_args[1].clone()))]);
+        println!("axiom: {:?}", axiom); 
 
+        // XXX: limit lenght
+        let (s, iter) = self.system.develop(axiom, iterations);
+        println!("produced string: {:?}", s);
+        println!("after iterations: {:?}", iter);
 
-        //system
+        let edge_ops: Vec<_> = s.0.into_iter().filter_map(|op| {
+            match op.symbol() {
+                &EdgeAlphabet::Terminal(ref edge_op) => {
+                    if let Some(&Expr::Const(param)) = op.args().get(0) {
+                        Some((edge_op.clone(), param))
+                    } else {
+                        println!("Invalid parameter");
+                        None
+                    }
+                }
+                _ => None
+            }
+        }).collect();
 
         return edge_ops;
     }
 }
 
 
+/*
 #[inline]
 fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
                                           rng: &mut R)
                                           -> (EdgeOp, f32) {
     (weighted_op.ind_sample(rng), rng.gen::<f32>())
 }
+*/
