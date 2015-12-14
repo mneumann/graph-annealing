@@ -25,57 +25,19 @@ use rand::{Rng, SeedableRng};
 use rand::distributions::{IndependentSample, Range};
 use rand::os::OsRng;
 use pcg::PcgRng;
-
 use evo::Probability;
-use evo::nsga2::{self, FitnessEval, MultiObjective3};
+use evo::nsga2::{self, FitnessEval};
 use genome::{Genome, Toolbox};
 use graph_annealing::helper::{draw_graph, parse_weighted_op_list, to_weighted_vec};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;
 use graph_annealing::fitness_function::FitnessFunction;
 use simple_parallel::Pool;
-
 use petgraph::{Directed, Graph};
 use graph_sgf::{PetgraphReader, Unweighted};
 use triadic_census::OptDenseDigraph;
-
 use std::io::BufReader;
 use std::fs::File;
-
-struct MyEval<N, E> {
-    goal: Goal<N, E>,
-    pool: Pool,
-    fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
-}
-
-#[inline]
-fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFunction,
-                                                                       FitnessFunction,
-                                                                       FitnessFunction),
-                                                   goal: &Goal<N, E>,
-                                                   ind: &Genome)
-                                                   -> MultiObjective3<f32> {
-    let g = ind.to_graph();
-    MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
-                           goal.apply_fitness_function(fitness_functions.1, &g),
-                           goal.apply_fitness_function(fitness_functions.2, &g)))
-
-}
-
-impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<Genome, MultiObjective3<f32>> for MyEval<N,E> {
-    fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
-        let pool = &mut self.pool;
-        let goal = &self.goal;
-
-        let fitness_functions = self.fitness_functions;
-
-        crossbeam::scope(|scope| {
-            pool.map(scope, pop, |ind| fitness(fitness_functions, goal, ind))
-                .collect()
-        })
-    }
-}
-
 
 #[allow(non_snake_case)]
 fn main() {
@@ -252,13 +214,11 @@ fn main() {
     let w_mut_ops = to_weighted_vec(&mutops);
     assert!(w_mut_ops.len() > 0);
 
-    let mut toolbox = Toolbox::new(w_ops, w_var_ops, w_mut_ops, Probability::new(MUTP));
-
-    let mut evaluator = MyEval {
-        goal: Goal::new(OptDenseDigraph::from(graph)),
-        pool: Pool::new(ncpus),
-        fitness_functions: (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
-    };
+    let mut toolbox = Toolbox::new(
+        Goal::new(OptDenseDigraph::from(graph)),
+        Pool::new(ncpus),
+        (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
+        w_ops, w_var_ops, w_mut_ops, Probability::new(MUTP));
 
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
@@ -281,7 +241,7 @@ fn main() {
     println!("Population: {:?}", initial_population);
 
     // evaluate fitness
-    let fitness: Vec<_> = evaluator.fitness(&initial_population[..]);
+    let fitness: Vec<_> = toolbox.fitness(&initial_population[..]);
     assert!(fitness.len() == initial_population.len());
 
     let mut pop = initial_population;
@@ -293,7 +253,6 @@ fn main() {
         let (new_pop, new_fit) = nsga2::iterate(&mut rng,
                                                 pop,
                                                 fit,
-                                                &mut evaluator,
                                                 MU,
                                                 LAMBDA,
                                                 K,

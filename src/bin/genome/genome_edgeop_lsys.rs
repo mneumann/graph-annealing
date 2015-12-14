@@ -8,11 +8,13 @@ mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
-use evo::nsga2::Mate;
+use evo::nsga2::{self, Mate, FitnessEval, MultiObjective3};
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
 use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
+use graph_annealing::fitness_function::FitnessFunction;
+use graph_annealing::goal::Goal;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
 use lindenmayer_system::{Alphabet, Symbol, SymbolString, System, LSystem, Condition};
@@ -21,6 +23,8 @@ use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ConstExprOp, ExprOp, random_const_expr, random_expr};
 use self::cond_op::{CondOp, random_cond};
+use simple_parallel::Pool;
+use ::crossbeam;
 
 /// Element-wise Mutation operation.
 defops!{MutOp;
@@ -180,7 +184,11 @@ pub struct Genome {
     system: System<Sym>,
 }
 
-pub struct Toolbox {
+pub struct Toolbox<N, E> {
+    goal: Goal<N, E>, 
+    pool: Pool,
+    fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
+
     weighted_op: OwnedWeightedChoice<EdgeOp>,
     weighted_var_op: OwnedWeightedChoice<VarOp>,
     weighted_mut_op: OwnedWeightedChoice<MutOp>,
@@ -190,56 +198,28 @@ pub struct Toolbox {
     iterations: usize,
 }
 
-impl Mate<Genome> for Toolbox {
-    // p1 is potentially "better" than p2
-    fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
+impl <N:Clone+Default,E:Clone+Default> Toolbox<N,E> {
+    pub fn new(goal: Goal<N, E>, pool: Pool,
+               fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
+               weighted_op: Vec<Weighted<EdgeOp>>,
+               weighted_var_op: Vec<Weighted<VarOp>>,
+               weighted_mut_op: Vec<Weighted<MutOp>>,
+               prob_mutate_elem: Probability)
+               -> Toolbox<N,E> {
 
-        match self.weighted_var_op.ind_sample(rng) {
-            VarOp::Copy => p1.clone(),
-            VarOp::Mutate => self.mutate(rng, p1),
-            VarOp::LinearCrossover2 => {
-                Genome {
-                    /*edge_ops: linear_2point_crossover_random(rng,
-                                                             &p1.edge_ops[..],
-                                                             &p2.edge_ops[..]),*/
-                    axiom_args: self.axiom_args.clone(),
-                    iterations: self.iterations,
-
-                    system: System::new(),
-                }
-            }
-            VarOp::UniformCrossover => {
-                panic!("TODO");
-            }
+        Toolbox {
+            goal: goal,
+            pool: pool,
+            fitness_functions: fitness_functions,
+            prob_mutate_elem: prob_mutate_elem,
+            weighted_op: OwnedWeightedChoice::new(weighted_op),
+            weighted_var_op: OwnedWeightedChoice::new(weighted_var_op),
+            weighted_mut_op: OwnedWeightedChoice::new(weighted_mut_op),
+            axiom_args: vec![],
+            iterations: 10,
         }
     }
-}
 
-
-
-impl Genome {
-    pub fn len(&self) -> usize {
-        0 // XXX
-    }
-
-    pub fn to_edge_ops(&self) -> Vec<(EdgeOp, f32)> {
-        vec![]
-    }
-
-    pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
-        edgeops_to_graph(&self.to_edge_ops())
-    }
-}
-
-
-#[inline]
-fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
-                                              rng: &mut R)
-                                              -> (EdgeOp, f32) {
-    (weighted_op.ind_sample(rng), rng.gen::<f32>())
-}
-
-impl Toolbox {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
         /*
         let mut mut_ind = Vec::with_capacity(ind.len() + 1);
@@ -275,22 +255,6 @@ impl Toolbox {
         }
     }
 
-    pub fn new(weighted_op: Vec<Weighted<EdgeOp>>,
-               weighted_var_op: Vec<Weighted<VarOp>>,
-               weighted_mut_op: Vec<Weighted<MutOp>>,
-               prob_mutate_elem: Probability)
-               -> Toolbox {
-
-        Toolbox {
-            prob_mutate_elem: prob_mutate_elem,
-            weighted_op: OwnedWeightedChoice::new(weighted_op),
-            weighted_var_op: OwnedWeightedChoice::new(weighted_var_op),
-            weighted_mut_op: OwnedWeightedChoice::new(weighted_mut_op),
-            axiom_args: vec![],
-            iterations: 10,
-        }
-    }
-
     fn generate_random_edge_operation<R: Rng>(&self, rng: &mut R) -> (EdgeOp, f32) {
         generate_random_edge_operation(&self.weighted_op, rng)
     }
@@ -319,3 +283,82 @@ impl Toolbox {
 
     }
 }
+
+#[inline]
+fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFunction,
+                                                                       FitnessFunction,
+                                                                       FitnessFunction),
+                                                   goal: &Goal<N, E>,
+                                                   ind: &Genome)
+                                                   -> MultiObjective3<f32> {
+    let g = ind.to_graph();
+    MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
+                           goal.apply_fitness_function(fitness_functions.1, &g),
+                           goal.apply_fitness_function(fitness_functions.2, &g)))
+
+}
+
+impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<N,E> {
+    fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
+        let pool = &mut self.pool;
+        let goal = &self.goal;
+
+        let fitness_functions = self.fitness_functions;
+
+        crossbeam::scope(|scope| {
+            pool.map(scope, pop, |ind| fitness(fitness_functions, goal, ind))
+                .collect()
+        })
+    }
+}
+
+
+impl <N:Clone+Default,E:Clone+Default> Mate<Genome> for Toolbox<N,E> {
+    // p1 is potentially "better" than p2
+    fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
+
+        match self.weighted_var_op.ind_sample(rng) {
+            VarOp::Copy => p1.clone(),
+            VarOp::Mutate => self.mutate(rng, p1),
+            VarOp::LinearCrossover2 => {
+                Genome {
+                    /*edge_ops: linear_2point_crossover_random(rng,
+                                                             &p1.edge_ops[..],
+                                                             &p2.edge_ops[..]),*/
+                    axiom_args: self.axiom_args.clone(),
+                    iterations: self.iterations,
+
+                    system: System::new(),
+                }
+            }
+            VarOp::UniformCrossover => {
+                panic!("TODO");
+            }
+        }
+    }
+}
+
+
+impl Genome {
+    pub fn len(&self) -> usize {
+        0 // XXX
+    }
+
+    pub fn to_edge_ops(&self) -> Vec<(EdgeOp, f32)> {
+        vec![]
+    }
+
+    pub fn to_graph(&self) -> OptDenseDigraph<(), ()> {
+        edgeops_to_graph(&self.to_edge_ops())
+    }
+}
+
+
+#[inline]
+fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
+                                              rng: &mut R)
+                                              -> (EdgeOp, f32) {
+    (weighted_op.ind_sample(rng), rng.gen::<f32>())
+}
+
+
