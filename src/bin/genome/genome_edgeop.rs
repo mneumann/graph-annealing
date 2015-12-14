@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use triadic_census::OptDenseDigraph;
 use serde_json::Value;
 use sexp::{Atom, Sexp};
-use self::edgeop::{edgeops_to_graph, EdgeOp};
+use self::edgeop::{EdgeOp, edgeops_to_graph};
 
 /// Element-wise Mutation operation.
 defops!{MutOp;
@@ -68,12 +68,8 @@ impl Mate<EdgeOpsGenome> for Toolbox {
                     -> EdgeOpsGenome {
 
         match self.weighted_var_op.ind_sample(rng) {
-            VarOp::Copy => {
-                p1.clone()
-            }
-            VarOp::Mutate => {
-                self.mutate(rng, p1)
-            }
+            VarOp::Copy => p1.clone(),
+            VarOp::Mutate => self.mutate(rng, p1),
             VarOp::LinearCrossover2 => {
                 EdgeOpsGenome {
                     edge_ops: linear_2point_crossover_random(rng,
@@ -130,9 +126,9 @@ impl EdgeOpsGenome {
         let edge_ops = edge_ops.iter()
                                .map(|gene| {
                                    let op = EdgeOp::from_str(gene.find("op")
-                                                             .unwrap()
-                                                             .as_string()
-                                                             .unwrap())
+                                                                 .unwrap()
+                                                                 .as_string()
+                                                                 .unwrap())
                                                 .unwrap();
                                    let param = gene.find("param").unwrap().as_f64().unwrap();
                                    (op, param as f32)
@@ -174,9 +170,7 @@ impl Toolbox {
         for edge_op in ind.edge_ops.iter() {
             let new_op = if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
                 match self.weighted_mut_op.ind_sample(rng) {
-                    MutOp::Copy => {
-                        edge_op.clone()
-                    }
+                    MutOp::Copy => edge_op.clone(),
                     MutOp::Insert => {
                         // Insert a new op before the current operation
                         mut_ind.push(self.generate_random_edge_operation(rng));
@@ -186,15 +180,9 @@ impl Toolbox {
                         // remove current operation
                         continue;
                     }
-                    MutOp::ModifyOp => {
-                        (self.weighted_op.ind_sample(rng), edge_op.1)
-                    }
-                    MutOp::ModifyParam => {
-                        (edge_op.0, rng.gen::<f32>())
-                    }
-                    MutOp::Replace => {
-                        self.generate_random_edge_operation(rng)
-                    }
+                    MutOp::ModifyOp => (self.weighted_op.ind_sample(rng), edge_op.1),
+                    MutOp::ModifyParam => (edge_op.0, rng.gen::<f32>()),
+                    MutOp::Replace => self.generate_random_edge_operation(rng),
                 }
             } else {
                 edge_op.clone()
@@ -223,7 +211,7 @@ impl Toolbox {
         generate_random_edge_operation(&self.weighted_op, rng)
     }
 
-    pub fn random_genome<R:Rng>(&self, rng: &mut R, len: usize) -> EdgeOpsGenome {
+    pub fn random_genome<R: Rng>(&self, rng: &mut R, len: usize) -> EdgeOpsGenome {
         random_genome(rng, len, &self.weighted_op)
     }
 }

@@ -25,6 +25,32 @@ defops!{ConstExprOp;
     ConstOpen01Reciproc
 }
 
+// FlatExprOp is a non-recursive expression. It contains all
+// expressions of ConstExprOp, plus Param.
+defops!{FlatExprOp;
+    // 0.0
+    Zero,
+
+    // 1.0
+    One,
+
+    // Eulers number
+    Euler,
+
+    // Pi
+    Pi,
+
+    // A constant value in [0, 1]
+    ConstClosed01,
+
+    // A constant value in (1, inf), i.e. 1.0 / (0, 1)
+    ConstOpen01Reciproc,
+
+    // References a parameter
+    Param
+}
+
+
 defops!{ExprOp;
     // 0.0
     Zero,
@@ -68,12 +94,15 @@ defops!{ExprOp;
 ///     rng: Random number generator to use
 ///     weighted_const_op: Used to choose a const expression
 ///
-pub fn random_const_expr<R>(rng: &mut R,
-                            weighted_const_op: &OwnedWeightedChoice<ConstExprOp>)
-                            -> Expr<f32>
-    where R: Rng
-{
-    match weighted_const_op.ind_sample(rng) {
+pub fn random_const_expr<R: Rng>(rng: &mut R,
+                                 weighted_const_op: &OwnedWeightedChoice<ConstExprOp>)
+                                 -> Expr<f32> {
+    let op = weighted_const_op.ind_sample(rng);
+    const_expr_op_to_expr(rng, op)
+}
+
+fn const_expr_op_to_expr<R: Rng>(rng: &mut R, op: ConstExprOp) -> Expr<f32> {
+    match op {
         ConstExprOp::Zero => Expr::Const(Zero::zero()),
 
         ConstExprOp::One => Expr::Const(One::one()),
@@ -97,141 +126,172 @@ pub fn random_const_expr<R>(rng: &mut R,
 }
 
 
-
-/// Generates a random expression according to the parameters:
+/// Generates a random flat expression according to the parameters:
 ///
 ///     rng: Random number generator to use
 ///     num_params: number of parameters.
-///     max_depth: maximum recursion depth.
-///     weighted_op: Used to choose an expression when the max recursion depth is NOT reached.
-///     weighted_op_max_depth: Used to choose an expression when the max recursion depth is reached.
+///     weighted_const_op: Used to choose a const expression
 ///
-pub fn random_expr<R>(rng: &mut R,
-                      num_params: usize,
-                      max_depth: usize,
-                      weighted_op: &OwnedWeightedChoice<ExprOp>,
-                      weighted_op_max_depth: &OwnedWeightedChoice<ExprOp>)
-                      -> Expr<f32>
+pub fn random_flat_expr<R>(rng: &mut R,
+                           weighted_flat_op: &OwnedWeightedChoice<FlatExprOp>,
+                           num_params: usize)
+                           -> Expr<f32>
     where R: Rng
 {
-    let choose_from = if max_depth > 0 {
-        weighted_op
-    } else {
-        weighted_op_max_depth
-    };
+    let op = weighted_flat_op.ind_sample(rng);
+    flat_expr_op_to_expr(rng, op, num_params)
+}
 
-    match choose_from.ind_sample(rng) {
-        ExprOp::Zero => Expr::Const(Zero::zero()),
+fn flat_expr_op_to_expr<R: Rng>(rng: &mut R, op: FlatExprOp, num_params: usize) -> Expr<f32> {
+    match op {
+        FlatExprOp::Zero => Expr::Const(Zero::zero()),
 
-        ExprOp::One => Expr::Const(One::one()),
+        FlatExprOp::One => Expr::Const(One::one()),
 
-        ExprOp::Euler => Expr::Const(consts::E),
+        FlatExprOp::Euler => Expr::Const(consts::E),
 
-        ExprOp::Pi => Expr::Const(consts::PI),
+        FlatExprOp::Pi => Expr::Const(consts::PI),
 
-        ExprOp::ConstClosed01 => {
+        FlatExprOp::ConstClosed01 => {
             let n = rng.gen::<Closed01<f32>>().0;
             debug_assert!(n >= 0.0 && n <= 1.0);
             Expr::Const(n)
         }
 
-        ExprOp::ConstOpen01Reciproc => {
+        FlatExprOp::ConstOpen01Reciproc => {
             let n = rng.gen::<Open01<f32>>().0;
             debug_assert!(n > 0.0 && n < 1.0);
             Expr::Const(1.0 / n)
         }
 
-        ExprOp::Param => {
+        FlatExprOp::Param => {
             if num_params > 0 {
                 Expr::Arg(rng.gen_range(0, num_params))
             } else {
                 Expr::Const(Zero::zero())
             }
         }
+    }
+}
 
-        ExprOp::Reciprocz => {
-            if max_depth > 0 {
+
+
+
+/// Generates a random expression according to the parameters:
+///
+///     rng: Random number generator to use
+///     num_params: number of parameters.
+///     max_depth: maximum recursion depth.
+///     weighted_expr_op: Used to choose an expression when the max recursion depth is NOT reached.
+///     weighted_flat_op: Used to choose an expression when the max recursion depth is reached.
+///                       Only flat expressions (non-recursive).
+///
+pub fn random_expr<R>(rng: &mut R,
+                      num_params: usize,
+                      max_depth: usize,
+                      weighted_expr_op: &OwnedWeightedChoice<ExprOp>,
+                      weighted_flat_op: &OwnedWeightedChoice<FlatExprOp>)
+                      -> Expr<f32>
+    where R: Rng
+{
+    if max_depth > 0 {
+        let expr_op = weighted_expr_op.ind_sample(rng);
+        match expr_op {
+            ExprOp::Zero => Expr::Const(Zero::zero()),
+
+            ExprOp::One => Expr::Const(One::one()),
+
+            ExprOp::Euler => Expr::Const(consts::E),
+
+            ExprOp::Pi => Expr::Const(consts::PI),
+
+            ExprOp::ConstClosed01 => {
+                let n = rng.gen::<Closed01<f32>>().0;
+                debug_assert!(n >= 0.0 && n <= 1.0);
+                Expr::Const(n)
+            }
+
+            ExprOp::ConstOpen01Reciproc => {
+                let n = rng.gen::<Open01<f32>>().0;
+                debug_assert!(n > 0.0 && n < 1.0);
+                Expr::Const(1.0 / n)
+            }
+
+            ExprOp::Param => {
+                if num_params > 0 {
+                    Expr::Arg(rng.gen_range(0, num_params))
+                } else {
+                    Expr::Const(Zero::zero())
+                }
+            }
+
+            ExprOp::Reciprocz => {
                 let op = Box::new(random_expr(rng,
                                               num_params,
                                               max_depth - 1,
-                                              weighted_op,
-                                              weighted_op_max_depth));
+                                              weighted_expr_op,
+                                              weighted_flat_op));
                 Expr::Recipz(op)
-            } else {
-                Expr::Const(Zero::zero())
             }
-        }
 
-        ExprOp::Add => {
-            if max_depth > 0 {
+            ExprOp::Add => {
                 let op1 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 let op2 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 Expr::Add(op1, op2)
-            } else {
-                Expr::Const(Zero::zero())
             }
-        }
 
-        ExprOp::Sub => {
-            if max_depth > 0 {
+            ExprOp::Sub => {
                 let op1 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 let op2 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 Expr::Sub(op1, op2)
-            } else {
-                Expr::Const(Zero::zero())
             }
-        }
 
-        ExprOp::Mul => {
-            if max_depth > 0 {
+            ExprOp::Mul => {
                 let op1 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 let op2 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 Expr::Mul(op1, op2)
-            } else {
-                Expr::Const(Zero::zero())
             }
-        }
 
-        ExprOp::Divz => {
-            if max_depth > 0 {
+            ExprOp::Divz => {
                 let op1 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 let op2 = Box::new(random_expr(rng,
                                                num_params,
                                                max_depth - 1,
-                                               weighted_op,
-                                               weighted_op_max_depth));
+                                               weighted_expr_op,
+                                               weighted_flat_op));
                 Expr::Divz(op1, op2)
-            } else {
-                Expr::Const(Zero::zero())
             }
         }
+
+    } else {
+        random_flat_expr(rng, weighted_flat_op, num_params)
     }
 }
