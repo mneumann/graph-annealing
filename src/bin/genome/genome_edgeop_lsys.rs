@@ -1,14 +1,12 @@
 // Edge Operation L-System Genome
 
-
-
 mod edgeop;
 mod expr_op;
 mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
-use evo::nsga2::{self, Mate, FitnessEval, MultiObjective3};
+use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
 use rand::distributions::range::Range;
@@ -17,14 +15,14 @@ use graph_annealing::fitness_function::FitnessFunction;
 use graph_annealing::goal::Goal;
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
-use lindenmayer_system::{Alphabet, Symbol, SymbolString, System, LSystem, Condition};
+use lindenmayer_system::{Alphabet, Condition, LSystem, Symbol, SymbolString, System};
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ConstExprOp, ExprOp, random_const_expr, random_expr};
 use self::cond_op::{CondOp, random_cond};
 use simple_parallel::Pool;
-use ::crossbeam;
+use crossbeam;
 
 /// Element-wise Mutation operation.
 defops!{MutOp;
@@ -58,7 +56,7 @@ defops!{VarOp;
 }
 
 // The alphabet of terminal and non-terminals we use.
-// Non-terminals are our rules, while terminals are the EdgeOps.  
+// Non-terminals are our rules, while terminals are the EdgeOps.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum EdgeAlphabet {
     Terminal(EdgeOp),
@@ -155,9 +153,9 @@ impl SymbolGenerator {
     }
 
     // Generate a random rule with `symbol` and `arity` parameters.
-    // 
-    //fn gen_rule<R: Rng>(&self, symbol: EdgeAlphabet, arity: usize) {
-    //}
+    //
+    // fn gen_rule<R: Rng>(&self, symbol: EdgeAlphabet, arity: usize) {
+    // }
 }
 
 
@@ -169,7 +167,7 @@ impl SymbolGenerator {
 //
 //     * We use rule with number 0 as axiom.
 //       The arguments for the axiom are fixed and passed in from the command line.
-//       For simplicity, these arguments are duplicated in each Genome in `axiom_params`. 
+//       For simplicity, these arguments are duplicated in each Genome in `axiom_params`.
 //       One could also apply genetic operations onto these.
 //
 //
@@ -185,7 +183,7 @@ pub struct Genome {
 }
 
 pub struct Toolbox<N, E> {
-    goal: Goal<N, E>, 
+    goal: Goal<N, E>,
     pool: Pool,
     fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
 
@@ -198,14 +196,15 @@ pub struct Toolbox<N, E> {
     iterations: usize,
 }
 
-impl <N:Clone+Default,E:Clone+Default> Toolbox<N,E> {
-    pub fn new(goal: Goal<N, E>, pool: Pool,
+impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
+    pub fn new(goal: Goal<N, E>,
+               pool: Pool,
                fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
                weighted_op: Vec<Weighted<EdgeOp>>,
                weighted_var_op: Vec<Weighted<VarOp>>,
                weighted_mut_op: Vec<Weighted<MutOp>>,
                prob_mutate_elem: Probability)
-               -> Toolbox<N,E> {
+               -> Toolbox<N, E> {
 
         Toolbox {
             goal: goal,
@@ -221,32 +220,31 @@ impl <N:Clone+Default,E:Clone+Default> Toolbox<N,E> {
     }
 
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
-        /*
-        let mut mut_ind = Vec::with_capacity(ind.len() + 1);
-
-        for edge_op in ind.edge_ops.iter() {
-            let new_op = if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
-                match self.weighted_mut_op.ind_sample(rng) {
-                    MutOp::Copy => edge_op.clone(),
-                    MutOp::Insert => {
-                        // Insert a new op before the current operation
-                        mut_ind.push(self.generate_random_edge_operation(rng));
-                        edge_op.clone()
-                    }
-                    MutOp::Remove => {
-                        // remove current operation
-                        continue;
-                    }
-                    MutOp::ModifyOp => (self.weighted_op.ind_sample(rng), edge_op.1),
-                    MutOp::ModifyParam => (edge_op.0, rng.gen::<f32>()),
-                    MutOp::Replace => self.generate_random_edge_operation(rng),
-                }
-            } else {
-                edge_op.clone()
-            };
-            mut_ind.push(new_op);
-        }
-        */
+        // let mut mut_ind = Vec::with_capacity(ind.len() + 1);
+        //
+        // for edge_op in ind.edge_ops.iter() {
+        // let new_op = if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
+        // match self.weighted_mut_op.ind_sample(rng) {
+        // MutOp::Copy => edge_op.clone(),
+        // MutOp::Insert => {
+        // Insert a new op before the current operation
+        // mut_ind.push(self.generate_random_edge_operation(rng));
+        // edge_op.clone()
+        // }
+        // MutOp::Remove => {
+        // remove current operation
+        // continue;
+        // }
+        // MutOp::ModifyOp => (self.weighted_op.ind_sample(rng), edge_op.1),
+        // MutOp::ModifyParam => (edge_op.0, rng.gen::<f32>()),
+        // MutOp::Replace => self.generate_random_edge_operation(rng),
+        // }
+        // } else {
+        // edge_op.clone()
+        // };
+        // mut_ind.push(new_op);
+        // }
+        //
 
         Genome {
             axiom_args: self.axiom_args.clone(),
@@ -277,25 +275,11 @@ impl <N:Clone+Default,E:Clone+Default> Toolbox<N,E> {
     pub fn random_genome<R: Rng>(&self, rng: &mut R) -> Genome {
         Genome {
             axiom_args: self.axiom_args.clone(),
-            iterations: self.iterations, 
+            iterations: self.iterations,
             system: System::new(),
         }
 
     }
-}
-
-#[inline]
-fn fitness<N: Clone + Default, E: Clone + Default>(fitness_functions: (FitnessFunction,
-                                                                       FitnessFunction,
-                                                                       FitnessFunction),
-                                                   goal: &Goal<N, E>,
-                                                   ind: &Genome)
-                                                   -> MultiObjective3<f32> {
-    let g = ind.to_graph();
-    MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
-                           goal.apply_fitness_function(fitness_functions.1, &g),
-                           goal.apply_fitness_function(fitness_functions.2, &g)))
-
 }
 
 impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<N,E> {
@@ -306,14 +290,20 @@ impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<Genome, MultiObjecti
         let fitness_functions = self.fitness_functions;
 
         crossbeam::scope(|scope| {
-            pool.map(scope, pop, |ind| fitness(fitness_functions, goal, ind))
+            pool.map(scope, pop, |ind| {
+                let g = ind.to_graph();
+                MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
+                                       goal.apply_fitness_function(fitness_functions.1, &g),
+                                       goal.apply_fitness_function(fitness_functions.2, &g)))
+
+            })
                 .collect()
         })
     }
 }
 
 
-impl <N:Clone+Default,E:Clone+Default> Mate<Genome> for Toolbox<N,E> {
+impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
     // p1 is potentially "better" than p2
     fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
 
@@ -322,9 +312,9 @@ impl <N:Clone+Default,E:Clone+Default> Mate<Genome> for Toolbox<N,E> {
             VarOp::Mutate => self.mutate(rng, p1),
             VarOp::LinearCrossover2 => {
                 Genome {
-                    /*edge_ops: linear_2point_crossover_random(rng,
-                                                             &p1.edge_ops[..],
-                                                             &p2.edge_ops[..]),*/
+                    // edge_ops: linear_2point_crossover_random(rng,
+                    // &p1.edge_ops[..],
+                    // &p2.edge_ops[..]),
                     axiom_args: self.axiom_args.clone(),
                     iterations: self.iterations,
 
@@ -344,6 +334,7 @@ impl Genome {
         0 // XXX
     }
 
+    /// Develops
     pub fn to_edge_ops(&self) -> Vec<(EdgeOp, f32)> {
         vec![]
     }
@@ -356,9 +347,7 @@ impl Genome {
 
 #[inline]
 fn generate_random_edge_operation<R: Rng>(weighted_op: &OwnedWeightedChoice<EdgeOp>,
-                                              rng: &mut R)
-                                              -> (EdgeOp, f32) {
+                                          rng: &mut R)
+                                          -> (EdgeOp, f32) {
     (weighted_op.ind_sample(rng), rng.gen::<f32>())
 }
-
-

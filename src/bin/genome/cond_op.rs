@@ -1,5 +1,5 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use lindenmayer_system::expr::{Expr, Condition};
+use lindenmayer_system::expr::{Condition, Expr};
 use rand::{Closed01, Open01, Rng};
 use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
@@ -28,13 +28,13 @@ defops!{CondOp;
 ///     the condition.
 ///
 pub fn random_cond<R, F>(rng: &mut R,
-                      max_depth: usize,
-                      weighted_op: &OwnedWeightedChoice<CondOp>,
-                      weighted_op_max_depth: &OwnedWeightedChoice<CondOp>,
-                      expr_fn: &mut F)
-                      -> Condition<f32>
+                         max_depth: usize,
+                         weighted_op: &OwnedWeightedChoice<CondOp>,
+                         weighted_op_max_depth: &OwnedWeightedChoice<CondOp>,
+                         expr_fn: &mut F)
+                         -> Condition<f32>
     where R: Rng,
-          F: FnMut(&mut R, usize) -> Expr<f32> 
+          F: FnMut(&mut R, usize) -> Expr<f32>
 {
     let choose_from = if max_depth > 0 {
         weighted_op
@@ -49,9 +49,11 @@ pub fn random_cond<R, F>(rng: &mut R,
 
         CondOp::Not => {
             if max_depth > 0 {
-                let op = Box::new(random_cond(rng, max_depth-1,
+                let op = Box::new(random_cond(rng,
+                                              max_depth - 1,
                                               weighted_op,
-                                              weighted_op_max_depth, expr_fn));
+                                              weighted_op_max_depth,
+                                              expr_fn));
                 Condition::Not(op)
             } else {
                 Condition::False
@@ -60,12 +62,16 @@ pub fn random_cond<R, F>(rng: &mut R,
 
         CondOp::And => {
             if max_depth > 0 {
-                let op1 = Box::new(random_cond(rng, max_depth-1,
-                                              weighted_op,
-                                              weighted_op_max_depth, expr_fn));
-                let op2 = Box::new(random_cond(rng, max_depth-1,
-                                              weighted_op,
-                                              weighted_op_max_depth, expr_fn));
+                let op1 = Box::new(random_cond(rng,
+                                               max_depth - 1,
+                                               weighted_op,
+                                               weighted_op_max_depth,
+                                               expr_fn));
+                let op2 = Box::new(random_cond(rng,
+                                               max_depth - 1,
+                                               weighted_op,
+                                               weighted_op_max_depth,
+                                               expr_fn));
                 Condition::And(op1, op2)
             } else {
                 Condition::False
@@ -74,12 +80,16 @@ pub fn random_cond<R, F>(rng: &mut R,
 
         CondOp::Or => {
             if max_depth > 0 {
-                let op1 = Box::new(random_cond(rng, max_depth-1,
-                                              weighted_op,
-                                              weighted_op_max_depth, expr_fn));
-                let op2 = Box::new(random_cond(rng, max_depth-1,
-                                              weighted_op,
-                                              weighted_op_max_depth, expr_fn));
+                let op1 = Box::new(random_cond(rng,
+                                               max_depth - 1,
+                                               weighted_op,
+                                               weighted_op_max_depth,
+                                               expr_fn));
+                let op2 = Box::new(random_cond(rng,
+                                               max_depth - 1,
+                                               weighted_op,
+                                               weighted_op_max_depth,
+                                               expr_fn));
                 Condition::Or(op1, op2)
             } else {
                 Condition::False

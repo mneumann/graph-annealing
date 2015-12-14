@@ -69,8 +69,8 @@ defops!{ExprOp;
 ///     weighted_const_op: Used to choose a const expression
 ///
 pub fn random_const_expr<R>(rng: &mut R,
-                      weighted_const_op: &OwnedWeightedChoice<ConstExprOp>)
-                      -> Expr<f32>
+                            weighted_const_op: &OwnedWeightedChoice<ConstExprOp>)
+                            -> Expr<f32>
     where R: Rng
 {
     match weighted_const_op.ind_sample(rng) {
