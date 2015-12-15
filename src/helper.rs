@@ -85,6 +85,7 @@ fn test_parse_weighted_op_choice_list() {
             match s {
                 "Dup" => Ok(Op::Dup),
                 "Split" => Ok(Op::Split),
+                _ => Err(format!("Invalid opcode: {}", s)),
             }
         }
     }
@@ -119,4 +120,55 @@ pub fn to_weighted_vec<T: Clone>(ops: &[(T, u32)]) -> Vec<Weighted<T>> {
         }
     }
     w
+}
+
+/// Insert `b` into `a` at `position`
+#[inline]
+pub fn insert_vec_at<T: Clone>(mut a: Vec<T>, b: Vec<T>, position: usize) -> Vec<T> {
+    let remainder = a.split_off(position);
+    a.extend(b);
+    a.extend(remainder);
+    a
+}
+
+#[test]
+fn test_insert_vec_at() {
+    assert_eq!(vec![1usize, 2, 3, 4, 5],
+               insert_vec_at(vec![1usize, 5], vec![2usize, 3, 4], 1));
+    assert_eq!(vec![1usize, 2, 3, 4, 5],
+               insert_vec_at(vec![1usize, 2], vec![3usize, 4, 5], 2));
+
+}
+
+/// Remove `n` elements from `a` at `position`.
+#[inline]
+pub fn remove_at<T: Clone>(mut a: Vec<T>, position: usize, n: usize) -> Vec<T> {
+    let remainder = a.split_off(position);
+    for (i, item) in remainder.into_iter().enumerate() {
+        if i >= n {
+            a.push(item);
+        }
+    }
+    a
+}
+
+#[test]
+fn test_remove_at() {
+    assert_eq!(vec![1usize, 2, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 0, 0));
+
+    assert_eq!(vec![2usize, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 0, 1));
+    assert_eq!(vec![1usize, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 1, 1));
+
+    let a: Vec<usize> = vec![];
+    assert_eq!(a, remove_at(vec![1usize, 2, 3, 4, 5], 0, 10));
+
+    assert_eq!(vec![1usize, 2, 3, 4],
+               remove_at(vec![1usize, 2, 3, 4, 5], 4, 1));
+    assert_eq!(vec![1usize, 2, 3, 4],
+               remove_at(vec![1usize, 2, 3, 4, 5], 4, 2));
+    assert_eq!(vec![1usize, 2, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 5, 1));
 }

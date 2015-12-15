@@ -21,6 +21,7 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::fitness_function::FitnessFunction;
 use graph_annealing::goal::Goal;
+use graph_annealing::helper::{insert_vec_at, remove_at};
 use std::str::FromStr;
 use triadic_census::OptDenseDigraph;
 use lindenmayer_system::{Alphabet, Condition, LSystem, Rule, Symbol, SymbolString,
@@ -132,47 +133,6 @@ impl LSystem<Sym> for System {
         }
     }
 }
-
-/// Insert `b` into `a` at `position`
-fn insert_vec_at<T: Clone>(mut a: Vec<T>, b: Vec<T>, position: usize) -> Vec<T> {
-    let remainder = a.split_off(position);
-    a.extend(b);
-    a.extend(remainder);
-    a
-}
-
-/// Remove `n` elements from `a` at `position`.
-fn remove_at<T: Clone>(mut a: Vec<T>, position: usize, n: usize) -> Vec<T> {
-    let remainder = a.split_off(position);
-    for (i, item) in remainder.into_iter().enumerate() {
-        if i >= n {
-            a.push(item);
-        }
-    }
-    a
-}
-
-#[test]
-fn test_remove_at() {
-    assert_eq!(vec![1usize, 2, 3, 4, 5],
-               remove_at(vec![1usize, 2, 3, 4, 5], 0, 0));
-
-    assert_eq!(vec![2usize, 3, 4, 5],
-               remove_at(vec![1usize, 2, 3, 4, 5], 0, 1));
-    assert_eq!(vec![1usize, 3, 4, 5],
-               remove_at(vec![1usize, 2, 3, 4, 5], 1, 1));
-
-    let a: Vec<usize> = vec![];
-    assert_eq!(a, remove_at(vec![1usize, 2, 3, 4, 5], 0, 10));
-
-    assert_eq!(vec![1usize, 2, 3, 4],
-               remove_at(vec![1usize, 2, 3, 4, 5], 4, 1));
-    assert_eq!(vec![1usize, 2, 3, 4],
-               remove_at(vec![1usize, 2, 3, 4, 5], 4, 2));
-    assert_eq!(vec![1usize, 2, 3, 4, 5],
-               remove_at(vec![1usize, 2, 3, 4, 5], 5, 1));
-}
-
 
 pub struct SymbolGenerator {
     pub max_expr_depth: usize,
