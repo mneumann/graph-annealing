@@ -35,22 +35,6 @@ use crossbeam;
 use std::collections::BTreeMap;
 use std::cmp;
 
-/// Element-wise Mutation operation. XXX
-defops!{MutOp;
-    // No mutation (copy element)
-    Copy,
-    // Insert new operation
-    Insert,
-    // Remove an operation
-    Remove,
-    // Modify the operation
-    ModifyOp,
-    // Modify a parameter value
-    ModifyParam,
-    // Modify both operation and parameter
-    Replace
-}
-
 /// Rule mutation operations.
 defops!{RuleMutOp;
     // Modify Condition
@@ -289,9 +273,7 @@ pub struct Toolbox<N, E> {
     fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
 
     // Variation parameters
-    weighted_var_op: OwnedWeightedChoice<VarOp>,
-    weighted_mut_op: OwnedWeightedChoice<MutOp>,
-    prob_mutate_elem: Probability,
+    var_op: OwnedWeightedChoice<VarOp>,
     rule_mut_op: OwnedWeightedChoice<RuleMutOp>,
     rule_prod_mut_op: OwnedWeightedChoice<RuleProductionMutOp>,
     recursive_expr_op: OwnedWeightedChoice<RecursiveExprOp>,
@@ -332,11 +314,9 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
                flat_expr_weighted_op: Vec<Weighted<FlatExprOp>>,
                const_expr_weighted_op: Vec<Weighted<ConstExprOp>>,
 
-               weighted_var_op: Vec<Weighted<VarOp>>,
-               weighted_mut_op: Vec<Weighted<MutOp>>,
+               var_op: Vec<Weighted<VarOp>>)
 
 
-               prob_mutate_elem: Probability)
                -> Toolbox<N, E> {
 
                    assert!(num_rules > 0);
@@ -350,9 +330,7 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
             fitness_functions: fitness_functions,
 
             // XXX:
-            prob_mutate_elem: prob_mutate_elem,
-            weighted_var_op: OwnedWeightedChoice::new(weighted_var_op),
-            weighted_mut_op: OwnedWeightedChoice::new(weighted_mut_op),
+            var_op: OwnedWeightedChoice::new(var_op),
 
             // XXX 
             rule_mut_op: OwnedWeightedChoice::new(RuleMutOp::uniform_distribution()),
@@ -607,7 +585,7 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
     // p1 is potentially "better" than p2
     fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
 
-        match self.weighted_var_op.ind_sample(rng) {
+        match self.var_op.ind_sample(rng) {
             VarOp::Copy => p1.clone(),
             VarOp::Mutate => self.mutate(rng, p1),
             VarOp::Crossover => self.crossover(rng, p1, p2)
@@ -646,8 +624,6 @@ impl Genome {
         let axiom = SymbolString(vec![Sym2::new_parametric(EdgeAlphabet::NonTerminal(0),
                                                            (axiom_args[0].clone(),
                                                             axiom_args[1].clone()))]);
-        println!("axiom: {:?}", axiom);
-
         // XXX: limit #iterations based on produced length
         let (s, iter) = self.system.develop(axiom, iterations);
         println!("produced string: {:?}", s);

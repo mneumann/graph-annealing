@@ -86,23 +86,23 @@ fn main() {
                                       Mutate:1,LinearCrossover2:1,UniformCrossover:2,Copy:0")
                                .takes_value(true)
                                .required(true))
-                      .arg(Arg::with_name("MUTOPS")
-                               .long("mutops")
-                               .help("Mutation operation and weight specification, e.g. \
-                                      Insert:1,Remove:1,Replace:2,ModifyOp:0,ModifyParam:2,Copy:\
-                                      0")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("MUTP")
-                               .long("mutp")
-                               .help("Probability for element mutation")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("ILEN")
-                               .long("ilen")
-                               .help("Initial genome length (random range)")
-                               .takes_value(true)
-                               .required(true))
+                      //.arg(Arg::with_name("MUTOPS")
+                      //         .long("mutops")
+                      //         .help("Mutation operation and weight specification, e.g. \
+                      //                Insert:1,Remove:1,Replace:2,ModifyOp:0,ModifyParam:2,Copy:\
+                      //                0")
+                      //         .takes_value(true)
+                      //         .required(true))
+                      //.arg(Arg::with_name("MUTP")
+                      //         .long("mutp")
+                      //         .help("Probability for element mutation")
+                      //         .takes_value(true)
+                      //         .required(true))
+                      //.arg(Arg::with_name("ILEN")
+                      //         .long("ilen")
+                      //         .help("Initial genome length (random range)")
+                      //         .takes_value(true)
+                      //         .required(true))
                       .arg(Arg::with_name("OBJECTIVES")
                                .long("objectives")
                                .help("Specify 3 objective functions comma separated (null, cc, \
@@ -143,17 +143,18 @@ fn main() {
     }
     println!("SEED: {:?}", seed);
 
-    let MUTP: f32 = FromStr::from_str(matches.value_of("MUTP").unwrap()).unwrap();
-    println!("MUTP: {:?}", MUTP);
+    //let MUTP: f32 = FromStr::from_str(matches.value_of("MUTP").unwrap()).unwrap();
+    //println!("MUTP: {:?}", MUTP);
 
     // Parse weighted operation choice from command line
-    let mutops = parse_weighted_op_list(matches.value_of("MUTOPS").unwrap()).unwrap();
-    println!("mut ops: {:?}", mutops);
+    //let mutops = parse_weighted_op_list(matches.value_of("MUTOPS").unwrap()).unwrap();
+    //println!("mut ops: {:?}", mutops);
 
-    let ilen_str = matches.value_of("ILEN").unwrap();
-    let ilen: Vec<usize> = ilen_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
-    assert!(ilen.len() == 1 || ilen.len() == 2);
+    //let ilen_str = matches.value_of("ILEN").unwrap();
+    //let ilen: Vec<usize> = ilen_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
+    //assert!(ilen.len() == 1 || ilen.len() == 2);
 
+    /*
     let ilen_from = ilen[0];
     let ilen_to = if ilen.len() == 1 {
         ilen[0]
@@ -161,6 +162,7 @@ fn main() {
         ilen[1]
     };
     assert!(ilen_from <= ilen_to);
+    */
 
     // read objective functions
     let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES").unwrap().split(",").map(|s| FitnessFunction::from_str(s).unwrap()).collect();
@@ -213,8 +215,8 @@ fn main() {
     let w_var_ops = to_weighted_vec(&varops);
     assert!(w_var_ops.len() > 0);
 
-    let w_mut_ops = to_weighted_vec(&mutops);
-    assert!(w_mut_ops.len() > 0);
+    //let w_mut_ops = to_weighted_vec(&mutops);
+    //assert!(w_mut_ops.len() > 0);
 
     let mut toolbox = Toolbox::new(
         Goal::new(OptDenseDigraph::from(graph)),
@@ -232,9 +234,7 @@ fn main() {
         ExprOp::uniform_distribution(),
         FlatExprOp::uniform_distribution(),
         ConstExprOp::uniform_distribution(),
-        w_var_ops,
-        w_mut_ops,
-        Probability::new(MUTP));
+        w_var_ops);
 
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
@@ -242,12 +242,14 @@ fn main() {
     // create initial random population
     let initial_population: Vec<Genome> = (0..MU)
                                                      .map(|_| {
+                                                         /*
                                                          let len = if ilen_from == ilen_to {
                                                              ilen_from
                                                          } else {
                                                              Range::new(ilen_from, ilen_to)
                                                                  .ind_sample(&mut rng)
                                                          };
+                                                         */
                                                          toolbox.random_genome(&mut rng)
                                                      })
                                                      .collect();
