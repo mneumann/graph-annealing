@@ -34,7 +34,7 @@ use simple_parallel::Pool;
 use crossbeam;
 use std::collections::BTreeMap;
 
-/// Element-wise Mutation operation.
+/// Element-wise Mutation operation. XXX
 defops!{MutOp;
     // No mutation (copy element)
     Copy,
@@ -50,6 +50,37 @@ defops!{MutOp;
     Replace
 }
 
+/// Rule mutation operations.
+defops!{RuleMutOp;
+    // No mutation
+    Copy,
+
+    // Modify Condition
+    ModifyCondition,
+
+    // Modify Production
+    ModifyProduction
+}
+
+/// Rule production mutation operations.
+defops!{RuleProductionMutOp;
+    // No mutation
+    Copy,
+
+    // Replace a symbol (keeps the parameters)
+    ReplaceSymbol,
+
+    // Make a modification to a symbol parameter
+    ModifyParameter,
+
+    // Insert a sequence of symbols
+    InsertSequence, 
+
+    // Delete a sequence of symbols
+    DeleteSequence
+}
+
+
 /// Variation operators
 defops!{VarOp;
     // No variation. Reproduce exactly
@@ -58,11 +89,8 @@ defops!{VarOp;
     // Mutate
     Mutate,
 
-    // 2-point Linear crossover
-    LinearCrossover2,
-
-    // Uniform crossover
-    UniformCrossover
+    // Crossover
+    Crossover
 }
 
 type RuleId = u32;
@@ -101,6 +129,13 @@ impl System {
             .push(Rule::new_with_condition(EdgeAlphabet::NonTerminal(rule_id),
                                            production,
                                            condition));
+    }
+
+    fn random_rule_id<R:Rng>(&self, rng: &mut R) -> RuleId {
+        let len = self.rules.len();
+        assert!(len > 0);
+        let nth = rng.gen_range(0, len);
+        self.rules.iter().map(|(&k, _)| k).nth(nth).unwrap()
     }
 }
 
@@ -247,7 +282,6 @@ pub struct Toolbox<N, E> {
     symbol_generator: SymbolGenerator,
 }
 
-// XXX
 impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     pub fn new(goal: Goal<N, E>,
                pool: Pool,
@@ -316,35 +350,51 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
         }
     }
 
-    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
-        // let mut mut_ind = Vec::with_capacity(ind.len() + 1);
-        //
-        // for edge_op in ind.edge_ops.iter() {
-        // let new_op = if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_mutate_elem) {
-        // match self.weighted_mut_op.ind_sample(rng) {
-        // MutOp::Copy => edge_op.clone(),
-        // MutOp::Insert => {
-        // Insert a new op before the current operation
-        // mut_ind.push(self.generate_random_edge_operation(rng));
-        // edge_op.clone()
-        // }
-        // MutOp::Remove => {
-        // remove current operation
-        // continue;
-        // }
-        // MutOp::ModifyOp => (self.weighted_op.ind_sample(rng), edge_op.1),
-        // MutOp::ModifyParam => (edge_op.0, rng.gen::<f32>()),
-        // MutOp::Replace => self.generate_random_edge_operation(rng),
-        // }
-        // } else {
-        // edge_op.clone()
-        // };
-        // mut_ind.push(new_op);
-        // }
-        //
+    // XXX
+    fn mutate_rule<R: Rng>(&self, rng: &mut R, rule: &mut Rule<Sym>) { 
+        println!("Mutate rule before: {:?}", rule);
 
+        println!("Mutate rule after: {:?}", rule);
+    }
+
+    // XXX
+    // Mutate the genome, i.e. make a small change to it.
+    // 
+    // Modify a single symbol-rule:
+    //
+    //     * Change condition
+    //     * Replace one symbol
+    //     * Make change to symbol parameter expression (add a constant, lift to more complex expression)
+    //     * insert / remove sequence of symbols.
+    //
+    pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
+        let mut new_ind = ind.clone();
+
+        let rule_to_modify = new_ind.system.random_rule_id(rng);
+
+        if let Some(local_rules) = new_ind.system.rules.get_mut(&rule_to_modify) {
+            // modify one of the rule -> successor pairs
+            let len = local_rules.len();
+            if len > 0 {
+                let rule = &mut local_rules[rng.gen_range(0, len)]; 
+                self.mutate_rule(rng, rule);
+            }
+            else {
+                println!("no modification");
+            }
+        } else {
+            println!("no modification");
+        }
+
+        new_ind
+    }
+
+    // XXX
+    pub fn crossover<R: Rng>(&self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
+        panic!();
         Genome { system: System::new() }
     }
+
 
     // Generate a random genome. This is used in creating a random population.
     //
@@ -383,7 +433,6 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     }
 }
 
-// XXX
 impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
     // p1 is potentially "better" than p2
     fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
@@ -391,17 +440,7 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
         match self.weighted_var_op.ind_sample(rng) {
             VarOp::Copy => p1.clone(),
             VarOp::Mutate => self.mutate(rng, p1),
-            VarOp::LinearCrossover2 => {
-                Genome {
-                    // edge_ops: linear_2point_crossover_random(rng,
-                    // &p1.edge_ops[..],
-                    // &p2.edge_ops[..]),
-                    system: System::new(),
-                }
-            }
-            VarOp::UniformCrossover => {
-                panic!("TODO");
-            }
+            VarOp::Crossover => self.crossover(rng, p1, p2)
         }
     }
 }
