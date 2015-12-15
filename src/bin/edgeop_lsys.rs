@@ -318,7 +318,7 @@ fn main() {
 
             draw_graph(g.ref_graph(),
                        // XXX: name
-                       &format!("nsga2edgeops_g{}_f{}_i{}.svg",
+                       &format!("edgeop_lsys_g{}_f{}_i{}.svg",
                                 NGEN,
                                 fit[rd.idx].objectives[1] as usize,
                                 j));

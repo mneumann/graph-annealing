@@ -118,6 +118,41 @@ impl System {
         let nth = rng.gen_range(0, len);
         self.rules.iter().map(|(&k, _)| k).nth(nth).unwrap()
     }
+
+    fn with_random_rule<R:Rng, F: FnMut(&mut R, &Rule<Sym>)>(&self, rng: &mut R, mut callback: F) {
+        let rule_id = self.random_rule_id(rng);
+
+        if let Some(local_rules) = self.rules.get(&rule_id) {
+            let len = local_rules.len();
+            if len > 0 {
+                let idx = rng.gen_range(0, len);
+                callback(rng, &local_rules[idx]);
+            }
+        }
+    }
+
+    fn replace_random_rule<R:Rng, F: FnMut(&mut R, &Rule<Sym>) -> Rule<Sym>>(&mut self, rng: &mut R, mut update: F) {
+        let rule_to_modify = self.random_rule_id(rng);
+
+        if let Some(local_rules) = self.rules.get_mut(&rule_to_modify) {
+            // modify one of the rule -> successor pairs
+            let len = local_rules.len();
+            if len > 0 {
+                let idx = rng.gen_range(0, len);
+                let new_rule = {
+                    let rule = &local_rules[idx];
+                    println!("Mutate rule before: {:?}", rule);
+                    update(rng, rule)
+                };
+                println!("Mutate rule after: {:?}", new_rule);
+                local_rules[idx] = new_rule;
+            } else {
+                println!("no modification");
+            }
+        } else {
+            println!("no modification");
+        }
+    }
 }
 
 impl LSystem<Sym> for System {
@@ -492,34 +527,34 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
         let mut new_ind = ind.clone();
 
-        let rule_to_modify = new_ind.system.random_rule_id(rng);
-
-        if let Some(local_rules) = new_ind.system.rules.get_mut(&rule_to_modify) {
-            // modify one of the rule -> successor pairs
-            let len = local_rules.len();
-            if len > 0 {
-                let idx = rng.gen_range(0, len);
-                let rule = local_rules[idx].clone();
-                println!("Mutate rule before: {:?}", rule);
-                let new_rule = self.mutate_rule(rng, rule);
-                println!("Mutate rule after: {:?}", new_rule);
-                local_rules[idx] = new_rule;
-            } else {
-                println!("no modification");
-            }
-        } else {
-            println!("no modification");
-        }
+        new_ind.system.replace_random_rule(rng, |rng, rule| self.mutate_rule(rng, rule.clone()));
 
         new_ind
     }
 
-    // XXX
+    // At first, a random rule in p2 is determined, then
+    // it is copied / inserted / replaced with a 
+    // rule in p1.
+    //
+    // * Replacing one rule of p1 with a rule of p2.
+    // * Insert a subsequence of a rule of p2 into p1. 
+    // * Replace a subsequence
     pub fn crossover<R: Rng>(&self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
-        panic!();
-        Genome { system: System::new() }
-    }
+        let mut new_ind = p1.clone();
 
+        p2.system.with_random_rule(rng, |rng, rule_p2| {
+            println!("p2 called with random rule: {:?}", rule_p2);
+
+            new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
+                let new_production = linear_2point_crossover_random(rng, &rule_p1.successor.0, &rule_p2.successor.0);
+
+                Rule {successor: SymbolString(new_production), condition: rule_p1.condition.clone(), symbol: rule_p1.symbol.clone()}
+            });
+
+        });
+
+        new_ind
+    }
 
     // Generate a random genome. This is used in creating a random population.
     //
