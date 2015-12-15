@@ -28,7 +28,7 @@ use lindenmayer_system::{Alphabet, Condition, LSystem, Rule, Symbol, SymbolStrin
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, random_const_expr, random_expr};
+use self::expr_op::{ConstExprOp, ExprOp, RecursiveExprOp, FlatExprOp, random_const_expr, random_expr};
 use self::cond_op::{CondOp, random_cond};
 use simple_parallel::Pool;
 use crossbeam;
@@ -52,9 +52,6 @@ defops!{MutOp;
 
 /// Rule mutation operations.
 defops!{RuleMutOp;
-    // No mutation
-    Copy,
-
     // Modify Condition
     ModifyCondition,
 
@@ -64,9 +61,6 @@ defops!{RuleMutOp;
 
 /// Rule production mutation operations.
 defops!{RuleProductionMutOp;
-    // No mutation
-    Copy,
-
     // Replace a symbol (keeps the parameters)
     ReplaceSymbol,
 
@@ -262,6 +256,9 @@ pub struct Toolbox<N, E> {
     weighted_var_op: OwnedWeightedChoice<VarOp>,
     weighted_mut_op: OwnedWeightedChoice<MutOp>,
     prob_mutate_elem: Probability,
+    rule_mut_op: OwnedWeightedChoice<RuleMutOp>,
+    rule_prod_mut_op: OwnedWeightedChoice<RuleProductionMutOp>,
+    recursive_expr_op: OwnedWeightedChoice<RecursiveExprOp>,
 
     /// Arguments to the axiom rule.
     pub axiom_args: Vec<Expr<f32>>,
@@ -301,6 +298,8 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
 
                weighted_var_op: Vec<Weighted<VarOp>>,
                weighted_mut_op: Vec<Weighted<MutOp>>,
+
+
                prob_mutate_elem: Probability)
                -> Toolbox<N, E> {
 
@@ -318,6 +317,13 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
             prob_mutate_elem: prob_mutate_elem,
             weighted_var_op: OwnedWeightedChoice::new(weighted_var_op),
             weighted_mut_op: OwnedWeightedChoice::new(weighted_mut_op),
+
+            // XXX 
+            rule_mut_op: OwnedWeightedChoice::new(RuleMutOp::uniform_distribution()),
+            // XXX 
+            rule_prod_mut_op: OwnedWeightedChoice::new(RuleProductionMutOp::uniform_distribution()),
+
+            recursive_expr_op: OwnedWeightedChoice::new(RecursiveExprOp::uniform_distribution()),
 
             // we use n-ary symbols, so we need n parameters. (XXX)
             axiom_args: (0..symbol_arity).map(|_| Expr::Const(0.0)).collect(),
@@ -351,13 +357,94 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     }
 
     // XXX
-    fn mutate_rule<R: Rng>(&self, rng: &mut R, rule: &mut Rule<Sym>) { 
-        println!("Mutate rule before: {:?}", rule);
-
-        println!("Mutate rule after: {:?}", rule);
+    // The mutation can operate on the logic level (AND, OR, NOT) or on the expression level
+    // (>=, <=, >, <, ==).
+    //
+    // * Specialize condition (AND)
+    // * Generalized condition (OR)
+    // * Flip condition (NOT)
+    fn mutate_rule_condition<R: Rng>(&self, rng: &mut R, cond: Condition<f32>) -> Condition<f32> {
+        // XXX: Simply negate it for now.
+        Condition::Not(Box::new(cond))
     }
 
     // XXX
+    //     * Replace one symbol
+    //     * Make change to symbol parameter expression (add a constant, lift to more complex expression)
+    //     * insert / remove sequence of symbols.
+    fn mutate_rule_production<R: Rng>(&self, rng: &mut R, mut prod: SymbolString<Sym>) -> SymbolString<Sym> {
+        let rule_prod_mut_op = self.rule_prod_mut_op.ind_sample(rng);
+        match rule_prod_mut_op {
+            RuleProductionMutOp::ReplaceSymbol => {
+                // choose a random element, and replace it with a terminal or non-terminal
+                let len = prod.0.len();
+                if len > 0 {
+                    let idx = rng.gen_range(0, len);
+                    let sym_value = self.symbol_generator.gen_symbol_value(rng);
+                    prod.0[idx].set_symbol(sym_value); // replace symbol value
+                } else {
+                    println!("unmodified rule production symbol");
+                }
+            }
+            RuleProductionMutOp::ModifyParameter => {
+                // choose a random element, and modify one of it's parameters 
+                let len = prod.0.len();
+                if len > 0 {
+                    let idx = rng.gen_range(0, len);
+
+                    let mut args = prod.0[idx].args().to_vec();
+                    let arity = args.len();
+                    if arity > 0 {
+                        let argsidx = rng.gen_range(0, arity);
+                        // change the expression of argument `argsidx`
+                        let expr = args[argsidx].clone();
+
+                        let rec_expr_op = self.recursive_expr_op.ind_sample(rng);
+                        let new_expr = match rec_expr_op {
+                            RecursiveExprOp::Reciprocz => {
+                                Expr::Recipz(Box::new(expr))
+                            }
+                            _ => {
+                                // XXX
+                                Expr::Const(0.0)
+                            }
+                        };
+
+                        args[argsidx] = new_expr;
+                    } else {
+                        println!("unmodified rule production parameter 1");
+                    }
+
+                    let sym_value = prod.0[idx].symbol().clone();
+                    // replace symbol with modified parameters
+                    prod.0[idx] = Sym::from_iter(sym_value, args.into_iter());
+                } else {
+                    println!("unmodified rule production parameter");
+                }
+            }
+            RuleProductionMutOp::InsertSequence => {
+                // XXX: 
+            }
+            RuleProductionMutOp::DeleteSequence => {
+                // XXX: 
+            }
+        }
+        prod
+    }
+
+    fn mutate_rule<R: Rng>(&self, rng: &mut R, rule: Rule<Sym>) -> Rule<Sym> {
+        let Rule {symbol, condition, successor} = rule;
+        let rule_mut_op = self.rule_mut_op.ind_sample(rng);
+        match rule_mut_op {
+            RuleMutOp::ModifyCondition => {
+                Rule{symbol: symbol, condition: self.mutate_rule_condition(rng, condition), successor: successor}
+            }
+            RuleMutOp::ModifyProduction => {
+                Rule{symbol: symbol, condition: condition, successor: self.mutate_rule_production(rng, successor)}
+            }
+        }
+    }
+
     // Mutate the genome, i.e. make a small change to it.
     // 
     // Modify a single symbol-rule:
@@ -376,8 +463,12 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
             // modify one of the rule -> successor pairs
             let len = local_rules.len();
             if len > 0 {
-                let rule = &mut local_rules[rng.gen_range(0, len)]; 
-                self.mutate_rule(rng, rule);
+                let idx = rng.gen_range(0, len);
+                let rule = local_rules[idx].clone();
+                println!("Mutate rule before: {:?}", rule);
+                let new_rule = self.mutate_rule(rng, rule);
+                println!("Mutate rule after: {:?}", new_rule);
+                local_rules[idx] = new_rule;
             }
             else {
                 println!("no modification");

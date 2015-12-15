@@ -50,6 +50,22 @@ defops!{FlatExprOp;
     Param
 }
 
+defops!{RecursiveExprOp;
+    // 1.0 / x using safe division.
+    Reciprocz,
+
+    // Addition
+    Add,
+
+    // Subtraction
+    Sub,
+
+    // Multiplication
+    Mul,
+
+    // Safe division
+    Divz
+}
 
 defops!{ExprOp;
     // 0.0

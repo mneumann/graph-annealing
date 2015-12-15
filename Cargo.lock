@@ -14,7 +14,7 @@ dependencies = [
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "pcg 0.0.1 (git+https://github.com/codahale/pcg.git)",
- "petgraph 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -117,7 +117,7 @@ name = "graph-sgf"
 version = "0.0.1"
 source = "git+https://github.com/mneumann/graph-sgf.git#951b3a7662c7569b1729f89eb01b899362407780"
 dependencies = [
- "petgraph 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -137,7 +137,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lindenmayer-system"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/lindenmayer-system.git#daa95cc8fd45b69444cf76680d22198bd6191e70"
+source = "git+https://github.com/mneumann/lindenmayer-system.git#d49f34eb43a6bf41489fbaae2239784af1440ce9"
 dependencies = [
  "turtle 0.1.0 (git+https://github.com/mneumann/turtle-rs.git)",
 ]
@@ -197,7 +197,7 @@ dependencies = [
 
 [[package]]
 name = "petgraph"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "fixedbitset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -308,7 +308,7 @@ version = "0.0.1"
 source = "git+https://github.com/mneumann/triadic-census-rs.git#3922341678f7562b5326624810e4b36959ac8032"
 dependencies = [
  "fixedbitset 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "petgraph 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
