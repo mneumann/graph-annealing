@@ -39,6 +39,7 @@ use triadic_census::OptDenseDigraph;
 use std::io::BufReader;
 use std::fs::File;
 use genome::edgeop::edgeops_to_graph;
+use genome::expr_op::{ExprOp, FlatExprOp, ConstExprOp};
 
 #[allow(non_snake_case)]
 fn main() {
@@ -219,7 +220,21 @@ fn main() {
         Goal::new(OptDenseDigraph::from(graph)),
         Pool::new(ncpus),
         (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
-        w_ops, w_var_ops, w_mut_ops, Probability::new(MUTP));
+
+        3, // iterations
+        20, // num_rules
+        4, // initial rule length
+        2, // we use 2-ary symbols
+        Probability::new(0.7), // prob_terminal
+        2, // max_expr_depth
+
+        w_ops,
+        ExprOp::uniform_distribution(),
+        FlatExprOp::uniform_distribution(),
+        ConstExprOp::uniform_distribution(),
+        w_var_ops,
+        w_mut_ops,
+        Probability::new(MUTP));
 
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);

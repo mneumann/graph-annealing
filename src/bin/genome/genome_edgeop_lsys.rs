@@ -9,7 +9,7 @@
 // * We start out with a simple Genome, which gets more and more complex through mating.
 
 pub mod edgeop;
-mod expr_op;
+pub mod expr_op;
 mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
@@ -237,6 +237,12 @@ pub struct Toolbox<N, E> {
     /// Number of rules per genome.
     num_rules: usize,
 
+    /// Length of an initial random rule production
+    initial_rule_length: usize,
+
+    /// Symbol arity
+    symbol_arity: usize,
+
     /// Used symbol generator
     symbol_generator: SymbolGenerator,
 }
@@ -246,12 +252,28 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     pub fn new(goal: Goal<N, E>,
                pool: Pool,
                fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
+
+               iterations: usize,
+               num_rules: usize,
+               initial_rule_length: usize,
+               symbol_arity: usize,
+               prob_terminal: Probability,
+               max_expr_depth: usize,
+
                terminal_symbols: Vec<Weighted<EdgeOp>>,
+               expr_weighted_op: Vec<Weighted<ExprOp>>,
+               flat_expr_weighted_op: Vec<Weighted<FlatExprOp>>,
+               const_expr_weighted_op: Vec<Weighted<ConstExprOp>>,
 
                weighted_var_op: Vec<Weighted<VarOp>>,
                weighted_mut_op: Vec<Weighted<MutOp>>,
                prob_mutate_elem: Probability)
                -> Toolbox<N, E> {
+
+                   assert!(num_rules > 0);
+
+                   // this is fixed for now, because we use fixed 2-ary symbols.
+                   assert!(symbol_arity == 2);
 
         Toolbox {
             goal: goal,
@@ -263,30 +285,33 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
             weighted_var_op: OwnedWeightedChoice::new(weighted_var_op),
             weighted_mut_op: OwnedWeightedChoice::new(weighted_mut_op),
 
-            // we use 2-ary symbols, so we need 2 parameters.
-            axiom_args: vec![Expr::Const(0.0), Expr::Const(0.0)],
+            // we use n-ary symbols, so we need n parameters. (XXX)
+            axiom_args: (0..symbol_arity).map(|_| Expr::Const(0.0)).collect(),
 
             // maximum 3 iterations of the L-system.
-            iterations: 3,
+            iterations: iterations,
 
             // We start with 20 rules per genome.
-            num_rules: 20,
+            num_rules: num_rules,
+
+            initial_rule_length: initial_rule_length,
+
+            symbol_arity: symbol_arity,
 
             symbol_generator: SymbolGenerator {
-                max_expr_depth: 2,
+                max_expr_depth: max_expr_depth,
 
                 terminal_symbols: OwnedWeightedChoice::new(terminal_symbols),
 
-                nonterminal_symbols: Range::new(0, 20),
+                nonterminal_symbols: Range::new(0, num_rules as u32),
 
                 // The probability with which a terminal value is choosen.
                 // we favor terminals over non-terminals
-                prob_terminal: Probability::new(0.7),
+                prob_terminal: prob_terminal,
 
-                // XXX
-                expr_weighted_op: OwnedWeightedChoice::new(vec![]),
-                flat_expr_weighted_op: OwnedWeightedChoice::new(vec![]),
-                const_expr_weighted_op: OwnedWeightedChoice::new(vec![]),
+                expr_weighted_op: OwnedWeightedChoice::new(expr_weighted_op),
+                flat_expr_weighted_op: OwnedWeightedChoice::new(flat_expr_weighted_op),
+                const_expr_weighted_op: OwnedWeightedChoice::new(const_expr_weighted_op),
             },
         }
     }
@@ -337,15 +362,14 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     pub fn random_genome<R: Rng>(&self, rng: &mut R) -> Genome {
         let mut system = System::new();
 
-        let arity = 2;
+        let arity = self.symbol_arity;
 
-        // XXX:
-        let strlen = 4;
+        // we start out flat.
         let expr_depth = 0;
 
         for rule_id in 0..self.num_rules as RuleId {
             let production = self.symbol_generator
-                                 .gen_symbolstring(rng, strlen, arity, arity, expr_depth);
+                                 .gen_symbolstring(rng, self.initial_rule_length, arity, arity, expr_depth);
             let condition = if rule_id == 0 {
                 // The axiomatic rule (rule number 0) has Condition::True.
                 Condition::True
