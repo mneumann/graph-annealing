@@ -33,6 +33,7 @@ use self::cond_op::{CondOp, random_cond};
 use simple_parallel::Pool;
 use crossbeam;
 use std::collections::BTreeMap;
+use std::cmp;
 
 /// Element-wise Mutation operation. XXX
 defops!{MutOp;
@@ -146,6 +147,41 @@ impl LSystem<Sym> for System {
         }
     }
 }
+
+/// Insert `b` into `a` at `position`
+fn insert_vec_at<T:Clone>(mut a: Vec<T>, b: Vec<T>, position: usize) -> Vec<T> {
+    let remainder = a.split_off(position);
+    a.extend(b);
+    a.extend(remainder);
+    a
+}
+
+/// Remove `n` elements from `a` at `position`.
+fn remove_at<T:Clone>(mut a: Vec<T>, position: usize, n: usize) -> Vec<T> {
+    let remainder = a.split_off(position);
+    for (i, item) in remainder.into_iter().enumerate() {
+        if i >= n { 
+            a.push(item);
+        }
+    }
+    a
+}
+
+#[test]
+fn test_remove_at() {
+    assert_eq!(vec![1usize, 2, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 0, 0));
+
+    assert_eq!(vec![2usize, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 0, 1));
+    assert_eq!(vec![1usize, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 1, 1));
+
+    let a: Vec<usize> = vec![];
+    assert_eq!(a, remove_at(vec![1usize, 2, 3, 4, 5], 0, 10));
+    
+    assert_eq!(vec![1usize, 2, 3, 4], remove_at(vec![1usize, 2, 3, 4, 5], 4, 1));
+    assert_eq!(vec![1usize, 2, 3, 4], remove_at(vec![1usize, 2, 3, 4, 5], 4, 2));
+    assert_eq!(vec![1usize, 2, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 5, 1));
+}
+
 
 pub struct SymbolGenerator {
     pub max_expr_depth: usize,
@@ -404,9 +440,21 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
                             RecursiveExprOp::Reciprocz => {
                                 Expr::Recipz(Box::new(expr))
                             }
-                            _ => {
-                                // XXX
-                                Expr::Const(0.0)
+                            RecursiveExprOp::Add => {
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                Expr::Add(Box::new(expr), Box::new(op2)) 
+                            }
+                            RecursiveExprOp::Sub => {
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                Expr::Sub(Box::new(expr), Box::new(op2)) 
+                            }
+                            RecursiveExprOp::Mul => {
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                Expr::Mul(Box::new(expr), Box::new(op2)) 
+                            }
+                            RecursiveExprOp::Divz => {
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                Expr::Divz(Box::new(expr), Box::new(op2)) 
                             }
                         };
 
@@ -423,10 +471,41 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
                 }
             }
             RuleProductionMutOp::InsertSequence => {
-                // XXX: 
+                // Insert a sequence of random symbols (as we generate
+                // during initialization of the genome).
+                // Parameters:
+                //     * Number of symbols to insert
+                //     * Insert Position
+                // Insert at most 4 symbols. XXX
+                let max_number_of_symbols = cmp::min(4, cmp::max(1, prod.0.len() / 2));
+                assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= 4);
+
+                let number_of_symbols = rng.gen_range(0, max_number_of_symbols) + 1;
+                assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
+                let insert_position = rng.gen_range(0, prod.0.len() + 1);
+
+                let arity = self.symbol_arity;
+                let expr_depth = 0;
+                let new_symbols = self.symbol_generator.gen_symbolstring(rng, number_of_symbols, arity, arity, expr_depth);
+
+                let new_production = insert_vec_at(prod.0, new_symbols.0, insert_position);
+
+                return SymbolString(new_production);
             }
             RuleProductionMutOp::DeleteSequence => {
-                // XXX: 
+                // * Number of symbols to delete 
+                // * At position
+                let max_number_of_symbols = cmp::min(4, cmp::max(1, prod.0.len() / 2));
+                assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= 4);
+
+                let number_of_symbols = rng.gen_range(0, max_number_of_symbols) + 1;
+                assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
+                let remove_position = rng.gen_range(0, prod.0.len() + 1);
+
+                let new_production = remove_at(prod.0, remove_position, number_of_symbols); 
+
+                return SymbolString(new_production);
+
             }
         }
         prod
