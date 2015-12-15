@@ -33,7 +33,7 @@ fn graph_to_edgelist<N, E>(g: &Graph<N, E, Directed>) -> (Vec<Vec<usize>>, Vec<V
     (in_a, out_a)
 }
 
-impl<N:Clone+Default,E:Clone+Default> Goal<N,E> {
+impl<N: Clone + Default, E: Clone + Default> Goal<N, E> {
     pub fn new(g: OptDenseDigraph<N, E>) -> Goal<N, E> {
         let census = TriadicCensus::from(&g);
         let (in_a, out_a) = graph_to_edgelist(g.ref_graph());
@@ -49,23 +49,18 @@ impl<N:Clone+Default,E:Clone+Default> Goal<N,E> {
         }
     }
 
-    pub fn apply_fitness_function(&self, fitfun: FitnessFunction, g: &OptDenseDigraph<(), ()>) -> f32 {
+    pub fn apply_fitness_function(&self,
+                                  fitfun: FitnessFunction,
+                                  g: &OptDenseDigraph<(), ()>)
+                                  -> f32 {
         match fitfun {
-            FitnessFunction::Null => {
-                0.0
-            }
-            FitnessFunction::ConnectedComponents => {
-                self.connected_components_distance(g) as f32
-            }
+            FitnessFunction::Null => 0.0,
+            FitnessFunction::ConnectedComponents => self.connected_components_distance(g) as f32,
             FitnessFunction::StronglyConnectedComponents => {
                 self.strongly_connected_components_distance(g) as f32
             }
-            FitnessFunction::NeighborMatching => {
-                self.neighbor_matching_score(g) as f32
-            }
-            FitnessFunction::TriadicDistance => {
-                self.triadic_distance(g) as f32
-            }
+            FitnessFunction::NeighborMatching => self.neighbor_matching_score(g) as f32,
+            FitnessFunction::TriadicDistance => self.triadic_distance(g) as f32,
         }
     }
 

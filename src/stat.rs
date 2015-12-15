@@ -1,6 +1,6 @@
-use ::std::f32::INFINITY;
-use ::std::fmt::Debug;
-use ::evo::nsga2::MultiObjective3;
+use std::f32::INFINITY;
+use std::fmt::Debug;
+use evo::nsga2::MultiObjective3;
 
 #[derive(Debug)]
 pub struct Stat<T: Debug> {

@@ -14,7 +14,7 @@ impl FromStr for FitnessFunction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "null" => Ok(FitnessFunction::Null),
-            "cc"  =>  Ok(FitnessFunction::ConnectedComponents),
+            "cc" => Ok(FitnessFunction::ConnectedComponents),
             "scc" => Ok(FitnessFunction::StronglyConnectedComponents),
             "nm" => Ok(FitnessFunction::NeighborMatching),
             "td" => Ok(FitnessFunction::TriadicDistance),

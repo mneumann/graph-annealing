@@ -30,7 +30,7 @@ use pcg::PcgRng;
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval, MultiObjective3};
 use genome::{EdgeOpsGenome, Toolbox};
-use graph_annealing::helper::{draw_graph, to_weighted_vec, parse_weighted_op_list};
+use graph_annealing::helper::{draw_graph, parse_weighted_op_list, to_weighted_vec};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;
 use graph_annealing::fitness_function::FitnessFunction;
@@ -199,7 +199,13 @@ fn main() {
     assert!(ilen_from <= ilen_to);
 
     // read objective functions
-    let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES").unwrap().split(",").map(|s| FitnessFunction::from_str(s).unwrap()).collect();
+    let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES")
+                                                          .unwrap()
+                                                          .split(",")
+                                                          .map(|s| {
+                                                              FitnessFunction::from_str(s).unwrap()
+                                                          })
+                                                          .collect();
 
     while objectives_arr.len() < 3 {
         objectives_arr.push(FitnessFunction::Null);

@@ -50,18 +50,14 @@ fn main() {
                       .get_matches();
 
     let mut wr: Box<Write> = match matches.value_of("OUT") {
-        Some(out) => {
-            Box::new(File::create(out).unwrap())
-        }
-        None => {
-            Box::new(std::io::stdout())
-        }
+        Some(out) => Box::new(File::create(out).unwrap()),
+        None => Box::new(std::io::stdout()),
     };
 
     writeln!(&mut wr, "(POPULATION");
     writeln!(&mut wr, "  (INSTRUCTIONS");
     writeln!(&mut wr, "    (CREATE");
-     
+
     // size of population
     let MU: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
     writeln!(&mut wr, "      (MU {})", MU);
@@ -110,7 +106,7 @@ fn main() {
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
 
-    
+
     writeln!(&mut wr, "    )");
     writeln!(&mut wr, "  )");
 

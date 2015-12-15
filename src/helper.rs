@@ -88,7 +88,7 @@ fn test_parse_weighted_op_choice_list() {
             }
         }
     }
-     
+
     fn parse_weighted_op_choice_list(s: &str) -> Result<Vec<(Op, u32)>, String> {
         parse_weighted_op_list(s)
     }

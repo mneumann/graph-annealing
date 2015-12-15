@@ -39,7 +39,7 @@ use triadic_census::OptDenseDigraph;
 use std::io::BufReader;
 use std::fs::File;
 use genome::edgeop::edgeops_to_graph;
-use genome::expr_op::{ExprOp, FlatExprOp, ConstExprOp};
+use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
 
 #[allow(non_snake_case)]
 fn main() {
@@ -86,23 +86,6 @@ fn main() {
                                       Mutate:1,LinearCrossover2:1,UniformCrossover:2,Copy:0")
                                .takes_value(true)
                                .required(true))
-                      //.arg(Arg::with_name("MUTOPS")
-                      //         .long("mutops")
-                      //         .help("Mutation operation and weight specification, e.g. \
-                      //                Insert:1,Remove:1,Replace:2,ModifyOp:0,ModifyParam:2,Copy:\
-                      //                0")
-                      //         .takes_value(true)
-                      //         .required(true))
-                      //.arg(Arg::with_name("MUTP")
-                      //         .long("mutp")
-                      //         .help("Probability for element mutation")
-                      //         .takes_value(true)
-                      //         .required(true))
-                      //.arg(Arg::with_name("ILEN")
-                      //         .long("ilen")
-                      //         .help("Initial genome length (random range)")
-                      //         .takes_value(true)
-                      //         .required(true))
                       .arg(Arg::with_name("OBJECTIVES")
                                .long("objectives")
                                .help("Specify 3 objective functions comma separated (null, cc, \
@@ -143,29 +126,34 @@ fn main() {
     }
     println!("SEED: {:?}", seed);
 
-    //let MUTP: f32 = FromStr::from_str(matches.value_of("MUTP").unwrap()).unwrap();
-    //println!("MUTP: {:?}", MUTP);
+    // let MUTP: f32 = FromStr::from_str(matches.value_of("MUTP").unwrap()).unwrap();
+    // println!("MUTP: {:?}", MUTP);
 
     // Parse weighted operation choice from command line
-    //let mutops = parse_weighted_op_list(matches.value_of("MUTOPS").unwrap()).unwrap();
-    //println!("mut ops: {:?}", mutops);
+    // let mutops = parse_weighted_op_list(matches.value_of("MUTOPS").unwrap()).unwrap();
+    // println!("mut ops: {:?}", mutops);
 
-    //let ilen_str = matches.value_of("ILEN").unwrap();
-    //let ilen: Vec<usize> = ilen_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
-    //assert!(ilen.len() == 1 || ilen.len() == 2);
+    // let ilen_str = matches.value_of("ILEN").unwrap();
+    // let ilen: Vec<usize> = ilen_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
+    // assert!(ilen.len() == 1 || ilen.len() == 2);
 
-    /*
-    let ilen_from = ilen[0];
-    let ilen_to = if ilen.len() == 1 {
-        ilen[0]
-    } else {
-        ilen[1]
-    };
-    assert!(ilen_from <= ilen_to);
-    */
+    // let ilen_from = ilen[0];
+    // let ilen_to = if ilen.len() == 1 {
+    // ilen[0]
+    // } else {
+    // ilen[1]
+    // };
+    // assert!(ilen_from <= ilen_to);
+    //
 
     // read objective functions
-    let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES").unwrap().split(",").map(|s| FitnessFunction::from_str(s).unwrap()).collect();
+    let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES")
+                                                          .unwrap()
+                                                          .split(",")
+                                                          .map(|s| {
+                                                              FitnessFunction::from_str(s).unwrap()
+                                                          })
+                                                          .collect();
 
     while objectives_arr.len() < 3 {
         objectives_arr.push(FitnessFunction::Null);
@@ -215,44 +203,42 @@ fn main() {
     let w_var_ops = to_weighted_vec(&varops);
     assert!(w_var_ops.len() > 0);
 
-    //let w_mut_ops = to_weighted_vec(&mutops);
-    //assert!(w_mut_ops.len() > 0);
+    // let w_mut_ops = to_weighted_vec(&mutops);
+    // assert!(w_mut_ops.len() > 0);
 
-    let mut toolbox = Toolbox::new(
-        Goal::new(OptDenseDigraph::from(graph)),
-        Pool::new(ncpus),
-        (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
+    let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(graph)),
+                                   Pool::new(ncpus),
+                                   (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
 
-        3, // iterations
-        20, // num_rules
-        4, // initial rule length
-        2, // we use 2-ary symbols
-        Probability::new(0.7), // prob_terminal
-        2, // max_expr_depth
+                                   3, // iterations
+                                   20, // num_rules
+                                   4, // initial rule length
+                                   2, // we use 2-ary symbols
+                                   Probability::new(0.7), // prob_terminal
+                                   2, // max_expr_depth
 
-        w_ops,
-        ExprOp::uniform_distribution(),
-        FlatExprOp::uniform_distribution(),
-        ConstExprOp::uniform_distribution(),
-        w_var_ops);
+                                   w_ops,
+                                   ExprOp::uniform_distribution(),
+                                   FlatExprOp::uniform_distribution(),
+                                   ConstExprOp::uniform_distribution(),
+                                   w_var_ops);
 
     assert!(seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
 
     // create initial random population
     let initial_population: Vec<Genome> = (0..MU)
-                                                     .map(|_| {
-                                                         /*
-                                                         let len = if ilen_from == ilen_to {
-                                                             ilen_from
-                                                         } else {
-                                                             Range::new(ilen_from, ilen_to)
-                                                                 .ind_sample(&mut rng)
-                                                         };
-                                                         */
-                                                         toolbox.random_genome(&mut rng)
-                                                     })
-                                                     .collect();
+                                              .map(|_| {
+                                                  // let len = if ilen_from == ilen_to {
+                                                  // ilen_from
+                                                  // } else {
+                                                  // Range::new(ilen_from, ilen_to)
+                                                  // .ind_sample(&mut rng)
+                                                  // };
+                                                  //
+                                                  toolbox.random_genome(&mut rng)
+                                              })
+                                              .collect();
 
 
     // output initial population to stdout.
@@ -268,13 +254,7 @@ fn main() {
     for iteration in 0..NGEN {
         print!("# {:>6}", iteration);
         let before = time::precise_time_ns();
-        let (new_pop, new_fit) = nsga2::iterate(&mut rng,
-                                                pop,
-                                                fit,
-                                                MU,
-                                                LAMBDA,
-                                                K,
-                                                &mut toolbox);
+        let (new_pop, new_fit) = nsga2::iterate(&mut rng, pop, fit, MU, LAMBDA, K, &mut toolbox);
         let duration = time::precise_time_ns() - before;
         pop = new_pop;
         fit = new_fit;

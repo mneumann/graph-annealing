@@ -28,7 +28,8 @@ use lindenmayer_system::{Alphabet, Condition, LSystem, Rule, Symbol, SymbolStrin
 use lindenmayer_system::symbol::Sym2;
 use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{ConstExprOp, ExprOp, RecursiveExprOp, FlatExprOp, random_const_expr, random_expr};
+use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
+                    random_expr};
 use self::cond_op::{CondOp, random_cond};
 use simple_parallel::Pool;
 use crossbeam;
@@ -110,7 +111,7 @@ impl System {
                                            condition));
     }
 
-    fn random_rule_id<R:Rng>(&self, rng: &mut R) -> RuleId {
+    fn random_rule_id<R: Rng>(&self, rng: &mut R) -> RuleId {
         let len = self.rules.len();
         assert!(len > 0);
         let nth = rng.gen_range(0, len);
@@ -133,7 +134,7 @@ impl LSystem<Sym> for System {
 }
 
 /// Insert `b` into `a` at `position`
-fn insert_vec_at<T:Clone>(mut a: Vec<T>, b: Vec<T>, position: usize) -> Vec<T> {
+fn insert_vec_at<T: Clone>(mut a: Vec<T>, b: Vec<T>, position: usize) -> Vec<T> {
     let remainder = a.split_off(position);
     a.extend(b);
     a.extend(remainder);
@@ -141,10 +142,10 @@ fn insert_vec_at<T:Clone>(mut a: Vec<T>, b: Vec<T>, position: usize) -> Vec<T> {
 }
 
 /// Remove `n` elements from `a` at `position`.
-fn remove_at<T:Clone>(mut a: Vec<T>, position: usize, n: usize) -> Vec<T> {
+fn remove_at<T: Clone>(mut a: Vec<T>, position: usize, n: usize) -> Vec<T> {
     let remainder = a.split_off(position);
     for (i, item) in remainder.into_iter().enumerate() {
-        if i >= n { 
+        if i >= n {
             a.push(item);
         }
     }
@@ -153,17 +154,23 @@ fn remove_at<T:Clone>(mut a: Vec<T>, position: usize, n: usize) -> Vec<T> {
 
 #[test]
 fn test_remove_at() {
-    assert_eq!(vec![1usize, 2, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 0, 0));
+    assert_eq!(vec![1usize, 2, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 0, 0));
 
-    assert_eq!(vec![2usize, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 0, 1));
-    assert_eq!(vec![1usize, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 1, 1));
+    assert_eq!(vec![2usize, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 0, 1));
+    assert_eq!(vec![1usize, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 1, 1));
 
     let a: Vec<usize> = vec![];
     assert_eq!(a, remove_at(vec![1usize, 2, 3, 4, 5], 0, 10));
-    
-    assert_eq!(vec![1usize, 2, 3, 4], remove_at(vec![1usize, 2, 3, 4, 5], 4, 1));
-    assert_eq!(vec![1usize, 2, 3, 4], remove_at(vec![1usize, 2, 3, 4, 5], 4, 2));
-    assert_eq!(vec![1usize, 2, 3, 4, 5], remove_at(vec![1usize, 2, 3, 4, 5], 5, 1));
+
+    assert_eq!(vec![1usize, 2, 3, 4],
+               remove_at(vec![1usize, 2, 3, 4, 5], 4, 1));
+    assert_eq!(vec![1usize, 2, 3, 4],
+               remove_at(vec![1usize, 2, 3, 4, 5], 4, 2));
+    assert_eq!(vec![1usize, 2, 3, 4, 5],
+               remove_at(vec![1usize, 2, 3, 4, 5], 5, 1));
 }
 
 
@@ -315,14 +322,12 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
                const_expr_weighted_op: Vec<Weighted<ConstExprOp>>,
 
                var_op: Vec<Weighted<VarOp>>)
-
-
                -> Toolbox<N, E> {
 
-                   assert!(num_rules > 0);
+        assert!(num_rules > 0);
 
-                   // this is fixed for now, because we use fixed 2-ary symbols.
-                   assert!(symbol_arity == 2);
+        // this is fixed for now, because we use fixed 2-ary symbols.
+        assert!(symbol_arity == 2);
 
         Toolbox {
             goal: goal,
@@ -332,9 +337,9 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
             // XXX:
             var_op: OwnedWeightedChoice::new(var_op),
 
-            // XXX 
+            // XXX
             rule_mut_op: OwnedWeightedChoice::new(RuleMutOp::uniform_distribution()),
-            // XXX 
+            // XXX
             rule_prod_mut_op: OwnedWeightedChoice::new(RuleProductionMutOp::uniform_distribution()),
 
             recursive_expr_op: OwnedWeightedChoice::new(RecursiveExprOp::uniform_distribution()),
@@ -386,7 +391,10 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     //     * Replace one symbol
     //     * Make change to symbol parameter expression (add a constant, lift to more complex expression)
     //     * insert / remove sequence of symbols.
-    fn mutate_rule_production<R: Rng>(&self, rng: &mut R, mut prod: SymbolString<Sym>) -> SymbolString<Sym> {
+    fn mutate_rule_production<R: Rng>(&self,
+                                      rng: &mut R,
+                                      mut prod: SymbolString<Sym>)
+                                      -> SymbolString<Sym> {
         let rule_prod_mut_op = self.rule_prod_mut_op.ind_sample(rng);
         match rule_prod_mut_op {
             RuleProductionMutOp::ReplaceSymbol => {
@@ -401,7 +409,7 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
                 }
             }
             RuleProductionMutOp::ModifyParameter => {
-                // choose a random element, and modify one of it's parameters 
+                // choose a random element, and modify one of it's parameters
                 let len = prod.0.len();
                 if len > 0 {
                     let idx = rng.gen_range(0, len);
@@ -415,24 +423,22 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
 
                         let rec_expr_op = self.recursive_expr_op.ind_sample(rng);
                         let new_expr = match rec_expr_op {
-                            RecursiveExprOp::Reciprocz => {
-                                Expr::Recipz(Box::new(expr))
-                            }
+                            RecursiveExprOp::Reciprocz => Expr::Recipz(Box::new(expr)),
                             RecursiveExprOp::Add => {
                                 let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
-                                Expr::Add(Box::new(expr), Box::new(op2)) 
+                                Expr::Add(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Sub => {
                                 let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
-                                Expr::Sub(Box::new(expr), Box::new(op2)) 
+                                Expr::Sub(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Mul => {
                                 let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
-                                Expr::Mul(Box::new(expr), Box::new(op2)) 
+                                Expr::Mul(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Divz => {
                                 let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
-                                Expr::Divz(Box::new(expr), Box::new(op2)) 
+                                Expr::Divz(Box::new(expr), Box::new(op2))
                             }
                         };
 
@@ -464,14 +470,18 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
 
                 let arity = self.symbol_arity;
                 let expr_depth = 0;
-                let new_symbols = self.symbol_generator.gen_symbolstring(rng, number_of_symbols, arity, arity, expr_depth);
+                let new_symbols = self.symbol_generator.gen_symbolstring(rng,
+                                                                         number_of_symbols,
+                                                                         arity,
+                                                                         arity,
+                                                                         expr_depth);
 
                 let new_production = insert_vec_at(prod.0, new_symbols.0, insert_position);
 
                 return SymbolString(new_production);
             }
             RuleProductionMutOp::DeleteSequence => {
-                // * Number of symbols to delete 
+                // * Number of symbols to delete
                 // * At position
                 let max_number_of_symbols = cmp::min(4, cmp::max(1, prod.0.len() / 2));
                 assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= 4);
@@ -480,7 +490,7 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
                 assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
                 let remove_position = rng.gen_range(0, prod.0.len() + 1);
 
-                let new_production = remove_at(prod.0, remove_position, number_of_symbols); 
+                let new_production = remove_at(prod.0, remove_position, number_of_symbols);
 
                 return SymbolString(new_production);
 
@@ -494,16 +504,24 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
         let rule_mut_op = self.rule_mut_op.ind_sample(rng);
         match rule_mut_op {
             RuleMutOp::ModifyCondition => {
-                Rule{symbol: symbol, condition: self.mutate_rule_condition(rng, condition), successor: successor}
+                Rule {
+                    symbol: symbol,
+                    condition: self.mutate_rule_condition(rng, condition),
+                    successor: successor,
+                }
             }
             RuleMutOp::ModifyProduction => {
-                Rule{symbol: symbol, condition: condition, successor: self.mutate_rule_production(rng, successor)}
+                Rule {
+                    symbol: symbol,
+                    condition: condition,
+                    successor: self.mutate_rule_production(rng, successor),
+                }
             }
         }
     }
 
     // Mutate the genome, i.e. make a small change to it.
-    // 
+    //
     // Modify a single symbol-rule:
     //
     //     * Change condition
@@ -526,8 +544,7 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
                 let new_rule = self.mutate_rule(rng, rule);
                 println!("Mutate rule after: {:?}", new_rule);
                 local_rules[idx] = new_rule;
-            }
-            else {
+            } else {
                 println!("no modification");
             }
         } else {
@@ -567,7 +584,11 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
 
         for rule_id in 0..self.num_rules as RuleId {
             let production = self.symbol_generator
-                                 .gen_symbolstring(rng, self.initial_rule_length, arity, arity, expr_depth);
+                                 .gen_symbolstring(rng,
+                                                   self.initial_rule_length,
+                                                   arity,
+                                                   arity,
+                                                   expr_depth);
             let condition = if rule_id == 0 {
                 // The axiomatic rule (rule number 0) has Condition::True.
                 Condition::True
@@ -588,7 +609,7 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
         match self.var_op.ind_sample(rng) {
             VarOp::Copy => p1.clone(),
             VarOp::Mutate => self.mutate(rng, p1),
-            VarOp::Crossover => self.crossover(rng, p1, p2)
+            VarOp::Crossover => self.crossover(rng, p1, p2),
         }
     }
 }

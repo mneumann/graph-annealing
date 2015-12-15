@@ -19,7 +19,7 @@ struct MyEval<N, E> {
     goal: Goal<N, E>,
 }
 
-impl<N:Clone+Sync,E:Clone+Sync> Evaluator<AdjGenome, MinFitness<f64>> for MyEval<N,E> {
+impl<N: Clone + Sync, E: Clone + Sync> Evaluator<AdjGenome, MinFitness<f64>> for MyEval<N, E> {
     fn fitness(&self, ind: &AdjGenome) -> MinFitness<f64> {
         let g = ind.to_graph();
 
@@ -86,7 +86,7 @@ impl<I: Individual, F: PartialOrd> OpSelectRandomIndividual<I, F> for Toolbox {
     }
 }
 
-impl<I: Individual, F: PartialOrd+Clone> OpSelect<I, F> for Toolbox {
+impl<I: Individual, F: PartialOrd + Clone> OpSelect<I, F> for Toolbox {
     fn select(&mut self, population: &RatedPopulation<I, F>, mu: usize) -> RatedPopulation<I, F> {
         let mut pop: RatedPopulation<I, F> = RatedPopulation::with_capacity(mu);
         for _ in 0..mu {

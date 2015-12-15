@@ -52,7 +52,7 @@ struct MyEval<N, E> {
     goal: Goal<N, E>,
 }
 
-impl<N:Clone,E:Clone> FitnessEval<AdjGenome, MultiObjective2<f32>> for MyEval<N,E> {
+impl<N: Clone, E: Clone> FitnessEval<AdjGenome, MultiObjective2<f32>> for MyEval<N, E> {
     fn fitness(&mut self, pop: &[AdjGenome]) -> Vec<MultiObjective2<f32>> {
         pop.iter().map(|ind| fitness(&self.goal, ind)).collect()
     }

@@ -70,9 +70,7 @@ impl EdgeListGenome {
         for edge in self.edges.iter_mut() {
             if rng.gen::<ProbabilityValue>().is_probable_with(mutate_elem_prob) {
                 let new_edge = match wc.ind_sample(rng) {
-                    Mutation::Reverse => {
-                        (edge.1, edge.0)
-                    }
+                    Mutation::Reverse => (edge.1, edge.0),
                     Mutation::ModifySource => {
                         // XXX: Add an offset?
                         (edge_range.ind_sample(rng), edge.1)
