@@ -3,11 +3,12 @@ name = "graph_annealing"
 version = "0.1.0"
 dependencies = [
  "clap 1.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "closed01 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
  "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
- "graph-neighbor-matching 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graph-neighbor-matching 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-sgf 0.0.1 (git+https://github.com/mneumann/graph-sgf.git)",
  "lindenmayer-system 0.1.0 (git+https://github.com/mneumann/lindenmayer-system.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -65,6 +66,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "closed01"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "crossbeam"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -104,9 +110,10 @@ source = "git+https://github.com/mneumann/graph-layout-rs.git#a304a5200ca34035bf
 
 [[package]]
 name = "graph-neighbor-matching"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
+ "closed01 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "munkres 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

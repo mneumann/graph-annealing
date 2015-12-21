@@ -2,8 +2,9 @@ use petgraph::{Directed, EdgeDirection, Graph};
 use petgraph::graph::NodeIndex;
 use petgraph::algo::{connected_components, scc};
 use triadic_census::{OptDenseDigraph, TriadicCensus};
-use graph_neighbor_matching::{Closed01, Edge, GraphSimilarityMatrix, Idx, IgnoreNodeColors};
+use graph_neighbor_matching::{Edge, GraphSimilarityMatrix, IgnoreNodeColors};
 use super::fitness_function::FitnessFunction;
+use closed01::Closed01;
 
 use graph_neighbor_matching::Graph as NGraph;
 
@@ -23,10 +24,10 @@ fn graph_to_edgelist<N, E>(g: &Graph<N, E, Directed>) -> (Vec<Vec<Edge>>, Vec<Ve
         let mut in_neighbors: Vec<Edge> = Vec::new();
         let mut out_neighbors: Vec<Edge> = Vec::new();
         for n in g.neighbors_directed(NodeIndex::new(ni), EdgeDirection::Incoming) {
-            in_neighbors.push(Edge::new(n.index() as Idx, Closed01::zero()));
+            in_neighbors.push(Edge::new(n.index(), Closed01::zero()));
         }
         for n in g.neighbors_directed(NodeIndex::new(ni), EdgeDirection::Outgoing) {
-            out_neighbors.push(Edge::new(n.index() as Idx, Closed01::zero()));
+            out_neighbors.push(Edge::new(n.index(), Closed01::zero()));
         }
         in_a.push(in_neighbors);
         out_a.push(out_neighbors);
