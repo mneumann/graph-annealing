@@ -7,10 +7,9 @@ dependencies = [
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
  "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
- "graph-neighbor-matching 0.0.1 (git+https://github.com/mneumann/graph-neighbor-matching.git)",
+ "graph-neighbor-matching 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-sgf 0.0.1 (git+https://github.com/mneumann/graph-sgf.git)",
  "lindenmayer-system 0.1.0 (git+https://github.com/mneumann/lindenmayer-system.git)",
- "munkres 0.0.2 (git+https://github.com/mneumann/munkres-rs.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "pcg 0.0.1 (git+https://github.com/codahale/pcg.git)",
@@ -105,10 +104,10 @@ source = "git+https://github.com/mneumann/graph-layout-rs.git#a304a5200ca34035bf
 
 [[package]]
 name = "graph-neighbor-matching"
-version = "0.0.1"
-source = "git+https://github.com/mneumann/graph-neighbor-matching.git#f8d2a8cd2c4b4a712e9cc0da222f9110283113e6"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "munkres 0.0.2 (git+https://github.com/mneumann/munkres-rs.git)",
+ "munkres 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -152,8 +151,8 @@ dependencies = [
 
 [[package]]
 name = "munkres"
-version = "0.0.2"
-source = "git+https://github.com/mneumann/munkres-rs.git#1abfbf5ada7ac440e0c8c43755c7072dcaa61aaf"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "fixedbitset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

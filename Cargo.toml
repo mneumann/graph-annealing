@@ -19,12 +19,13 @@ serde_macros = "*"
 
 sexp = "1.1"
 
+# git = "https://github.com/mneumann/graph-neighbor-matching.git"
+graph-neighbor-matching = "0.1.0"
+
 pcg = { git = "https://github.com/codahale/pcg.git" }
 triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
-munkres = { git = "https://github.com/mneumann/munkres-rs.git" }
 graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }
 evo = { git = "https://github.com/mneumann/evo-rs.git" }
-graph-neighbor-matching = { git = "https://github.com/mneumann/graph-neighbor-matching.git" }
 graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
 graph-sgf = { git = "https://github.com/mneumann/graph-sgf.git" }
 lindenmayer-system = { git = "https://github.com/mneumann/lindenmayer-system.git" }

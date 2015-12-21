@@ -2,29 +2,31 @@ use petgraph::{Directed, EdgeDirection, Graph};
 use petgraph::graph::NodeIndex;
 use petgraph::algo::{connected_components, scc};
 use triadic_census::{OptDenseDigraph, TriadicCensus};
-use graph_neighbor_matching::neighbor_matching_score;
+use graph_neighbor_matching::{Closed01, Edge, GraphSimilarityMatrix, Idx, IgnoreNodeColors};
 use super::fitness_function::FitnessFunction;
+
+use graph_neighbor_matching::Graph as NGraph;
 
 pub struct Goal<N, E> {
     _target_graph: OptDenseDigraph<N, E>,
     target_census: TriadicCensus,
     target_connected_components: usize,
     target_strongly_connected_components: usize,
-    target_in_a: Vec<Vec<usize>>,
-    target_out_a: Vec<Vec<usize>>,
+    target_in_a: Vec<Vec<Edge>>,
+    target_out_a: Vec<Vec<Edge>>,
 }
 
-fn graph_to_edgelist<N, E>(g: &Graph<N, E, Directed>) -> (Vec<Vec<usize>>, Vec<Vec<usize>>) {
-    let mut in_a: Vec<Vec<usize>> = Vec::with_capacity(g.node_count());
-    let mut out_a: Vec<Vec<usize>> = Vec::with_capacity(g.node_count());
+fn graph_to_edgelist<N, E>(g: &Graph<N, E, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
+    let mut in_a: Vec<Vec<Edge>> = Vec::with_capacity(g.node_count());
+    let mut out_a: Vec<Vec<Edge>> = Vec::with_capacity(g.node_count());
     for ni in 0..g.node_count() {
-        let mut in_neighbors: Vec<usize> = Vec::new();
-        let mut out_neighbors: Vec<usize> = Vec::new();
+        let mut in_neighbors: Vec<Edge> = Vec::new();
+        let mut out_neighbors: Vec<Edge> = Vec::new();
         for n in g.neighbors_directed(NodeIndex::new(ni), EdgeDirection::Incoming) {
-            in_neighbors.push(n.index());
+            in_neighbors.push(Edge::new(n.index() as Idx, Closed01::zero()));
         }
         for n in g.neighbors_directed(NodeIndex::new(ni), EdgeDirection::Outgoing) {
-            out_neighbors.push(n.index());
+            out_neighbors.push(Edge::new(n.index() as Idx, Closed01::zero()));
         }
         in_a.push(in_neighbors);
         out_a.push(out_neighbors);
@@ -86,14 +88,16 @@ impl<N: Clone + Default, E: Clone + Default> Goal<N, E> {
                                                            g: &OptDenseDigraph<A, B>)
                                                            -> f32 {
         let (in_b, out_b) = graph_to_edgelist(g.ref_graph());
-        let (_iter, score) = neighbor_matching_score(&self.target_in_a[..],
-                                                     &in_b[..],
-                                                     &self.target_out_a[..],
-                                                     &out_b[..],
-                                                     0.1, // XXX
-                                                     20); // XXX
-        assert!(score >= 0.0 && score <= 1.0);
-        let score = 1.0 - score;
+        let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.target_in_a[..],
+                                                             &self.target_out_a[..]),
+                                                 NGraph::new(&in_b[..], &out_b[..]),
+                                                 IgnoreNodeColors);
+        // XXX
+        sim.iterate(20, 0.1);
+
+        let score = sim.score_sum_norm_min_degree(None);
+
+        let score = 1.0 - score.get();
         score
     }
 }
