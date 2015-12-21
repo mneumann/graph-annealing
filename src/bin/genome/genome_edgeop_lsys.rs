@@ -119,7 +119,9 @@ impl System {
         self.rules.iter().map(|(&k, _)| k).nth(nth).unwrap()
     }
 
-    fn with_random_rule<R:Rng, F: FnMut(&mut R, &Rule<Sym>)>(&self, rng: &mut R, mut callback: F) {
+    fn with_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym>)>(&self,
+                                                              rng: &mut R,
+                                                              mut callback: F) {
         let rule_id = self.random_rule_id(rng);
 
         if let Some(local_rules) = self.rules.get(&rule_id) {
@@ -131,7 +133,9 @@ impl System {
         }
     }
 
-    fn replace_random_rule<R:Rng, F: FnMut(&mut R, &Rule<Sym>) -> Rule<Sym>>(&mut self, rng: &mut R, mut update: F) {
+    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym>) -> Rule<Sym>>(&mut self,
+                                                                              rng: &mut R,
+                                                                              mut update: F) {
         let rule_to_modify = self.random_rule_id(rng);
 
         if let Some(local_rules) = self.rules.get_mut(&rule_to_modify) {
@@ -533,11 +537,11 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     }
 
     // At first, a random rule in p2 is determined, then
-    // it is copied / inserted / replaced with a 
+    // it is copied / inserted / replaced with a
     // rule in p1.
     //
     // * Replacing one rule of p1 with a rule of p2.
-    // * Insert a subsequence of a rule of p2 into p1. 
+    // * Insert a subsequence of a rule of p2 into p1.
     // * Replace a subsequence
     pub fn crossover<R: Rng>(&self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
         let mut new_ind = p1.clone();
@@ -546,9 +550,15 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
             println!("p2 called with random rule: {:?}", rule_p2);
 
             new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
-                let new_production = linear_2point_crossover_random(rng, &rule_p1.successor.0, &rule_p2.successor.0);
+                let new_production = linear_2point_crossover_random(rng,
+                                                                    &rule_p1.successor.0,
+                                                                    &rule_p2.successor.0);
 
-                Rule {successor: SymbolString(new_production), condition: rule_p1.condition.clone(), symbol: rule_p1.symbol.clone()}
+                Rule {
+                    successor: SymbolString(new_production),
+                    condition: rule_p1.condition.clone(),
+                    symbol: rule_p1.symbol.clone(),
+                }
             });
 
         });
