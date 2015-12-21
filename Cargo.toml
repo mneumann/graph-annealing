@@ -4,28 +4,30 @@ version = "0.1.0"
 authors = ["Michael Neumann <mneumann@ntecs.de>"]
 
 [dependencies]
-petgraph = "*"
+petgraph = "0.2.0"
 rand = "0.3"
-nalgebra = "*"
-clap = "*"
-crossbeam = "*"
-simple_parallel = "*"
+nalgebra = "0.4.0"
+clap = "1.5.0"
+crossbeam = "0.1.0"
+simple_parallel = "0.3.0"
 num_cpus = "0.2"
 time = "0.1"
 
-serde = "*"
-serde_json = "0.6"
-serde_macros = "*"
+serde = "0.6.0"
+serde_json = "0.6.0"
+serde_macros = "0.6.0"
 
 sexp = "1.1"
 
 # git = "https://github.com/mneumann/graph-neighbor-matching.git"
 graph-neighbor-matching = "0.2.0"
 
+# git = "https://github.com/mneumann/triadic-census-rs.git"
+triadic-census = "0.1.0"
+
 closed01 = "0.0.1"
 
 pcg = { git = "https://github.com/codahale/pcg.git" }
-triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
 graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }
 evo = { git = "https://github.com/mneumann/evo-rs.git" }
 graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
