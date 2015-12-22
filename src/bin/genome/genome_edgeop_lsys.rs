@@ -148,10 +148,10 @@ impl System {
                 let idx = rng.gen_range(0, len);
                 let new_rule = {
                     let rule = &local_rules[idx];
-                    //println!("Mutate rule before: {:?}", rule);
+                    // println!("Mutate rule before: {:?}", rule);
                     update(rng, rule)
                 };
-                //println!("Mutate rule after: {:?}", new_rule);
+                // println!("Mutate rule after: {:?}", new_rule);
                 local_rules[idx] = new_rule;
             } else {
                 println!("no modification");
@@ -647,26 +647,25 @@ impl<N:Clone+Sync+Default + Debug,E:Clone+Sync+Default + Debug> FitnessEval<Geno
         })
     }
 
-    /*
-    fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
-        let goal = &self.goal;
-        let axiom_args = &self.axiom_args[..];
-        let iterations = self.iterations;
-        let fitness_functions = self.fitness_functions;
-
-        let mut result = Vec::new();
-        pop.into_par_iter().map(|ind| {
-                let edge_ops = ind.to_edge_ops(axiom_args, iterations);
-                let g = edgeops_to_graph(&edge_ops);
-
-                MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
-                                       goal.apply_fitness_function(fitness_functions.1, &g),
-                                       goal.apply_fitness_function(fitness_functions.2, &g)))
-
-        }).collect_into(&mut result);
-        result
-    }
-    */
+// fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
+// let goal = &self.goal;
+// let axiom_args = &self.axiom_args[..];
+// let iterations = self.iterations;
+// let fitness_functions = self.fitness_functions;
+//
+// let mut result = Vec::new();
+// pop.into_par_iter().map(|ind| {
+// let edge_ops = ind.to_edge_ops(axiom_args, iterations);
+// let g = edgeops_to_graph(&edge_ops);
+//
+// MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
+// goal.apply_fitness_function(fitness_functions.1, &g),
+// goal.apply_fitness_function(fitness_functions.2, &g)))
+//
+// }).collect_into(&mut result);
+// result
+// }
+//
 
 }
 
@@ -678,8 +677,8 @@ impl Genome {
                                                             axiom_args[1].clone()))]);
         // XXX: limit #iterations based on produced length
         let (s, iter) = self.system.develop(axiom, iterations);
-        //println!("produced string: {:?}", s);
-        //println!("stopped after iterations: {:?}", iter);
+        // println!("produced string: {:?}", s);
+        // println!("stopped after iterations: {:?}", iter);
 
         let edge_ops: Vec<_> = s.0.into_iter().filter_map(|op| {
             match op.symbol() {

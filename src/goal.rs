@@ -9,7 +9,7 @@ use std::fmt::Debug;
 
 use graph_neighbor_matching::Graph as NGraph;
 
-//#[derive(Debug)]
+// #[derive(Debug)]
 pub struct Goal<N: Debug, E: Debug> {
     _target_graph: OptDenseDigraph<N, E>,
     target_census: TriadicCensus,
@@ -19,7 +19,8 @@ pub struct Goal<N: Debug, E: Debug> {
     target_out_a: Vec<Vec<Edge>>,
 }
 
-fn graph_to_edgelist<N: Debug, E: Debug>(g: &Graph<N, E, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
+fn graph_to_edgelist<N: Debug, E: Debug>(g: &Graph<N, E, Directed>)
+                                         -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
     let mut in_a: Vec<Vec<Edge>> = Vec::with_capacity(g.node_count());
     let mut out_a: Vec<Vec<Edge>> = Vec::with_capacity(g.node_count());
     for ni in 0..g.node_count() {
@@ -80,16 +81,18 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         let cc = connected_components(g.ref_graph()) as isize;
         ((self.target_connected_components as isize) - cc).abs() as usize
     }
-    pub fn strongly_connected_components_distance<A: Default+Debug, B: Default+Debug>(&self,
-                                                                          g: &OptDenseDigraph<A, B>)
-                                                                          -> usize {
+    pub fn strongly_connected_components_distance<A: Default + Debug, B: Default + Debug>
+        (&self,
+         g: &OptDenseDigraph<A, B>)
+         -> usize {
         let scc = scc(g.ref_graph()).len() as isize;
         ((self.target_strongly_connected_components as isize) - scc).abs() as usize
     }
 
-    pub fn neighbor_matching_score<A: Default+Debug, B: Default+Debug>(&self,
-                                                           g: &OptDenseDigraph<A, B>)
-                                                           -> f32 {
+    pub fn neighbor_matching_score<A: Default + Debug, B: Default + Debug>(&self,
+                                                                           g: &OptDenseDigraph<A,
+                                                                                               B>)
+                                                                           -> f32 {
         let (in_b, out_b) = graph_to_edgelist(g.ref_graph());
         let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.target_in_a[..],
                                                              &self.target_out_a[..]),

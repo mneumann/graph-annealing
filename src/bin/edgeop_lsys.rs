@@ -45,7 +45,7 @@ use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
 
 #[allow(non_snake_case)]
 fn main() {
-    //rayon::initialize();
+    // rayon::initialize();
 
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);
