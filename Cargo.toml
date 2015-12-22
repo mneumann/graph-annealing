@@ -19,6 +19,8 @@ serde_macros = "0.6.0"
 
 sexp = "1.1"
 
+rayon = {git = "https://github.com/nikomatsakis/rayon.git"}
+
 #graph-neighbor-matching = {git = "https://github.com/mneumann/graph-neighbor-matching.git"}
 graph-neighbor-matching = "0.2.1"
 

@@ -16,6 +16,8 @@ extern crate time;
 extern crate lindenmayer_system;
 extern crate graph_edge_evolution;
 
+extern crate rayon;
+
 #[path="genome/genome_edgeop_lsys.rs"]
 pub mod genome;
 
@@ -43,6 +45,8 @@ use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
 
 #[allow(non_snake_case)]
 fn main() {
+    //rayon::initialize();
+
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);
     let matches = App::new("nsga2_edge")
