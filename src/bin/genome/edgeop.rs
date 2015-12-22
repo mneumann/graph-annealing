@@ -11,7 +11,8 @@ defops!{EdgeOp;
     Parent,
     Reverse,
     Save,
-    Restore
+    Restore,
+    Output
 }
 
 pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
@@ -21,6 +22,7 @@ pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
             EdgeOp::Dup => EdgeOperation::Duplicate { weight: f },
             EdgeOp::Split => EdgeOperation::Split { weight: f },
             EdgeOp::Loop => EdgeOperation::Loop { weight: f },
+            EdgeOp::Output => EdgeOperation::Output { weight: f },
             EdgeOp::Merge => EdgeOperation::Merge { n: NthEdgeF(f.abs().fract()) },
             EdgeOp::Next => EdgeOperation::Next { n: NthEdgeF(f.abs().fract()) },
             EdgeOp::Parent => EdgeOperation::Parent { n: NthEdgeF(f.abs().fract()) },
@@ -31,7 +33,7 @@ pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
         builder.apply_operation(graph_op);
     }
 
-    let mut g: OptDenseDigraph<(), ()> = OptDenseDigraph::new(builder.total_number_of_nodes()); // XXX: rename to real_number
+    let mut g: OptDenseDigraph<(), ()> = OptDenseDigraph::new(builder.count_nodes());
 
     // maps node_idx to index used within the graph.
     let mut node_map: BTreeMap<usize, usize> = BTreeMap::new(); // XXX: with_capacity

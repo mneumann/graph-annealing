@@ -5,10 +5,12 @@ use triadic_census::{OptDenseDigraph, TriadicCensus};
 use graph_neighbor_matching::{Edge, GraphSimilarityMatrix, IgnoreNodeColors};
 use super::fitness_function::FitnessFunction;
 use closed01::Closed01;
+use std::fmt::Debug;
 
 use graph_neighbor_matching::Graph as NGraph;
 
-pub struct Goal<N, E> {
+//#[derive(Debug)]
+pub struct Goal<N: Debug, E: Debug> {
     _target_graph: OptDenseDigraph<N, E>,
     target_census: TriadicCensus,
     target_connected_components: usize,
@@ -17,7 +19,7 @@ pub struct Goal<N, E> {
     target_out_a: Vec<Vec<Edge>>,
 }
 
-fn graph_to_edgelist<N, E>(g: &Graph<N, E, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
+fn graph_to_edgelist<N: Debug, E: Debug>(g: &Graph<N, E, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
     let mut in_a: Vec<Vec<Edge>> = Vec::with_capacity(g.node_count());
     let mut out_a: Vec<Vec<Edge>> = Vec::with_capacity(g.node_count());
     for ni in 0..g.node_count() {
@@ -36,7 +38,7 @@ fn graph_to_edgelist<N, E>(g: &Graph<N, E, Directed>) -> (Vec<Vec<Edge>>, Vec<Ve
     (in_a, out_a)
 }
 
-impl<N: Clone + Default, E: Clone + Default> Goal<N, E> {
+impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
     pub fn new(g: OptDenseDigraph<N, E>) -> Goal<N, E> {
         let census = TriadicCensus::from(&g);
         let (in_a, out_a) = graph_to_edgelist(g.ref_graph());
@@ -67,25 +69,25 @@ impl<N: Clone + Default, E: Clone + Default> Goal<N, E> {
         }
     }
 
-    pub fn triadic_distance<A, B>(&self, g: &OptDenseDigraph<A, B>) -> f64 {
+    pub fn triadic_distance<A: Debug, B: Debug>(&self, g: &OptDenseDigraph<A, B>) -> f64 {
         let census = TriadicCensus::from(g);
         TriadicCensus::distance(&self.target_census, &census)
     }
 
-    pub fn connected_components_distance<A: Default, B: Default>(&self,
+    pub fn connected_components_distance<A: Default+Debug, B: Default+Debug>(&self,
                                                                  g: &OptDenseDigraph<A, B>)
                                                                  -> usize {
         let cc = connected_components(g.ref_graph()) as isize;
         ((self.target_connected_components as isize) - cc).abs() as usize
     }
-    pub fn strongly_connected_components_distance<A: Default, B: Default>(&self,
+    pub fn strongly_connected_components_distance<A: Default+Debug, B: Default+Debug>(&self,
                                                                           g: &OptDenseDigraph<A, B>)
                                                                           -> usize {
         let scc = scc(g.ref_graph()).len() as isize;
         ((self.target_strongly_connected_components as isize) - scc).abs() as usize
     }
 
-    pub fn neighbor_matching_score<A: Default, B: Default>(&self,
+    pub fn neighbor_matching_score<A: Default+Debug, B: Default+Debug>(&self,
                                                            g: &OptDenseDigraph<A, B>)
                                                            -> f32 {
         let (in_b, out_b) = graph_to_edgelist(g.ref_graph());

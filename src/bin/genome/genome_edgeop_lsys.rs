@@ -36,6 +36,7 @@ use simple_parallel::Pool;
 use crossbeam;
 use std::collections::BTreeMap;
 use std::cmp;
+use std::fmt::Debug;
 
 /// Rule mutation operations.
 defops!{RuleMutOp;
@@ -145,10 +146,10 @@ impl System {
                 let idx = rng.gen_range(0, len);
                 let new_rule = {
                     let rule = &local_rules[idx];
-                    println!("Mutate rule before: {:?}", rule);
+                    //println!("Mutate rule before: {:?}", rule);
                     update(rng, rule)
                 };
-                println!("Mutate rule after: {:?}", new_rule);
+                //println!("Mutate rule after: {:?}", new_rule);
                 local_rules[idx] = new_rule;
             } else {
                 println!("no modification");
@@ -273,7 +274,7 @@ pub struct Genome {
     system: System,
 }
 
-pub struct Toolbox<N, E> {
+pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
     pool: Pool,
     fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
@@ -303,7 +304,7 @@ pub struct Toolbox<N, E> {
     symbol_generator: SymbolGenerator,
 }
 
-impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
+impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     pub fn new(goal: Goal<N, E>,
                pool: Pool,
                fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
@@ -607,7 +608,7 @@ impl<N: Clone + Default, E: Clone + Default> Toolbox<N, E> {
     }
 }
 
-impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
+impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Mate<Genome> for Toolbox<N, E> {
     // p1 is potentially "better" than p2
     fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
 
@@ -619,7 +620,7 @@ impl<N: Clone + Default, E: Clone + Default> Mate<Genome> for Toolbox<N, E> {
     }
 }
 
-impl<N:Clone+Sync+Default,E:Clone+Sync+Default> FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<N,E> {
+impl<N:Clone+Sync+Default + Debug,E:Clone+Sync+Default + Debug> FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<N,E> {
 /// Evaluates the fitness of a Genome population.
     fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
         let pool = &mut self.pool;
@@ -652,8 +653,8 @@ impl Genome {
                                                             axiom_args[1].clone()))]);
         // XXX: limit #iterations based on produced length
         let (s, iter) = self.system.develop(axiom, iterations);
-        println!("produced string: {:?}", s);
-        println!("stopped after iterations: {:?}", iter);
+        //println!("produced string: {:?}", s);
+        //println!("stopped after iterations: {:?}", iter);
 
         let edge_ops: Vec<_> = s.0.into_iter().filter_map(|op| {
             match op.symbol() {

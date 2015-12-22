@@ -6,9 +6,9 @@ dependencies = [
  "closed01 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
- "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
+ "graph-edge-evolution 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
- "graph-neighbor-matching 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graph-neighbor-matching 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-sgf 0.0.1 (git+https://github.com/mneumann/graph-sgf.git)",
  "lindenmayer-system 0.1.0 (git+https://github.com/mneumann/lindenmayer-system.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -22,7 +22,7 @@ dependencies = [
  "sexp 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple_parallel 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.34 (registry+https://github.com/rust-lang/crates.io-index)",
- "triadic-census 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "triadic-census 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -78,7 +78,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "evo"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/evo-rs.git#41b4134f998610c2cb038afdca7313ac43d2d8b1"
+source = "git+https://github.com/mneumann/evo-rs.git#5af1c0e124fda560e4095713a027abf7bfe276db"
 dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -93,10 +93,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "graph-edge-evolution"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/graph-edge-evolution.git#ffb42fb27711072306bf0c801ea68de9af19894a"
-dependencies = [
- "log 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "graph-layout"
@@ -105,7 +102,7 @@ source = "git+https://github.com/mneumann/graph-layout-rs.git#a304a5200ca34035bf
 
 [[package]]
 name = "graph-neighbor-matching"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "closed01 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -141,14 +138,6 @@ version = "0.1.0"
 source = "git+https://github.com/mneumann/lindenmayer-system.git#d49f34eb43a6bf41489fbaae2239784af1440ce9"
 dependencies = [
  "turtle 0.1.0 (git+https://github.com/mneumann/turtle-rs.git)",
-]
-
-[[package]]
-name = "log"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "libc 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -305,7 +294,7 @@ dependencies = [
 
 [[package]]
 name = "triadic-census"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "fixedbitset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
