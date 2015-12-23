@@ -2,6 +2,7 @@
 name = "graph_annealing"
 version = "0.1.0"
 dependencies = [
+ "asexp 0.1.0 (git+https://github.com/mneumann/asexp-rs.git)",
  "clap 1.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "closed01 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -39,6 +40,11 @@ dependencies = [
 name = "ansi_term"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "asexp"
+version = "0.1.0"
+source = "git+https://github.com/mneumann/asexp-rs.git#b20916def148ac272631287aadb240b2898f3b3d"
 
 [[package]]
 name = "aster"

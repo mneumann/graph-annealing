@@ -15,6 +15,7 @@ extern crate triadic_census;
 extern crate time;
 extern crate lindenmayer_system;
 extern crate graph_edge_evolution;
+extern crate asexp;
 
 extern crate rayon;
 
@@ -40,15 +41,26 @@ use graph_sgf::{PetgraphReader, Unweighted};
 use triadic_census::OptDenseDigraph;
 use std::io::BufReader;
 use std::fs::File;
-use genome::edgeop::edgeops_to_graph;
+use genome::VarOp;
+use genome::edgeop::{EdgeOp, edgeops_to_graph};
 use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
+use std::io::Read;
 
-#[allow(non_snake_case)]
-fn main() {
-    // rayon::initialize();
+#[derive(Debug)]
+struct Config {
+    ngen: usize,
+    mu: usize,
+    lambda: usize,
+    k: usize,
+    seed: Vec<u64>,
+    objectives: Vec<FitnessFunction>,
+    thresholds: Vec<f32>,
+    graph: Graph<Unweighted, Unweighted, Directed>,
+    edge_ops: Vec<(EdgeOp, u32)>,
+    var_ops: Vec<(VarOp, u32)>,
+}
 
-    let ncpus = num_cpus::get();
-    println!("Using {} CPUs", ncpus);
+fn read_config() -> Config {
     let matches = App::new("nsga2_edge")
                       .arg(Arg::with_name("NGEN")
                                .long("ngen")
@@ -104,21 +116,17 @@ fn main() {
                       .get_matches();
 
     // number of generations
-    let NGEN: usize = FromStr::from_str(matches.value_of("NGEN").unwrap()).unwrap();
-    println!("NGEN: {}", NGEN);
+    let ngen: usize = FromStr::from_str(matches.value_of("NGEN").unwrap()).unwrap();
 
     // size of population
-    let MU: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
-    println!("MU: {}", MU);
+    let mu: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
 
     // size of offspring population
-    let LAMBDA: usize = FromStr::from_str(matches.value_of("LAMBDA").unwrap()).unwrap();
-    println!("LAMBDA: {}", LAMBDA);
+    let lambda: usize = FromStr::from_str(matches.value_of("LAMBDA").unwrap()).unwrap();
 
     // tournament selection
-    let K: usize = FromStr::from_str(matches.value_of("K").unwrap_or("2")).unwrap();
-    assert!(K > 0);
-    println!("K: {}", K);
+    let k: usize = FromStr::from_str(matches.value_of("K").unwrap_or("2")).unwrap();
+    assert!(k > 0);
 
     let seed: Vec<u64>;
     if let Some(seed_str) = matches.value_of("SEED") {
@@ -128,27 +136,6 @@ fn main() {
         let mut rng = OsRng::new().unwrap();
         seed = (0..2).map(|_| rng.next_u64()).collect();
     }
-    println!("SEED: {:?}", seed);
-
-    // let MUTP: f32 = FromStr::from_str(matches.value_of("MUTP").unwrap()).unwrap();
-    // println!("MUTP: {:?}", MUTP);
-
-    // Parse weighted operation choice from command line
-    // let mutops = parse_weighted_op_list(matches.value_of("MUTOPS").unwrap()).unwrap();
-    // println!("mut ops: {:?}", mutops);
-
-    // let ilen_str = matches.value_of("ILEN").unwrap();
-    // let ilen: Vec<usize> = ilen_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
-    // assert!(ilen.len() == 1 || ilen.len() == 2);
-
-    // let ilen_from = ilen[0];
-    // let ilen_to = if ilen.len() == 1 {
-    // ilen[0]
-    // } else {
-    // ilen[1]
-    // };
-    // assert!(ilen_from <= ilen_to);
-    //
 
     // read objective functions
     let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES")
@@ -166,8 +153,6 @@ fn main() {
     if objectives_arr.len() > 3 {
         panic!("Max 3 objectives allowed");
     }
-
-    println!("objectives={:?}", objectives_arr);
 
     // read objective functions
     let mut threshold_arr: Vec<f32> = Vec::new();
@@ -194,25 +179,54 @@ fn main() {
     };
 
     // Parse weighted operation choice from command line
-    let ops = parse_weighted_op_list(matches.value_of("OPS").unwrap()).unwrap();
-    println!("edge ops: {:?}", ops);
+    let edge_ops = parse_weighted_op_list(matches.value_of("OPS").unwrap()).unwrap();
 
     // Parse weighted variation operators from command line
-    let varops = parse_weighted_op_list(matches.value_of("VAROPS").unwrap()).unwrap();
-    println!("var ops: {:?}", varops);
+    let var_ops = parse_weighted_op_list(matches.value_of("VAROPS").unwrap()).unwrap();
 
-    let w_ops = to_weighted_vec(&ops);
+    Config {
+        ngen: ngen,
+        mu: mu,
+        lambda: lambda,
+        k: k,
+        seed: seed,
+        objectives: objectives_arr,
+        thresholds: threshold_arr,
+        graph: graph,
+        edge_ops: edge_ops,
+        var_ops: var_ops,
+    }
+}
+
+#[allow(non_snake_case)]
+fn main() {
+    // rayon::initialize();
+
+    let ncpus = num_cpus::get();
+    println!("Using {} CPUs", ncpus);
+
+    /*
+    let mut s = String::new();
+    let _ = File::open("runit.config").unwrap().read_to_string(&mut s).unwrap();
+    println!("{}", s);
+    let expr = asexp::Expr::parse_toplevel(&s).unwrap();
+    println!("{}", expr);
+    return;
+    */
+
+    let config = read_config();
+    println!("{:#?}", config);
+
+    let w_ops = to_weighted_vec(&config.edge_ops);
     assert!(w_ops.len() > 0);
 
-    let w_var_ops = to_weighted_vec(&varops);
+    let w_var_ops = to_weighted_vec(&config.var_ops);
     assert!(w_var_ops.len() > 0);
 
-    // let w_mut_ops = to_weighted_vec(&mutops);
-    // assert!(w_mut_ops.len() > 0);
 
-    let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(graph)),
+    let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
                                    Pool::new(ncpus),
-                                   (objectives_arr[0], objectives_arr[1], objectives_arr[2]),
+                                   (config.objectives[0], config.objectives[1], config.objectives[2]),
 
                                    3, // iterations
                                    20, // num_rules
@@ -227,26 +241,19 @@ fn main() {
                                    ConstExprOp::uniform_distribution(),
                                    w_var_ops);
 
-    assert!(seed.len() == 2);
-    let mut rng: PcgRng = SeedableRng::from_seed([seed[0], seed[1]]);
+    assert!(config.seed.len() == 2);
+    let mut rng: PcgRng = SeedableRng::from_seed([config.seed[0], config.seed[1]]);
 
     // create initial random population
-    let initial_population: Vec<Genome> = (0..MU)
+    let initial_population: Vec<Genome> = (0..config.mu)
                                               .map(|_| {
-                                                  // let len = if ilen_from == ilen_to {
-                                                  // ilen_from
-                                                  // } else {
-                                                  // Range::new(ilen_from, ilen_to)
-                                                  // .ind_sample(&mut rng)
-                                                  // };
-                                                  //
                                                   toolbox.random_genome(&mut rng)
                                               })
                                               .collect();
 
 
     // output initial population to stdout.
-    println!("Population: {:?}", initial_population);
+    println!("Population: {:#?}", initial_population);
 
     // evaluate fitness
     let fitness: Vec<_> = toolbox.fitness(&initial_population[..]);
@@ -255,10 +262,10 @@ fn main() {
     let mut pop = initial_population;
     let mut fit = fitness;
 
-    for iteration in 0..NGEN {
+    for iteration in 0..config.ngen {
         print!("# {:>6}", iteration);
         let before = time::precise_time_ns();
-        let (new_pop, new_fit) = nsga2::iterate(&mut rng, pop, fit, MU, LAMBDA, K, &mut toolbox);
+        let (new_pop, new_fit) = nsga2::iterate(&mut rng, pop, fit, config.mu, config.lambda, config.k, &mut toolbox);
         let duration = time::precise_time_ns() - before;
         pop = new_pop;
         fit = new_fit;
@@ -272,8 +279,8 @@ fn main() {
 
         let mut num_optima = 0;
         for f in fit.iter() {
-            if f.objectives[0] <= threshold_arr[0] && f.objectives[1] <= threshold_arr[1] &&
-               f.objectives[2] <= threshold_arr[2] {
+            if f.objectives[0] <= config.thresholds[0] && f.objectives[1] <= config.thresholds[1] &&
+               f.objectives[2] <= config.thresholds[2] {
                 num_optima += 1;
             }
         }
@@ -303,8 +310,8 @@ fn main() {
     println!("===========================================================");
 
     // finally evaluate rank and crowding distance (using select()).
-    let rank_dist = nsga2::select(&fit[..], MU);
-    assert!(rank_dist.len() == MU);
+    let rank_dist = nsga2::select(&fit[..], config.mu);
+    assert!(rank_dist.len() == config.mu);
 
     let mut j = 0;
 
@@ -323,7 +330,7 @@ fn main() {
             draw_graph(g.ref_graph(),
                        // XXX: name
                        &format!("edgeop_lsys_g{}_f{}_i{}.svg",
-                                NGEN,
+                                config.ngen,
                                 fit[rd.idx].objectives[1] as usize,
                                 j));
             j += 1;
