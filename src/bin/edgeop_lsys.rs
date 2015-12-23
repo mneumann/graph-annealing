@@ -5,7 +5,6 @@ extern crate evo;
 extern crate petgraph;
 #[macro_use]
 extern crate graph_annealing;
-extern crate clap;
 extern crate crossbeam;
 extern crate simple_parallel;
 extern crate num_cpus;
@@ -23,7 +22,6 @@ extern crate rayon;
 pub mod genome;
 
 use std::str::FromStr;
-use clap::{App, Arg};
 use rand::{Rng, SeedableRng};
 use rand::distributions::{IndependentSample, Range};
 use rand::os::OsRng;
@@ -46,6 +44,7 @@ use genome::edgeop::{EdgeOp, edgeops_to_graph};
 use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
 use std::io::Read;
 use asexp::Expr;
+use std::env;
 
 #[derive(Debug)]
 struct Config {
@@ -61,146 +60,7 @@ struct Config {
     var_ops: Vec<(VarOp, u32)>,
 }
 
-fn read_config() -> Config {
-    let matches = App::new("nsga2_edge")
-                      .arg(Arg::with_name("NGEN")
-                               .long("ngen")
-                               .help("Number of generations to run")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("OPS")
-                               .long("ops")
-                               .help("Edge operation and weight specification, e.g. \
-                                      Dup:1,Split:3,Parent:2")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("GRAPH")
-                               .long("graph")
-                               .help("SGF graph file")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("MU")
-                               .long("mu")
-                               .help("Population size")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("LAMBDA")
-                               .long("lambda")
-                               .help("Size of offspring population")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("K")
-                               .long("k")
-                               .help("Tournament selection (default: 2)")
-                               .takes_value(true))
-                      .arg(Arg::with_name("SEED")
-                               .long("seed")
-                               .help("Seed value for Rng")
-                               .takes_value(true))
-                      .arg(Arg::with_name("VAROPS")
-                               .long("varops")
-                               .help("Variation operators and weight specification, e.g. \
-                                      Mutate:1,LinearCrossover2:1,UniformCrossover:2,Copy:0")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("OBJECTIVES")
-                               .long("objectives")
-                               .help("Specify 3 objective functions comma separated (null, cc, \
-                                      scc, nm, td), e.g. cc,nm,td")
-                               .takes_value(true)
-                               .required(true))
-                      .arg(Arg::with_name("THRESHOLD")
-                               .long("threshold")
-                               .help("Abort if for all fitness[i] <= value[i] (default: 0,0,0)")
-                               .takes_value(true)
-                               .required(false))
-                      .get_matches();
-
-    // number of generations
-    let ngen: usize = FromStr::from_str(matches.value_of("NGEN").unwrap()).unwrap();
-
-    // size of population
-    let mu: usize = FromStr::from_str(matches.value_of("MU").unwrap()).unwrap();
-
-    // size of offspring population
-    let lambda: usize = FromStr::from_str(matches.value_of("LAMBDA").unwrap()).unwrap();
-
-    // tournament selection
-    let k: usize = FromStr::from_str(matches.value_of("K").unwrap_or("2")).unwrap();
-    assert!(k > 0);
-
-    let seed: Vec<u64>;
-    if let Some(seed_str) = matches.value_of("SEED") {
-        seed = seed_str.split(",").map(|s| FromStr::from_str(s).unwrap()).collect();
-    } else {
-        println!("Use OsRng to generate seed..");
-        let mut rng = OsRng::new().unwrap();
-        seed = (0..2).map(|_| rng.next_u64()).collect();
-    }
-
-    // read objective functions
-    let mut objectives_arr: Vec<FitnessFunction> = matches.value_of("OBJECTIVES")
-                                                          .unwrap()
-                                                          .split(",")
-                                                          .map(|s| {
-                                                              FitnessFunction::from_str(s).unwrap()
-                                                          })
-                                                          .collect();
-
-    while objectives_arr.len() < 3 {
-        objectives_arr.push(FitnessFunction::Null);
-    }
-
-    if objectives_arr.len() > 3 {
-        panic!("Max 3 objectives allowed");
-    }
-
-    // read objective functions
-    let mut threshold_arr: Vec<f32> = Vec::new();
-    for s in matches.value_of("THRESHOLD").unwrap_or("").split(",") {
-        let value: f32 = FromStr::from_str(s).unwrap();
-        threshold_arr.push(value);
-    }
-
-    while threshold_arr.len() < 3 {
-        threshold_arr.push(0.0);
-    }
-
-    if threshold_arr.len() > 3 {
-        panic!("Max 3 threshold values allowed");
-    }
-
-    // read graph
-    let graph_file = matches.value_of("GRAPH").unwrap();
-    println!("Using graph file: {}", graph_file);
-    let graph = {
-        let mut f = BufReader::new(File::open(graph_file).unwrap());
-        let graph: Graph<Unweighted, Unweighted, Directed> = PetgraphReader::from_sgf(&mut f);
-        graph
-    };
-
-    // Parse weighted operation choice from command line
-    let edge_ops = parse_weighted_op_list(matches.value_of("OPS").unwrap()).unwrap();
-
-    // Parse weighted variation operators from command line
-    let var_ops = parse_weighted_op_list(matches.value_of("VAROPS").unwrap()).unwrap();
-
-    Config {
-        ngen: ngen,
-        mu: mu,
-        lambda: lambda,
-        k: k,
-        seed: seed,
-        objectives: objectives_arr,
-        thresholds: threshold_arr,
-        graph: graph,
-        edge_ops: edge_ops,
-        var_ops: var_ops,
-    }
-}
-
-
-fn read_config_from_asexp(expr: Expr) -> Config {
+fn parse_config(expr: Expr) -> Config {
     let map = expr.into_map().unwrap();
 
     // number of generations
@@ -297,11 +157,11 @@ fn main() {
     println!("Using {} CPUs", ncpus);
 
     let mut s = String::new();
-    let _ = File::open("runit.config").unwrap().read_to_string(&mut s).unwrap();
+    let configfile = env::args().nth(1).unwrap();
+    let _ = File::open(configfile).unwrap().read_to_string(&mut s).unwrap();
     let expr = asexp::Expr::parse_toplevel(&s).unwrap();
-    let config = read_config_from_asexp(expr);
+    let config = parse_config(expr);
 
-    //let config = read_config();
     println!("{:#?}", config);
 
     let w_ops = to_weighted_vec(&config.edge_ops);
