@@ -45,6 +45,7 @@ use genome::VarOp;
 use genome::edgeop::{EdgeOp, edgeops_to_graph};
 use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
 use std::io::Read;
+use asexp::Expr;
 
 #[derive(Debug)]
 struct Config {
@@ -198,23 +199,101 @@ fn read_config() -> Config {
     }
 }
 
-#[allow(non_snake_case)]
+
+fn read_config_from_asexp(expr: Expr) -> Config {
+    let map = expr.into_map().unwrap();
+
+    // number of generations
+    let ngen: usize = map.get("ngen").and_then(|v| v.get_uint()).unwrap() as usize;
+
+    // size of population
+    let mu: usize = map.get("mu").and_then(|v| v.get_uint()).unwrap() as usize;
+
+    // size of offspring population
+    let lambda: usize = map.get("lambda").and_then(|v| v.get_uint()).unwrap() as usize;
+
+    // tournament selection
+    let k: usize = map.get("k").and_then(|v| v.get_uint()).unwrap_or(2) as usize;
+    assert!(k > 0);
+
+    let seed: Vec<u64>;
+    if let Some(seed_expr) = map.get("seed") {
+        seed = seed_expr.get_uint_vec().unwrap();
+    } else {
+        println!("Use OsRng to generate seed..");
+        let mut rng = OsRng::new().unwrap();
+        seed = (0..2).map(|_| rng.next_u64()).collect();
+    }
+
+    // read objective functions
+    let mut objectives_arr: Vec<FitnessFunction> = map.get("objectives").unwrap().get_vec(|elm| FitnessFunction::from_str(elm.get_str().unwrap()).ok()).unwrap();
+
+    while objectives_arr.len() < 3 {
+        objectives_arr.push(FitnessFunction::Null);
+    }
+
+    if objectives_arr.len() > 3 {
+        panic!("Max 3 objectives allowed");
+    }
+
+    // read objective functions
+    let mut threshold_arr: Vec<f32> = map.get("thresholds").unwrap().get_vec(|elm| elm.get_float()).unwrap().iter().map(|&i| i as f32).collect();
+
+    while threshold_arr.len() < 3 {
+        threshold_arr.push(0.0);
+    }
+
+    if threshold_arr.len() > 3 {
+        panic!("Max 3 threshold values allowed");
+    }
+
+    // read graph
+    let graph_file = map.get("graph").unwrap().get_str().unwrap();
+    println!("Using graph file: {}", graph_file);
+    let graph = {
+        let mut f = BufReader::new(File::open(graph_file).unwrap());
+        let graph: Graph<Unweighted, Unweighted, Directed> = PetgraphReader::from_sgf(&mut f);
+        graph
+    };
+
+    // Parse weighted operation choice from command line
+    let mut edge_ops: Vec<(EdgeOp, u32)> = Vec::new();
+    for (k, v) in map.get("edgeops").unwrap().clone().into_map().unwrap().iter() {
+        edge_ops.push((EdgeOp::from_str(k).unwrap(), v.get_uint().unwrap() as u32));
+    }
+
+    // Parse weighted variation operators from command line
+    let mut var_ops: Vec<(VarOp, u32)> = Vec::new();
+    for (k, v) in map.get("varops").unwrap().clone().into_map().unwrap().iter() {
+        var_ops.push((VarOp::from_str(k).unwrap(), v.get_uint().unwrap() as u32));
+    }
+
+    Config {
+        ngen: ngen,
+        mu: mu,
+        lambda: lambda,
+        k: k,
+        seed: seed,
+        objectives: objectives_arr,
+        thresholds: threshold_arr,
+        graph: graph,
+        edge_ops: edge_ops,
+        var_ops: var_ops,
+    }
+}
+
 fn main() {
     // rayon::initialize();
 
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);
 
-    /*
     let mut s = String::new();
     let _ = File::open("runit.config").unwrap().read_to_string(&mut s).unwrap();
-    println!("{}", s);
     let expr = asexp::Expr::parse_toplevel(&s).unwrap();
-    println!("{}", expr);
-    return;
-    */
+    let config = read_config_from_asexp(expr);
 
-    let config = read_config();
+    //let config = read_config();
     println!("{:#?}", config);
 
     let w_ops = to_weighted_vec(&config.edge_ops);
