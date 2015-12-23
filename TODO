@@ -1,3 +1,4 @@
+* Special case the L-System genome to allow flat operations. reduce duplicate code.
 * Use genome length as criterion
 * Search for repeating sequences and lift them up one layer.
 * Add a pruning step, which removes unneccessary operations.
