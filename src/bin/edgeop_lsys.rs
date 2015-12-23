@@ -258,14 +258,22 @@ fn read_config_from_asexp(expr: Expr) -> Config {
 
     // Parse weighted operation choice from command line
     let mut edge_ops: Vec<(EdgeOp, u32)> = Vec::new();
-    for (k, v) in map.get("edgeops").unwrap().clone().into_map().unwrap().iter() {
-        edge_ops.push((EdgeOp::from_str(k).unwrap(), v.get_uint().unwrap() as u32));
+    if let Some(&Expr::Map(ref list)) = map.get("edgeops") {
+        for &(ref k, ref v) in list.iter() {
+            edge_ops.push((EdgeOp::from_str(k.get_str().unwrap()).unwrap(), v.get_uint().unwrap() as u32));
+        }
+    } else {
+        panic!();
     }
 
     // Parse weighted variation operators from command line
     let mut var_ops: Vec<(VarOp, u32)> = Vec::new();
-    for (k, v) in map.get("varops").unwrap().clone().into_map().unwrap().iter() {
-        var_ops.push((VarOp::from_str(k).unwrap(), v.get_uint().unwrap() as u32));
+    if let Some(&Expr::Map(ref list)) = map.get("varops") {
+        for &(ref k, ref v) in list.iter() {
+            var_ops.push((VarOp::from_str(k.get_str().unwrap()).unwrap(), v.get_uint().unwrap() as u32));
+        }
+    } else {
+        panic!();
     }
 
     Config {
