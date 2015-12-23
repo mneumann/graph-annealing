@@ -86,7 +86,14 @@ fn parse_config(expr: Expr) -> Config {
     }
 
     // read objective functions
-    let mut objectives_arr: Vec<FitnessFunction> = map.get("objectives").unwrap().get_vec(|elm| FitnessFunction::from_str(elm.get_str().unwrap()).ok()).unwrap();
+    let mut objectives_arr: Vec<FitnessFunction> = map.get("objectives")
+                                                      .unwrap()
+                                                      .get_vec(|elm| {
+                                                          FitnessFunction::from_str(elm.get_str()
+                                                                                       .unwrap())
+                                                              .ok()
+                                                      })
+                                                      .unwrap();
 
     while objectives_arr.len() < 3 {
         objectives_arr.push(FitnessFunction::Null);
@@ -97,7 +104,13 @@ fn parse_config(expr: Expr) -> Config {
     }
 
     // read objective functions
-    let mut threshold_arr: Vec<f32> = map.get("thresholds").unwrap().get_vec(|elm| elm.get_float()).unwrap().iter().map(|&i| i as f32).collect();
+    let mut threshold_arr: Vec<f32> = map.get("thresholds")
+                                         .unwrap()
+                                         .get_vec(|elm| elm.get_float())
+                                         .unwrap()
+                                         .iter()
+                                         .map(|&i| i as f32)
+                                         .collect();
 
     while threshold_arr.len() < 3 {
         threshold_arr.push(0.0);
@@ -120,7 +133,8 @@ fn parse_config(expr: Expr) -> Config {
     let mut edge_ops: Vec<(EdgeOp, u32)> = Vec::new();
     if let Some(&Expr::Map(ref list)) = map.get("edgeops") {
         for &(ref k, ref v) in list.iter() {
-            edge_ops.push((EdgeOp::from_str(k.get_str().unwrap()).unwrap(), v.get_uint().unwrap() as u32));
+            edge_ops.push((EdgeOp::from_str(k.get_str().unwrap()).unwrap(),
+                           v.get_uint().unwrap() as u32));
         }
     } else {
         panic!();
@@ -130,7 +144,8 @@ fn parse_config(expr: Expr) -> Config {
     let mut var_ops: Vec<(VarOp, u32)> = Vec::new();
     if let Some(&Expr::Map(ref list)) = map.get("varops") {
         for &(ref k, ref v) in list.iter() {
-            var_ops.push((VarOp::from_str(k.get_str().unwrap()).unwrap(), v.get_uint().unwrap() as u32));
+            var_ops.push((VarOp::from_str(k.get_str().unwrap()).unwrap(),
+                          v.get_uint().unwrap() as u32));
         }
     } else {
         panic!();
@@ -173,7 +188,9 @@ fn main() {
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
                                    Pool::new(ncpus),
-                                   (config.objectives[0], config.objectives[1], config.objectives[2]),
+                                   (config.objectives[0],
+                                    config.objectives[1],
+                                    config.objectives[2]),
 
                                    3, // iterations
                                    20, // num_rules
@@ -193,9 +210,7 @@ fn main() {
 
     // create initial random population
     let initial_population: Vec<Genome> = (0..config.mu)
-                                              .map(|_| {
-                                                  toolbox.random_genome(&mut rng)
-                                              })
+                                              .map(|_| toolbox.random_genome(&mut rng))
                                               .collect();
 
 
@@ -212,7 +227,13 @@ fn main() {
     for iteration in 0..config.ngen {
         print!("# {:>6}", iteration);
         let before = time::precise_time_ns();
-        let (new_pop, new_fit) = nsga2::iterate(&mut rng, pop, fit, config.mu, config.lambda, config.k, &mut toolbox);
+        let (new_pop, new_fit) = nsga2::iterate(&mut rng,
+                                                pop,
+                                                fit,
+                                                config.mu,
+                                                config.lambda,
+                                                config.k,
+                                                &mut toolbox);
         let duration = time::precise_time_ns() - before;
         pop = new_pop;
         fit = new_fit;
