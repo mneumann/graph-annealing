@@ -1,6 +1,7 @@
 use graph_edge_evolution::{EdgeOperation, GraphBuilder, NthEdgeF};
 use triadic_census::OptDenseDigraph;
 use std::collections::BTreeMap;
+use asexp::{Sexp};
 
 defops!{EdgeOp;
     Dup,
@@ -13,6 +14,12 @@ defops!{EdgeOp;
     Save,
     Restore,
     Output
+}
+
+impl Into<Sexp> for EdgeOp {
+    fn into(self) -> Sexp {
+        Sexp::from(self.to_string())
+    }
 }
 
 pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {

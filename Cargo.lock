@@ -44,7 +44,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "asexp"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/asexp-rs.git#6f841727cca77d971073e94ca6431e526e393f36"
+source = "git+https://github.com/mneumann/asexp-rs.git#6df658c2f12856be83bacd79e7bbd685dad7a61f"
 
 [[package]]
 name = "aster"
@@ -150,8 +150,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lindenmayer-system"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/lindenmayer-system.git#d49f34eb43a6bf41489fbaae2239784af1440ce9"
+source = "git+https://github.com/mneumann/lindenmayer-system.git#83f37078e70b2b85689db0f27c8e5bdebbcf843e"
 dependencies = [
+ "asexp 0.1.0 (git+https://github.com/mneumann/asexp-rs.git)",
  "turtle 0.1.0 (git+https://github.com/mneumann/turtle-rs.git)",
 ]
 

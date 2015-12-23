@@ -211,8 +211,13 @@ fn main() {
                                               .collect();
 
 
+    for ind in initial_population.iter() {
+        println!("{}", Into::<Sexp>::into(ind));
+    }
+    //let p_sexp: Vec<Sexp> = initial_population.iter().map(|ind| ind.into()).collect();
     // output initial population to stdout.
-    println!("Population: {:#?}", initial_population);
+    //println!("{}", Sexp::from(p_sexp));
+    //println!("Population: {:#?}", initial_population);
 
     // evaluate fitness
     let fitness: Vec<_> = toolbox.fitness(&initial_population[..]);

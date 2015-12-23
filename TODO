@@ -1,3 +1,4 @@
+* Write driver based on Toolbox trait
 * Special case the L-System genome to allow flat operations. reduce duplicate code.
 * Use genome length as criterion
 * Search for repeating sequences and lift them up one layer.

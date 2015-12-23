@@ -37,6 +37,7 @@ use crossbeam;
 use std::collections::BTreeMap;
 use std::cmp;
 use std::fmt::Debug;
+use asexp::{Sexp, Atom};
 
 use rayon::par_iter::*;
 
@@ -85,6 +86,15 @@ type RuleId = u32;
 enum EdgeAlphabet {
     Terminal(EdgeOp),
     NonTerminal(RuleId),
+}
+
+impl Into<Sexp> for EdgeAlphabet {
+    fn into(self) -> Sexp {
+        match self {
+            EdgeAlphabet::Terminal(op) => op.into(),
+            EdgeAlphabet::NonTerminal(rule_id) => Sexp::from(format!("@{}", rule_id))
+        }
+    }
 }
 
 impl Alphabet for EdgeAlphabet {}
@@ -270,11 +280,6 @@ impl SymbolGenerator {
 }
 
 
-
-#[derive(Clone, Debug)]
-pub struct Genome {
-    system: System,
-}
 
 pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
@@ -667,6 +672,30 @@ impl<N:Clone+Sync+Default + Debug,E:Clone+Sync+Default + Debug> FitnessEval<Geno
 // }
 //
 
+}
+
+#[derive(Clone, Debug)]
+pub struct Genome {
+    system: System,
+}
+
+impl<'a> Into<Sexp> for &'a Genome {
+    fn into(self) -> Sexp {
+        let mut rules = Vec::<Sexp>::new();
+        for (k, vec_rules) in self.system.rules.iter() {
+            for rule in vec_rules.iter() {
+                let sym = Into::<Sexp>::into(rule.symbol.clone());
+                let cond = Into::<Sexp>::into(&rule.condition);
+                let succ: Vec<Sexp> = rule.successor.0.iter().map(|s| {
+                    let args: Vec<Sexp> = s.args().iter().map(|a| a.into()).collect();
+                    Sexp::from((Into::<Sexp>::into((*s.symbol()).clone()), Sexp::Array(args)))
+                }).collect();
+                rules.push(Sexp::from((sym, cond, succ)));
+            }
+        }
+
+        Sexp::from(("genome", rules))
+    }
 }
 
 impl Genome {
