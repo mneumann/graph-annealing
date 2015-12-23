@@ -44,6 +44,7 @@ use genome::edgeop::{EdgeOp, edgeops_to_graph};
 use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
 use std::io::Read;
 use asexp::Sexp;
+use asexp::sexp::prettyprint;
 use std::env;
 
 #[derive(Debug)]
@@ -165,6 +166,12 @@ fn parse_config(sexp: Sexp) -> Config {
     }
 }
 
+fn pp_sexp(s: &Sexp) {
+    let mut st = String::new();
+    let _ = prettyprint(&s, &mut st, 0, false).unwrap();
+    println!("{}", st);
+}
+
 fn main() {
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);
@@ -210,14 +217,10 @@ fn main() {
                                               .map(|_| toolbox.random_genome(&mut rng))
                                               .collect();
 
-
-    for ind in initial_population.iter() {
-        println!("{}", Into::<Sexp>::into(ind));
-    }
-    //let p_sexp: Vec<Sexp> = initial_population.iter().map(|ind| ind.into()).collect();
     // output initial population to stdout.
-    //println!("{}", Sexp::from(p_sexp));
-    //println!("Population: {:#?}", initial_population);
+    for ind in initial_population.iter() {
+        pp_sexp(&ind.into());
+    }
 
     // evaluate fitness
     let fitness: Vec<_> = toolbox.fitness(&initial_population[..]);
@@ -290,7 +293,8 @@ fn main() {
             println!("-------------------------------------------");
             println!("rd: {:?}", rd);
             println!("fitness: {:?}", fit[rd.idx]);
-            println!("genome: {:?}", pop[rd.idx]);
+            // println!("genome: {:?}", pop[rd.idx]);
+            pp_sexp(&(&pop[rd.idx]).into());
 
             // if fit[rd.idx].objectives[0] < 1.0 {
             let ind = &pop[rd.idx];

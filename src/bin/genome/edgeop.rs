@@ -1,7 +1,7 @@
 use graph_edge_evolution::{EdgeOperation, GraphBuilder, NthEdgeF};
 use triadic_census::OptDenseDigraph;
 use std::collections::BTreeMap;
-use asexp::{Sexp};
+use asexp::Sexp;
 
 defops!{EdgeOp;
     Dup,

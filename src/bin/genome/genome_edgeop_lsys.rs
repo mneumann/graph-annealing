@@ -37,7 +37,7 @@ use crossbeam;
 use std::collections::BTreeMap;
 use std::cmp;
 use std::fmt::Debug;
-use asexp::{Sexp, Atom};
+use asexp::{Atom, Sexp};
 
 use rayon::par_iter::*;
 
@@ -92,7 +92,7 @@ impl Into<Sexp> for EdgeAlphabet {
     fn into(self) -> Sexp {
         match self {
             EdgeAlphabet::Terminal(op) => op.into(),
-            EdgeAlphabet::NonTerminal(rule_id) => Sexp::from(format!("@{}", rule_id))
+            EdgeAlphabet::NonTerminal(rule_id) => Sexp::from(format!("@{}", rule_id)),
         }
     }
 }
@@ -686,10 +686,18 @@ impl<'a> Into<Sexp> for &'a Genome {
             for rule in vec_rules.iter() {
                 let sym = Into::<Sexp>::into(rule.symbol.clone());
                 let cond = Into::<Sexp>::into(&rule.condition);
-                let succ: Vec<Sexp> = rule.successor.0.iter().map(|s| {
-                    let args: Vec<Sexp> = s.args().iter().map(|a| a.into()).collect();
-                    Sexp::from((Into::<Sexp>::into((*s.symbol()).clone()), Sexp::Array(args)))
-                }).collect();
+                let succ: Vec<Sexp> = rule.successor
+                                          .0
+                                          .iter()
+                                          .map(|s| {
+                                              let args: Vec<Sexp> = s.args()
+                                                                     .iter()
+                                                                     .map(|a| a.into())
+                                                                     .collect();
+                                              Sexp::from((Into::<Sexp>::into((*s.symbol()).clone()),
+                                                          Sexp::Array(args)))
+                                          })
+                                          .collect();
                 rules.push(Sexp::from((sym, cond, succ)));
             }
         }

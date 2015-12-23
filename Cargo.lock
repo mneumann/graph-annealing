@@ -44,7 +44,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "asexp"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/asexp-rs.git#6df658c2f12856be83bacd79e7bbd685dad7a61f"
+source = "git+https://github.com/mneumann/asexp-rs.git#5031783ff1964eeb88c8e03aa63a1c698db2ab6a"
 
 [[package]]
 name = "aster"
