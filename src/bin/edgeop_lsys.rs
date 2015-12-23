@@ -43,7 +43,7 @@ use genome::VarOp;
 use genome::edgeop::{EdgeOp, edgeops_to_graph};
 use genome::expr_op::{ConstExprOp, ExprOp, FlatExprOp};
 use std::io::Read;
-use asexp::Expr;
+use asexp::Sexp;
 use std::env;
 
 #[derive(Debug)]
@@ -60,8 +60,8 @@ struct Config {
     var_ops: Vec<(VarOp, u32)>,
 }
 
-fn parse_config(expr: Expr) -> Config {
-    let map = expr.into_map().unwrap();
+fn parse_config(sexp: Sexp) -> Config {
+    let map = sexp.into_map().unwrap();
 
     // number of generations
     let ngen: usize = map.get("ngen").and_then(|v| v.get_uint()).unwrap() as usize;
@@ -131,7 +131,7 @@ fn parse_config(expr: Expr) -> Config {
 
     // Parse weighted operation choice from command line
     let mut edge_ops: Vec<(EdgeOp, u32)> = Vec::new();
-    if let Some(&Expr::Map(ref list)) = map.get("edgeops") {
+    if let Some(&Sexp::Map(ref list)) = map.get("edgeops") {
         for &(ref k, ref v) in list.iter() {
             edge_ops.push((EdgeOp::from_str(k.get_str().unwrap()).unwrap(),
                            v.get_uint().unwrap() as u32));
@@ -142,7 +142,7 @@ fn parse_config(expr: Expr) -> Config {
 
     // Parse weighted variation operators from command line
     let mut var_ops: Vec<(VarOp, u32)> = Vec::new();
-    if let Some(&Expr::Map(ref list)) = map.get("varops") {
+    if let Some(&Sexp::Map(ref list)) = map.get("varops") {
         for &(ref k, ref v) in list.iter() {
             var_ops.push((VarOp::from_str(k.get_str().unwrap()).unwrap(),
                           v.get_uint().unwrap() as u32));
@@ -166,15 +166,13 @@ fn parse_config(expr: Expr) -> Config {
 }
 
 fn main() {
-    // rayon::initialize();
-
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);
 
     let mut s = String::new();
     let configfile = env::args().nth(1).unwrap();
     let _ = File::open(configfile).unwrap().read_to_string(&mut s).unwrap();
-    let expr = asexp::Expr::parse_toplevel(&s).unwrap();
+    let expr = asexp::Sexp::parse_toplevel(&s).unwrap();
     let config = parse_config(expr);
 
     println!("{:#?}", config);
@@ -184,7 +182,6 @@ fn main() {
 
     let w_var_ops = to_weighted_vec(&config.var_ops);
     assert!(w_var_ops.len() > 0);
-
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
                                    Pool::new(ncpus),
