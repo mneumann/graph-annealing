@@ -48,6 +48,14 @@ use asexp::sexp::prettyprint;
 use std::env;
 
 #[derive(Debug)]
+struct ConfigGenome {
+    max_iter: usize,
+    rules: usize,
+    initial_len:  usize,
+    arity: usize,
+}
+
+#[derive(Debug)]
 struct Config {
     ngen: usize,
     mu: usize,
@@ -59,6 +67,7 @@ struct Config {
     graph: Graph<Unweighted, Unweighted, Directed>,
     edge_ops: Vec<(EdgeOp, u32)>,
     var_ops: Vec<(VarOp, u32)>,
+    genome: ConfigGenome,
 }
 
 fn parse_config(sexp: Sexp) -> Config {
@@ -152,6 +161,8 @@ fn parse_config(sexp: Sexp) -> Config {
         panic!();
     }
 
+    let genome_map = map.get("genome").unwrap().clone().into_map().unwrap();
+
     Config {
         ngen: ngen,
         mu: mu,
@@ -163,6 +174,12 @@ fn parse_config(sexp: Sexp) -> Config {
         graph: graph,
         edge_ops: edge_ops,
         var_ops: var_ops,
+        genome: ConfigGenome {
+            rules: genome_map.get("rules").and_then(|v| v.get_uint()).unwrap() as usize,
+            arity: genome_map.get("arity").and_then(|v| v.get_uint()).unwrap() as usize,
+            initial_len: genome_map.get("initial_len").and_then(|v| v.get_uint()).unwrap() as usize,
+            max_iter: genome_map.get("max_iter").and_then(|v| v.get_uint()).unwrap() as usize,
+        }
     }
 }
 
@@ -196,10 +213,10 @@ fn main() {
                                     config.objectives[1],
                                     config.objectives[2]),
 
-                                   3, // iterations
-                                   20, // num_rules
-                                   4, // initial rule length
-                                   2, // we use 2-ary symbols
+                                   config.genome.max_iter, // iterations
+                                   config.genome.rules, // num_rules
+                                   config.genome.initial_len, // initial rule length
+                                   config.genome.arity, // we use 2-ary symbols
                                    Probability::new(0.7), // prob_terminal
                                    2, // max_expr_depth
 
