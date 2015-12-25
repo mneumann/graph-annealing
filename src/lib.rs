@@ -6,7 +6,6 @@ extern crate graph_layout;
 extern crate graph_neighbor_matching;
 extern crate graph_edge_evolution;
 extern crate graph_sgf;
-extern crate serde_json;
 extern crate sexp;
 extern crate closed01;
 
