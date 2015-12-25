@@ -1,6 +1,5 @@
 use std::f32::INFINITY;
 use std::fmt::Debug;
-use evo::mo::MultiObjective3;
 
 #[derive(Debug)]
 pub struct Stat<T: Debug> {
@@ -10,32 +9,32 @@ pub struct Stat<T: Debug> {
 }
 
 impl Stat<f32> {
-    pub fn for_objectives(fit: &[MultiObjective3<f32>], i: usize) -> Stat<f32> {
-        let min = fit.iter().fold(INFINITY, |acc, f| {
-            let x = f.objectives[i];
-            if x < acc {
-                x
-            } else {
-                acc
+    pub fn from_iter<I>(iter: I) -> Stat<f32>
+        where I: Iterator<Item = f32>
+    {
+        let mut min = INFINITY;
+        let mut max = -INFINITY;
+        let mut sum = 0.0;
+        let mut cnt = 0usize;
+
+        for x in iter {
+            if x < min {
+                min = x;
             }
-        });
-        let max = fit.iter().fold(-INFINITY, |acc, f| {
-            let x = f.objectives[i];
-            if x > acc {
-                x
-            } else {
-                acc
+            if x > max {
+                max = x;
             }
-        });
-        let sum = fit.iter()
-                     .fold(0.0, |acc, f| acc + f.objectives[i]);
+            sum += x;
+            cnt += 1;
+        }
+
         Stat {
             min: min,
             max: max,
-            avg: if fit.is_empty() {
+            avg: if cnt == 0 {
                 0.0
             } else {
-                sum / fit.len() as f32
+                sum / cnt as f32
             },
         }
     }

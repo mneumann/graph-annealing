@@ -50,7 +50,7 @@ use std::env;
 struct ConfigGenome {
     max_iter: usize,
     rules: usize,
-    initial_len:  usize,
+    initial_len: usize,
     arity: usize,
 }
 
@@ -178,7 +178,7 @@ fn parse_config(sexp: Sexp) -> Config {
             arity: genome_map.get("arity").and_then(|v| v.get_uint()).unwrap() as usize,
             initial_len: genome_map.get("initial_len").and_then(|v| v.get_uint()).unwrap() as usize,
             max_iter: genome_map.get("max_iter").and_then(|v| v.get_uint()).unwrap() as usize,
-        }
+        },
     }
 }
 
@@ -206,10 +206,12 @@ fn main() {
     let w_var_ops = to_weighted_vec(&config.var_ops);
     assert!(w_var_ops.len() > 0);
 
+    // XXX
     let num_objectives = 3;
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
                                    Pool::new(ncpus),
+                                   // XXX
                                    (config.objectives[0],
                                     config.objectives[1],
                                     config.objectives[2]),
@@ -262,36 +264,31 @@ fn main() {
         pop = new_pop;
         fit = new_fit;
 
-        // calculate a min/max/avg value for each objective.
-        let stat0: Stat<f32> = Stat::for_objectives(&fit[..], 0);
-        let stat1: Stat<f32> = Stat::for_objectives(&fit[..], 1);
-        let stat2: Stat<f32> = Stat::for_objectives(&fit[..], 2);
-
         let duration_ms = (duration as f32) / 1_000_000.0;
 
         let mut num_optima = 0;
         for f in fit.iter() {
-            if f.objectives[0] <= config.thresholds[0] && f.objectives[1] <= config.thresholds[1] &&
-               f.objectives[2] <= config.thresholds[2] {
+            if (0..num_objectives).into_iter().all(|i| f.objectives[i] <= config.thresholds[i]) {
                 num_optima += 1;
             }
         }
 
-        print!(" | ");
-        print!("{:>8.1}", stat0.min);
-        print!("{:>9.1}", stat0.avg);
-        print!("{:>10.1}", stat0.max);
-        print!(" | ");
-        print!("{:>8.1}", stat1.min);
-        print!("{:>9.1}", stat1.avg);
-        print!("{:>10.1}", stat1.max);
-        print!(" | ");
-        print!("{:>8.1}", stat2.min);
-        print!("{:>9.1}", stat2.avg);
-        print!("{:>10.1}", stat2.max);
+        // calculate a min/max/avg value for each objective.
+        let stats: Vec<Stat<f32>> = (0..num_objectives)
+                                        .into_iter()
+                                        .map(|i| {
+                                            Stat::from_iter(fit.iter().map(|o| o.objectives[i]))
+                                        })
+                                        .collect();
+
+        for stat in stats.iter() {
+            print!(" | ");
+            print!("{:>8.1}", stat.min);
+            print!("{:>9.1}", stat.avg);
+            print!("{:>10.1}", stat.max);
+        }
 
         print!(" | {:>5} | {:>8.0} ms", num_optima, duration_ms);
-
         println!("");
 
         if num_optima > 0 {
