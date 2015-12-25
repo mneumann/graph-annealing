@@ -1,9 +1,7 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use lindenmayer_system::expr::{Condition, Expr};
-use rand::{Closed01, Open01, Rng};
+use rand::Rng;
 use rand::distributions::IndependentSample;
-use std::num::{One, Zero};
-use std::f32::consts;
 
 defops!{CondOp;
     True,
@@ -27,6 +25,7 @@ defops!{CondOp;
 ///     expr_fn: A function that returns an expression, passing the Rng and the current depth of
 ///     the condition.
 ///
+#[allow(dead_code)]
 pub fn random_cond<R, F>(rng: &mut R,
                          max_depth: usize,
                          weighted_op: &OwnedWeightedChoice<CondOp>,

@@ -23,13 +23,12 @@ pub mod genome;
 
 use std::str::FromStr;
 use rand::{Rng, SeedableRng};
-use rand::distributions::{IndependentSample, Range};
 use rand::os::OsRng;
 use pcg::PcgRng;
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval};
 use genome::{Genome, Toolbox};
-use graph_annealing::helper::{draw_graph, parse_weighted_op_list, to_weighted_vec};
+use graph_annealing::helper::{draw_graph, to_weighted_vec};
 use graph_annealing::goal::Goal;
 use graph_annealing::stat::Stat;
 use graph_annealing::fitness_function::FitnessFunction;

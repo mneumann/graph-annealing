@@ -54,9 +54,11 @@ macro_rules! defops {
         }
 
         impl $name {
+            #[allow(dead_code)]
             pub fn all() -> Vec<$name> {
                 vec![ $($name::$key),+ ]
             }
+            #[allow(dead_code)]
             pub fn uniform_distribution() -> Vec<::rand::distributions::Weighted<$name>> {
                 Self::all().iter().map(|&item|
                     ::rand::distributions::Weighted{weight:1,item:item}).collect()

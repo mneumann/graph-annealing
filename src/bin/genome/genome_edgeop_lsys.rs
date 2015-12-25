@@ -14,7 +14,7 @@ mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
-use evo::nsga2::{self, FitnessEval, Mate};
+use evo::nsga2::{FitnessEval, Mate};
 use evo::mo::MultiObjective3;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
@@ -23,8 +23,6 @@ use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::fitness_function::FitnessFunction;
 use graph_annealing::goal::Goal;
 use graph_annealing::helper::{insert_vec_at, remove_at};
-use std::str::FromStr;
-use triadic_census::OptDenseDigraph;
 use lindenmayer_system::{Alphabet, Condition, LSystem, Rule, Symbol, SymbolString,
                          apply_first_rule};
 use lindenmayer_system::symbol::Sym2;
@@ -32,13 +30,12 @@ use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
                     random_expr};
-use self::cond_op::{CondOp, random_cond};
 use simple_parallel::Pool;
 use crossbeam;
 use std::collections::BTreeMap;
 use std::cmp;
 use std::fmt::Debug;
-use asexp::{Atom, Sexp};
+use asexp::Sexp;
 
 use rayon::par_iter::*;
 
@@ -390,7 +387,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     // * Specialize condition (AND)
     // * Generalized condition (OR)
     // * Flip condition (NOT)
-    fn mutate_rule_condition<R: Rng>(&self, rng: &mut R, cond: Condition<f32>) -> Condition<f32> {
+    fn mutate_rule_condition<R: Rng>(&self, _rng: &mut R, cond: Condition<f32>) -> Condition<f32> {
         // XXX: Simply negate it for now.
         Condition::Not(Box::new(cond))
     }
@@ -683,7 +680,7 @@ pub struct Genome {
 impl<'a> Into<Sexp> for &'a Genome {
     fn into(self) -> Sexp {
         let mut rules = Vec::<Sexp>::new();
-        for (k, vec_rules) in self.system.rules.iter() {
+        for (_k, vec_rules) in self.system.rules.iter() {
             for rule in vec_rules.iter() {
                 let sym = Into::<Sexp>::into(rule.symbol.clone());
                 let cond = Into::<Sexp>::into(&rule.condition);
@@ -714,7 +711,7 @@ impl Genome {
                                                            (axiom_args[0].clone(),
                                                             axiom_args[1].clone()))]);
         // XXX: limit #iterations based on produced length
-        let (s, iter) = self.system.develop(axiom, iterations);
+        let (s, _iter) = self.system.develop(axiom, iterations);
         // println!("produced string: {:?}", s);
         // println!("stopped after iterations: {:?}", iter);
 
