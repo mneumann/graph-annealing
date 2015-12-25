@@ -263,6 +263,7 @@ fn main() {
         let duration = time::precise_time_ns() - before;
         pop = new_pop;
         fit = new_fit;
+        assert!(fit.len() > 0);
 
         let duration_ms = (duration as f32) / 1_000_000.0;
 
@@ -278,6 +279,7 @@ fn main() {
                                         .into_iter()
                                         .map(|i| {
                                             Stat::from_iter(fit.iter().map(|o| o.objectives[i]))
+                                                .unwrap()
                                         })
                                         .collect();
 

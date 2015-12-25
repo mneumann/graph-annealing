@@ -1,4 +1,3 @@
-use std::f32::INFINITY;
 use std::fmt::Debug;
 
 #[derive(Debug)]
@@ -9,13 +8,22 @@ pub struct Stat<T: Debug> {
 }
 
 impl Stat<f32> {
-    pub fn from_iter<I>(iter: I) -> Stat<f32>
+    pub fn from_iter<I>(mut iter: I) -> Option<Stat<f32>>
         where I: Iterator<Item = f32>
     {
-        let mut min = INFINITY;
-        let mut max = -INFINITY;
-        let mut sum = 0.0;
-        let mut cnt = 0usize;
+        let mut min;
+        let mut max;
+        let mut sum;
+        let mut cnt;
+
+        if let Some(x) = iter.next() {
+            min = x;
+            max = x;
+            sum = x;
+            cnt = 1;
+        } else {
+            return None;
+        }
 
         for x in iter {
             if x < min {
@@ -28,14 +36,10 @@ impl Stat<f32> {
             cnt += 1;
         }
 
-        Stat {
+        Some(Stat {
             min: min,
             max: max,
-            avg: if cnt == 0 {
-                0.0
-            } else {
-                sum / cnt as f32
-            },
-        }
+            avg: sum / cnt as f32,
+        })
     }
 }
