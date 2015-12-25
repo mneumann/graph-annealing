@@ -14,7 +14,8 @@ mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
-use evo::nsga2::{self, FitnessEval, Mate, MultiObjective3};
+use evo::nsga2::{self, FitnessEval, Mate};
+use evo::mo::MultiObjective3;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
 use rand::distributions::range::Range;

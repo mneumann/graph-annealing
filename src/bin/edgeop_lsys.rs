@@ -207,6 +207,8 @@ fn main() {
     let w_var_ops = to_weighted_vec(&config.var_ops);
     assert!(w_var_ops.len() > 0);
 
+    let num_objectives = 3;
+
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
                                    Pool::new(ncpus),
                                    (config.objectives[0],
@@ -255,6 +257,7 @@ fn main() {
                                                 config.mu,
                                                 config.lambda,
                                                 config.k,
+                                                num_objectives,
                                                 &mut toolbox);
         let duration = time::precise_time_ns() - before;
         pop = new_pop;
@@ -300,7 +303,7 @@ fn main() {
     println!("===========================================================");
 
     // finally evaluate rank and crowding distance (using select()).
-    let rank_dist = nsga2::select(&fit[..], config.mu);
+    let rank_dist = nsga2::select(&fit[..], config.mu, num_objectives);
     assert!(rank_dist.len() == config.mu);
 
     let mut j = 0;

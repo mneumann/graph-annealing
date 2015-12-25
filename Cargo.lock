@@ -93,7 +93,7 @@ dependencies = [
 [[package]]
 name = "evo"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/evo-rs.git#5af1c0e124fda560e4095713a027abf7bfe276db"
+source = "git+https://github.com/mneumann/evo-rs.git#b6a6f79b4056993b6ea64bd8cdce978b809737b2"
 dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
