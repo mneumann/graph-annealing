@@ -1,5 +1,5 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use lindenmayer_system::expr::Expr;
+use lindenmayer_system::Expr;
 use rand::{Closed01, Open01, Rng};
 use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
@@ -182,7 +182,7 @@ fn flat_expr_op_to_expr<R: Rng>(rng: &mut R, op: FlatExprOp, num_params: usize) 
 
         FlatExprOp::Param => {
             if num_params > 0 {
-                Expr::Arg(rng.gen_range(0, num_params))
+                Expr::Var(rng.gen_range(0, num_params))
             } else {
                 Expr::Const(Zero::zero())
             }
@@ -235,7 +235,7 @@ pub fn random_expr<R>(rng: &mut R,
 
             ExprOp::Param => {
                 if num_params > 0 {
-                    Expr::Arg(rng.gen_range(0, num_params))
+                    Expr::Var(rng.gen_range(0, num_params))
                 } else {
                     Expr::Const(Zero::zero())
                 }

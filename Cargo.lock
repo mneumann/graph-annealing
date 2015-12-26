@@ -2,7 +2,7 @@
 name = "graph_annealing"
 version = "0.1.0"
 dependencies = [
- "asexp 0.1.0 (git+https://github.com/mneumann/asexp-rs.git)",
+ "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 1.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -17,7 +17,6 @@ dependencies = [
  "pcg 0.0.1 (git+https://github.com/codahale/pcg.git)",
  "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "sexp 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple_parallel 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.34 (registry+https://github.com/rust-lang/crates.io-index)",
  "triadic-census 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -41,6 +40,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "asexp"
 version = "0.1.0"
 source = "git+https://github.com/mneumann/asexp-rs.git#5031783ff1964eeb88c8e03aa63a1c698db2ab6a"
+
+[[package]]
+name = "asexp"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "bit-vec"
@@ -84,6 +88,14 @@ dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple_parallel 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "expression"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -136,9 +148,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "lindenmayer-system"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/lindenmayer-system.git#83f37078e70b2b85689db0f27c8e5bdebbcf843e"
+source = "git+https://github.com/mneumann/lindenmayer-system.git#2be665e42456506fd3ded97b4637e3fa64497222"
 dependencies = [
  "asexp 0.1.0 (git+https://github.com/mneumann/asexp-rs.git)",
+ "expression 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "turtle 0.1.0 (git+https://github.com/mneumann/turtle-rs.git)",
 ]
 
@@ -208,11 +221,6 @@ dependencies = [
 [[package]]
 name = "rustc-serialize"
 version = "0.3.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "sexp"
-version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]

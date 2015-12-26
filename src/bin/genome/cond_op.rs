@@ -1,5 +1,6 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use lindenmayer_system::expr::{Condition, Expr};
+use lindenmayer_system::Expr;
+use lindenmayer_system::Cond as Condition;
 use rand::Rng;
 use rand::distributions::IndependentSample;
 
@@ -31,7 +32,7 @@ pub fn random_cond<R, F>(rng: &mut R,
                          weighted_op: &OwnedWeightedChoice<CondOp>,
                          weighted_op_max_depth: &OwnedWeightedChoice<CondOp>,
                          expr_fn: &mut F)
-                         -> Condition<f32>
+                         -> Condition<Expr<f32>>
     where R: Rng,
           F: FnMut(&mut R, usize) -> Expr<f32>
 {

@@ -22,10 +22,10 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
-use lindenmayer_system::{Alphabet, Condition, LSystem, Rule, Symbol, SymbolString,
+use lindenmayer_system::{Alphabet, Expr, LSystem, Rule, Symbol, SymbolString,
                          apply_first_rule};
+use lindenmayer_system::Cond as Condition;
 use lindenmayer_system::symbol::Sym2;
-use lindenmayer_system::expr::Expr;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
                     random_expr};
@@ -111,7 +111,7 @@ impl System {
     fn add_rule(&mut self,
                 rule_id: RuleId,
                 production: SymbolString<Sym>,
-                condition: Condition<f32>) {
+                condition: Condition<Expr<f32>>) {
         self.rules
             .entry(rule_id)
             .or_insert(vec![])
@@ -257,9 +257,9 @@ impl SymbolGenerator {
 
     /// Generate a simple condition like:
     ///     Arg(n) or 0.0 [>=] or [<=] constant expr
-    fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, num_params: usize) -> Condition<f32> {
+    fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, num_params: usize) -> Condition<Expr<f32>> {
         let lhs = if num_params > 0 {
-            Expr::Arg(rng.gen_range(0, num_params))
+            Expr::Var(rng.gen_range(0, num_params))
         } else {
             Expr::Const(0.0)
         };
@@ -384,7 +384,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     // * Specialize condition (AND)
     // * Generalized condition (OR)
     // * Flip condition (NOT)
-    fn mutate_rule_condition<R: Rng>(&self, _rng: &mut R, cond: Condition<f32>) -> Condition<f32> {
+    fn mutate_rule_condition<R: Rng>(&self, _rng: &mut R, cond: Condition<Expr<f32>>) -> Condition<Expr<f32>> {
         // XXX: Simply negate it for now.
         Condition::Not(Box::new(cond))
     }
