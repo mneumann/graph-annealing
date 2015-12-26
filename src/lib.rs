@@ -74,4 +74,3 @@ pub mod helper;
 pub mod repr;
 pub mod owned_weighted_choice;
 pub mod stat;
-pub mod fitness_function;

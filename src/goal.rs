@@ -3,11 +3,17 @@ use petgraph::graph::NodeIndex;
 use petgraph::algo::{connected_components, scc};
 use triadic_census::{OptDenseDigraph, TriadicCensus};
 use graph_neighbor_matching::{Edge, GraphSimilarityMatrix, IgnoreNodeColors};
-use super::fitness_function::FitnessFunction;
 use closed01::Closed01;
 use std::fmt::Debug;
 
 use graph_neighbor_matching::Graph as NGraph;
+
+defops!{FitnessFunction;
+    ConnectedComponents,
+    StronglyConnectedComponents,
+    NeighborMatching,
+    TriadicDistance
+}
 
 // #[derive(Debug)]
 pub struct Goal<N: Debug, E: Debug> {
