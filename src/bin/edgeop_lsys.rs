@@ -46,6 +46,8 @@ use asexp::Sexp;
 use asexp::sexp::prettyprint;
 use std::env;
 
+const MAX_OBJECTIVES: usize = 3;
+
 #[derive(Debug)]
 struct ConfigGenome {
     max_iter: usize,
@@ -95,7 +97,8 @@ fn parse_config(sexp: Sexp) -> Config {
     }
 
     // read objective functions
-    let mut objectives_arr: Vec<FitnessFunction> = map.get("objectives")
+    // XXX: merge thresholds and objectives into one array.
+    let objectives_arr: Vec<FitnessFunction> = map.get("objectives")
                                                       .unwrap()
                                                       .get_vec(|elm| {
                                                           FitnessFunction::from_str(elm.get_str()
@@ -104,16 +107,12 @@ fn parse_config(sexp: Sexp) -> Config {
                                                       })
                                                       .unwrap();
 
-    while objectives_arr.len() < 3 {
-        objectives_arr.push(FitnessFunction::Null);
-    }
-
-    if objectives_arr.len() > 3 {
-        panic!("Max 3 objectives allowed");
+    if objectives_arr.len() > MAX_OBJECTIVES {
+        panic!("Max {} objectives allowed", MAX_OBJECTIVES);
     }
 
     // read objective functions
-    let mut threshold_arr: Vec<f32> = map.get("thresholds")
+    let threshold_arr: Vec<f32> = map.get("thresholds")
                                          .unwrap()
                                          .get_vec(|elm| elm.get_float())
                                          .unwrap()
@@ -121,12 +120,8 @@ fn parse_config(sexp: Sexp) -> Config {
                                          .map(|&i| i as f32)
                                          .collect();
 
-    while threshold_arr.len() < 3 {
-        threshold_arr.push(0.0);
-    }
-
-    if threshold_arr.len() > 3 {
-        panic!("Max 3 threshold values allowed");
+    if threshold_arr.len() > objectives_arr.len() { 
+        panic!("Invalid number of thresholds");
     }
 
     // read graph
@@ -206,21 +201,16 @@ fn main() {
     let w_var_ops = to_weighted_vec(&config.var_ops);
     assert!(w_var_ops.len() > 0);
 
-    // XXX
-    let num_objectives = 3;
+    let num_objectives = config.objectives.len();
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
                                    Pool::new(ncpus),
-                                   // XXX
-                                   (config.objectives[0],
-                                    config.objectives[1],
-                                    config.objectives[2]),
-
+                                   config.objectives.clone(),
                                    config.genome.max_iter, // iterations
                                    config.genome.rules, // num_rules
                                    config.genome.initial_len, // initial rule length
                                    config.genome.arity, // we use 2-ary symbols
-                                   Probability::new(0.7), // prob_terminal
+                                   Probability::new(0.7), // prob_terminal: XXX
                                    2, // max_expr_depth
 
                                    w_ops,
@@ -269,7 +259,8 @@ fn main() {
 
         let mut num_optima = 0;
         for f in fit.iter() {
-            if (0..num_objectives).into_iter().all(|i| f.objectives[i] <= config.thresholds[i]) {
+            if (0..num_objectives).into_iter().all(|i| f.objectives[i] <= *config.thresholds.get(i).unwrap_or(&0.0)) {
+            //if config.thresholds.iter().enumerate().all(|(i, &th)| f.objectives[i] <= th) {
                 num_optima += 1;
             }
         }

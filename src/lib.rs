@@ -9,15 +9,9 @@ extern crate graph_sgf;
 extern crate sexp;
 extern crate closed01;
 
-pub mod goal;
-pub mod helper;
-pub mod repr;
-pub mod owned_weighted_choice;
-pub mod stat;
-pub mod fitness_function;
-
+/// Defines a public enum that can be converted to and from a string.
 #[macro_export]
-macro_rules! defops {
+macro_rules! def_str_enum {
     ($name:ident; $( $key:ident ),+) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         pub enum $name {
@@ -46,17 +40,25 @@ macro_rules! defops {
                         }
                      )+
                     _ => {
-                        Err(format!("Invalid opcode: {}", s))
+                        Err(format!("Invalid string: {}", s))
                     }
                 }
             }
         }
+    }
+}
+
+#[macro_export]
+macro_rules! defops {
+    ($name:ident; $( $key:ident ),+) => {
+        def_str_enum!{$name; $($key),+}
 
         impl $name {
             #[allow(dead_code)]
             pub fn all() -> Vec<$name> {
                 vec![ $($name::$key),+ ]
             }
+            // XXX: move
             #[allow(dead_code)]
             pub fn uniform_distribution() -> Vec<::rand::distributions::Weighted<$name>> {
                 Self::all().iter().map(|&item|
@@ -66,3 +68,10 @@ macro_rules! defops {
 
     }
 }
+
+pub mod goal;
+pub mod helper;
+pub mod repr;
+pub mod owned_weighted_choice;
+pub mod stat;
+pub mod fitness_function;

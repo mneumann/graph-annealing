@@ -60,7 +60,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
                                   g: &OptDenseDigraph<(), ()>)
                                   -> f32 {
         match fitfun {
-            FitnessFunction::Null => 0.0,
             FitnessFunction::ConnectedComponents => self.connected_components_distance(g) as f32,
             FitnessFunction::StronglyConnectedComponents => {
                 self.strongly_connected_components_distance(g) as f32

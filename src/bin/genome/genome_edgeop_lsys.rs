@@ -282,7 +282,7 @@ impl SymbolGenerator {
 pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
     pool: Pool,
-    fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
+    fitness_functions: Vec<FitnessFunction>,
 
     // Variation parameters
     var_op: OwnedWeightedChoice<VarOp>,
@@ -312,7 +312,7 @@ pub struct Toolbox<N: Debug, E: Debug> {
 impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     pub fn new(goal: Goal<N, E>,
                pool: Pool,
-               fitness_functions: (FitnessFunction, FitnessFunction, FitnessFunction),
+               fitness_functions: Vec<FitnessFunction>,
 
                iterations: usize,
                num_rules: usize,
@@ -553,7 +553,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
         let mut new_ind = p1.clone();
 
         p2.system.with_random_rule(rng, |rng, rule_p2| {
-            println!("p2 called with random rule: {:?}", rule_p2);
+            //println!("p2 called with random rule: {:?}", rule_p2);
 
             new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
                 let new_production = linear_2point_crossover_random(rng,
@@ -634,17 +634,16 @@ impl<N:Clone+Sync+Default + Debug,E:Clone+Sync+Default + Debug> FitnessEval<Geno
         let axiom_args = &self.axiom_args[..];
         let iterations = self.iterations;
 
-        let fitness_functions = self.fitness_functions;
+        let fitness_functions = &self.fitness_functions[..];
 
         crossbeam::scope(|scope| {
             pool.map(scope, pop, |ind| {
                 let edge_ops = ind.to_edge_ops(axiom_args, iterations);
                 let g = edgeops_to_graph(&edge_ops);
 
-                MultiObjective3::from((goal.apply_fitness_function(fitness_functions.0, &g),
-                                       goal.apply_fitness_function(fitness_functions.1, &g),
-                                       goal.apply_fitness_function(fitness_functions.2, &g)))
-
+                MultiObjective3::from(
+                    fitness_functions.iter().map(|&f| goal.apply_fitness_function(f, &g))
+                )
             })
                 .collect()
         })
