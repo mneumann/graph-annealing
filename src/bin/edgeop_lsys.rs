@@ -99,13 +99,13 @@ fn parse_config(sexp: Sexp) -> Config {
     // read objective functions
     // XXX: merge thresholds and objectives into one array.
     let objectives_arr: Vec<FitnessFunction> = map.get("objectives")
-                                                      .unwrap()
-                                                      .get_vec(|elm| {
-                                                          FitnessFunction::from_str(elm.get_str()
-                                                                                       .unwrap())
-                                                              .ok()
-                                                      })
-                                                      .unwrap();
+                                                  .unwrap()
+                                                  .get_vec(|elm| {
+                                                      FitnessFunction::from_str(elm.get_str()
+                                                                                   .unwrap())
+                                                          .ok()
+                                                  })
+                                                  .unwrap();
 
     if objectives_arr.len() > MAX_OBJECTIVES {
         panic!("Max {} objectives allowed", MAX_OBJECTIVES);
@@ -113,14 +113,14 @@ fn parse_config(sexp: Sexp) -> Config {
 
     // read objective functions
     let threshold_arr: Vec<f32> = map.get("thresholds")
-                                         .unwrap()
-                                         .get_vec(|elm| elm.get_float())
-                                         .unwrap()
-                                         .iter()
-                                         .map(|&i| i as f32)
-                                         .collect();
+                                     .unwrap()
+                                     .get_vec(|elm| elm.get_float())
+                                     .unwrap()
+                                     .iter()
+                                     .map(|&i| i as f32)
+                                     .collect();
 
-    if threshold_arr.len() > objectives_arr.len() { 
+    if threshold_arr.len() > objectives_arr.len() {
         panic!("Invalid number of thresholds");
     }
 
@@ -259,8 +259,10 @@ fn main() {
 
         let mut num_optima = 0;
         for f in fit.iter() {
-            if (0..num_objectives).into_iter().all(|i| f.objectives[i] <= *config.thresholds.get(i).unwrap_or(&0.0)) {
-            //if config.thresholds.iter().enumerate().all(|(i, &th)| f.objectives[i] <= th) {
+            if (0..num_objectives)
+                   .into_iter()
+                   .all(|i| f.objectives[i] <= *config.thresholds.get(i).unwrap_or(&0.0)) {
+                // if config.thresholds.iter().enumerate().all(|(i, &th)| f.objectives[i] <= th) {
                 num_optima += 1;
             }
         }

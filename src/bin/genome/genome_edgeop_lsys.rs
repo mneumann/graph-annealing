@@ -553,7 +553,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
         let mut new_ind = p1.clone();
 
         p2.system.with_random_rule(rng, |rng, rule_p2| {
-            //println!("p2 called with random rule: {:?}", rule_p2);
+            // println!("p2 called with random rule: {:?}", rule_p2);
 
             new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
                 let new_production = linear_2point_crossover_random(rng,
