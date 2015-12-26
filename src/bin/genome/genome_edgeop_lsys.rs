@@ -21,7 +21,7 @@ use rand::distributions::{IndependentSample, Weighted};
 use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::fitness_function::FitnessFunction;
-use graph_annealing::goal::Goal;
+use graph_annealing::goal::{Cache, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
 use lindenmayer_system::{Alphabet, Condition, LSystem, Rule, Symbol, SymbolString,
                          apply_first_rule};
@@ -638,9 +638,10 @@ impl<N:Clone+Sync+Default + Debug,E:Clone+Sync+Default + Debug> FitnessEval<Geno
             pool.map(scope, pop, |ind| {
                 let edge_ops = ind.to_edge_ops(axiom_args, iterations);
                 let g = edgeops_to_graph(&edge_ops);
+                let mut cache = Cache::new();
 
                 MultiObjective3::from(
-                    fitness_functions.iter().map(|&f| goal.apply_fitness_function(f, &g))
+                    fitness_functions.iter().map(|&f| goal.apply_fitness_function(f, &g, &mut cache))
                 )
             })
                 .collect()

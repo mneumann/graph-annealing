@@ -39,6 +39,18 @@ fn graph_to_edgelist<N: Debug, E: Debug>(g: &Graph<N, E, Directed>)
     (in_a, out_a)
 }
 
+/// This is used to cache and reuse some heavy calculations done
+/// by some FitnessFunctions.
+pub struct Cache {
+    edge_list: Option<(Vec<Vec<Edge>>, Vec<Vec<Edge>>)>,
+}
+
+impl Cache {
+    pub fn new() -> Cache {
+        Cache { edge_list: None }
+    }
+}
+
 impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
     pub fn new(g: OptDenseDigraph<N, E>) -> Goal<N, E> {
         let census = TriadicCensus::from(&g);
@@ -57,14 +69,15 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
 
     pub fn apply_fitness_function(&self,
                                   fitfun: FitnessFunction,
-                                  g: &OptDenseDigraph<(), ()>)
+                                  g: &OptDenseDigraph<(), ()>,
+                                  cache: &mut Cache)
                                   -> f32 {
         match fitfun {
             FitnessFunction::ConnectedComponents => self.connected_components_distance(g) as f32,
             FitnessFunction::StronglyConnectedComponents => {
                 self.strongly_connected_components_distance(g) as f32
             }
-            FitnessFunction::NeighborMatching => self.neighbor_matching_score(g) as f32,
+            FitnessFunction::NeighborMatching => self.neighbor_matching_score(g, cache) as f32,
             FitnessFunction::TriadicDistance => self.triadic_distance(g) as f32,
         }
     }
@@ -80,6 +93,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         let cc = connected_components(g.ref_graph()) as isize;
         ((self.target_connected_components as isize) - cc).abs() as usize
     }
+
     pub fn strongly_connected_components_distance<A: Default + Debug, B: Default + Debug>
         (&self,
          g: &OptDenseDigraph<A, B>)
@@ -90,9 +104,14 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
 
     pub fn neighbor_matching_score<A: Default + Debug, B: Default + Debug>(&self,
                                                                            g: &OptDenseDigraph<A,
-                                                                                               B>)
+                                                                                               B>,
+                                                                           cache: &mut Cache)
                                                                            -> f32 {
-        let (in_b, out_b) = graph_to_edgelist(g.ref_graph());
+        if let None = cache.edge_list {
+            cache.edge_list = Some(graph_to_edgelist(g.ref_graph()));
+        }
+
+        let &(ref in_b, ref out_b) = cache.edge_list.as_ref().unwrap();
         let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.target_in_a[..],
                                                              &self.target_out_a[..]),
                                                  NGraph::new(&in_b[..], &out_b[..]),
