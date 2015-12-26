@@ -135,10 +135,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         // XXX
         sim.iterate(20, 0.1);
 
-        let score = sim.score_sum_norm_min_degree(None);
-
-        let score = 1.0 - score.get();
-        score
+        sim.score_sum_norm_min_degree(None).inv().get()
     }
 
     pub fn neighbor_matching_score_max_deg<A: Default + Debug, B: Default + Debug>(&self,
@@ -158,10 +155,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         // XXX
         sim.iterate(20, 0.1);
 
-        let score = sim.score_sum_norm_max_degree(None);
-
-        let score = 1.0 - score.get();
-        score
+        sim.score_sum_norm_max_degree(None).inv().get()
     }
 
     pub fn neighbor_matching_score_avg<A: Default + Debug, B: Default + Debug>(&self,
@@ -181,9 +175,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         // XXX
         sim.iterate(20, 0.1);
 
-        let score = sim.score_average();
-
-        let score = 1.0 - score.get();
-        score
+        sim.score_average().inv().get()
     }
 }

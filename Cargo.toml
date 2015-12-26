@@ -21,7 +21,7 @@ graph-neighbor-matching = "0.2.1"
 #triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
 triadic-census = "0.1.0"
 
-closed01 = "0.0.1"
+closed01 = "0.1.1"
 
 #graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
 graph-edge-evolution = "0.1.0"
