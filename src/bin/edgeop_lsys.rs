@@ -52,7 +52,7 @@ struct ConfigGenome {
     rules: usize,
     initial_len: usize,
     symbol_arity: usize,
-    prob_terminal: Probability
+    prob_terminal: Probability,
 }
 
 #[derive(Debug)]
@@ -62,12 +62,17 @@ struct Config {
     lambda: usize,
     k: usize,
     seed: Vec<u64>,
-    objectives: Vec<FitnessFunction>,
-    thresholds: Vec<f32>,
+    objectives: Vec<Objective>,
     graph: Graph<Unweighted, Unweighted, Directed>,
     edge_ops: Vec<(EdgeOp, u32)>,
     var_ops: Vec<(VarOp, u32)>,
     genome: ConfigGenome,
+}
+
+#[derive(Debug)]
+struct Objective {
+    fitness_function: FitnessFunction,
+    threshold: f32,
 }
 
 fn parse_config(sexp: Sexp) -> Config {
@@ -95,32 +100,21 @@ fn parse_config(sexp: Sexp) -> Config {
         seed = (0..2).map(|_| rng.next_u64()).collect();
     }
 
-    // read objective functions
-    // XXX: merge thresholds and objectives into one array.
-    let objectives_arr: Vec<FitnessFunction> = map.get("objectives")
-                                                  .unwrap()
-                                                  .get_vec(|elm| {
-                                                      FitnessFunction::from_str(elm.get_str()
-                                                                                   .unwrap())
-                                                          .ok()
-                                                  })
-                                                  .unwrap();
-
-    if objectives_arr.len() > MAX_OBJECTIVES {
-        panic!("Max {} objectives allowed", MAX_OBJECTIVES);
+    // Parse objectives and thresholds
+    let mut objectives: Vec<Objective> = Vec::new();
+    if let Some(&Sexp::Map(ref list)) = map.get("objectives") {
+        for &(ref k, ref v) in list.iter() {
+            objectives.push(Objective {
+                fitness_function: FitnessFunction::from_str(k.get_str().unwrap()).unwrap(),
+                threshold: v.get_float().unwrap() as f32,
+            });
+        }
+    } else {
+        panic!("Map expected");
     }
 
-    // read objective functions
-    let threshold_arr: Vec<f32> = map.get("thresholds")
-                                     .unwrap()
-                                     .get_vec(|elm| elm.get_float())
-                                     .unwrap()
-                                     .iter()
-                                     .map(|&i| i as f32)
-                                     .collect();
-
-    if threshold_arr.len() > objectives_arr.len() {
-        panic!("Invalid number of thresholds");
+    if objectives.len() > MAX_OBJECTIVES {
+        panic!("Max {} objectives allowed", MAX_OBJECTIVES);
     }
 
     // read graph
@@ -140,7 +134,7 @@ fn parse_config(sexp: Sexp) -> Config {
                            v.get_uint().unwrap() as u32));
         }
     } else {
-        panic!();
+        panic!("Map expected");
     }
 
     // Parse weighted variation operators from command line
@@ -162,8 +156,7 @@ fn parse_config(sexp: Sexp) -> Config {
         lambda: lambda,
         k: k,
         seed: seed,
-        objectives: objectives_arr,
-        thresholds: threshold_arr,
+        objectives: objectives,
         graph: graph,
         edge_ops: edge_ops,
         var_ops: var_ops,
@@ -205,14 +198,16 @@ fn main() {
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
                                    Pool::new(ncpus),
-                                   config.objectives.clone(),
+                                   config.objectives
+                                         .iter()
+                                         .map(|o| o.fitness_function.clone())
+                                         .collect(),
                                    config.genome.max_iter, // iterations
                                    config.genome.rules, // num_rules
                                    config.genome.initial_len, // initial rule length
                                    config.genome.symbol_arity, // we use 2-ary symbols
                                    config.genome.prob_terminal,
                                    2, // max_expr_depth
-
                                    w_ops,
                                    ExprOp::uniform_distribution(),
                                    FlatExprOp::uniform_distribution(),
@@ -259,10 +254,10 @@ fn main() {
 
         let mut num_optima = 0;
         for f in fit.iter() {
-            if (0..num_objectives)
-                   .into_iter()
-                   .all(|i| f.objectives[i] <= *config.thresholds.get(i).unwrap_or(&0.0)) {
-                // if config.thresholds.iter().enumerate().all(|(i, &th)| f.objectives[i] <= th) {
+            if config.objectives
+                     .iter()
+                     .enumerate()
+                     .all(|(i, obj)| f.objectives[i] <= obj.threshold) {
                 num_optima += 1;
             }
         }
