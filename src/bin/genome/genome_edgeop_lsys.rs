@@ -22,8 +22,7 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
-use lindenmayer_system::{Alphabet, Expr, LSystem, Rule, Symbol, SymbolString,
-                         apply_first_rule};
+use lindenmayer_system::{Alphabet, Expr, LSystem, Rule, Symbol, SymbolString, apply_first_rule};
 use lindenmayer_system::Cond as Condition;
 use lindenmayer_system::symbol::Sym2;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
@@ -257,7 +256,10 @@ impl SymbolGenerator {
 
     /// Generate a simple condition like:
     ///     Arg(n) or 0.0 [>=] or [<=] constant expr
-    fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, num_params: usize) -> Condition<Expr<f32>> {
+    fn gen_simple_rule_condition<R: Rng>(&self,
+                                         rng: &mut R,
+                                         num_params: usize)
+                                         -> Condition<Expr<f32>> {
         let lhs = if num_params > 0 {
             Expr::Var(rng.gen_range(0, num_params))
         } else {
@@ -384,7 +386,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     // * Specialize condition (AND)
     // * Generalized condition (OR)
     // * Flip condition (NOT)
-    fn mutate_rule_condition<R: Rng>(&self, _rng: &mut R, cond: Condition<Expr<f32>>) -> Condition<Expr<f32>> {
+    fn mutate_rule_condition<R: Rng>(&self,
+                                     _rng: &mut R,
+                                     cond: Condition<Expr<f32>>)
+                                     -> Condition<Expr<f32>> {
         // XXX: Simply negate it for now.
         Condition::Not(Box::new(cond))
     }
