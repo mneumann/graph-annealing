@@ -27,7 +27,7 @@ use evo::Probability;
 use evo::nsga2::{self, FitnessEval};
 use genome::{Genome, Toolbox};
 use graph_annealing::helper::{draw_graph, to_weighted_vec};
-use graph_annealing::goal::{Goal, FitnessFunction};
+use graph_annealing::goal::{FitnessFunction, Goal};
 use graph_annealing::stat::Stat;
 use simple_parallel::Pool;
 use petgraph::{Directed, Graph};

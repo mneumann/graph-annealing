@@ -20,7 +20,7 @@ use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
 use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use graph_annealing::goal::{Cache, Goal, FitnessFunction};
+use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
 use lindenmayer_system::{Alphabet, Condition, LSystem, Rule, Symbol, SymbolString,
                          apply_first_rule};

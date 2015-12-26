@@ -11,7 +11,9 @@ use graph_neighbor_matching::Graph as NGraph;
 defops!{FitnessFunction;
     ConnectedComponents,
     StronglyConnectedComponents,
-    NeighborMatching,
+    NeighborMatchingMinDeg,
+    NeighborMatchingMaxDeg,
+    NeighborMatchingAvg,
     TriadicDistance
 }
 
@@ -83,7 +85,15 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
             FitnessFunction::StronglyConnectedComponents => {
                 self.strongly_connected_components_distance(g) as f32
             }
-            FitnessFunction::NeighborMatching => self.neighbor_matching_score(g, cache) as f32,
+            FitnessFunction::NeighborMatchingMinDeg => {
+                self.neighbor_matching_score_min_deg(g, cache) as f32
+            }
+            FitnessFunction::NeighborMatchingMaxDeg => {
+                self.neighbor_matching_score_max_deg(g, cache) as f32
+            }
+            FitnessFunction::NeighborMatchingAvg => {
+                self.neighbor_matching_score_avg(g, cache) as f32
+            }
             FitnessFunction::TriadicDistance => self.triadic_distance(g) as f32,
         }
     }
@@ -108,7 +118,30 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         ((self.target_strongly_connected_components as isize) - scc).abs() as usize
     }
 
-    pub fn neighbor_matching_score<A: Default + Debug, B: Default + Debug>(&self,
+    pub fn neighbor_matching_score_min_deg<A: Default + Debug, B: Default + Debug>(&self,
+                                                                           g: &OptDenseDigraph<A,
+                                                                                               B>,
+                                                                           cache: &mut Cache)
+                                                                           -> f32 {
+        if let None = cache.edge_list {
+            cache.edge_list = Some(graph_to_edgelist(g.ref_graph()));
+        }
+
+        let &(ref in_b, ref out_b) = cache.edge_list.as_ref().unwrap();
+        let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.target_in_a[..],
+                                                             &self.target_out_a[..]),
+                                                 NGraph::new(&in_b[..], &out_b[..]),
+                                                 IgnoreNodeColors);
+        // XXX
+        sim.iterate(20, 0.1);
+
+        let score = sim.score_sum_norm_min_degree(None);
+
+        let score = 1.0 - score.get();
+        score
+    }
+
+    pub fn neighbor_matching_score_max_deg<A: Default + Debug, B: Default + Debug>(&self,
                                                                            g: &OptDenseDigraph<A,
                                                                                                B>,
                                                                            cache: &mut Cache)
@@ -126,6 +159,29 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         sim.iterate(20, 0.1);
 
         let score = sim.score_sum_norm_max_degree(None);
+
+        let score = 1.0 - score.get();
+        score
+    }
+
+    pub fn neighbor_matching_score_avg<A: Default + Debug, B: Default + Debug>(&self,
+                                                                           g: &OptDenseDigraph<A,
+                                                                                               B>,
+                                                                           cache: &mut Cache)
+                                                                           -> f32 {
+        if let None = cache.edge_list {
+            cache.edge_list = Some(graph_to_edgelist(g.ref_graph()));
+        }
+
+        let &(ref in_b, ref out_b) = cache.edge_list.as_ref().unwrap();
+        let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.target_in_a[..],
+                                                             &self.target_out_a[..]),
+                                                 NGraph::new(&in_b[..], &out_b[..]),
+                                                 IgnoreNodeColors);
+        // XXX
+        sim.iterate(20, 0.1);
+
+        let score = sim.score_average();
 
         let score = 1.0 - score.get();
         score
