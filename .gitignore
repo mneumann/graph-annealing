@@ -14,5 +14,4 @@
 *.bk
 
 # Temporary files
-*.swp
-*.swo
+*.sw*
