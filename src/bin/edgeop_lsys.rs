@@ -273,9 +273,9 @@ fn main() {
 
         for stat in stats.iter() {
             print!(" | ");
-            print!("{:>8.1}", stat.min);
-            print!("{:>9.1}", stat.avg);
-            print!("{:>10.1}", stat.max);
+            print!("{:>8.2}", stat.min);
+            print!("{:>9.2}", stat.avg);
+            print!("{:>10.2}", stat.max);
         }
 
         print!(" | {:>5} | {:>8.0} ms", num_optima, duration_ms);
