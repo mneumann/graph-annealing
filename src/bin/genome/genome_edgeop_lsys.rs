@@ -189,7 +189,7 @@ pub struct SymbolGenerator {
     pub terminal_symbols: OwnedWeightedChoice<EdgeOp>,
     pub nonterminal_symbols: Range<u32>,
 
-    /// The probability with which a terminal value is choosen.
+    /// The probability with which a terminal value (i.e. an EdgeOp) is choosen.
     pub prob_terminal: Probability,
 
     pub expr_weighted_op: OwnedWeightedChoice<ExprOp>,

@@ -17,7 +17,6 @@ dependencies = [
  "pcg 0.0.1 (git+https://github.com/codahale/pcg.git)",
  "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "rayon 0.0.1 (git+https://github.com/nikomatsakis/rayon.git)",
  "sexp 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple_parallel 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.34 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -75,17 +74,9 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "deque"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "evo"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/evo-rs.git#b6a6f79b4056993b6ea64bd8cdce978b809737b2"
+source = "git+https://github.com/mneumann/evo-rs.git#4fc6c0a3b9c5b774a60ba3d41985879db6853d58"
 dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -209,16 +200,6 @@ dependencies = [
  "advapi32-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rayon"
-version = "0.0.1"
-source = "git+https://github.com/nikomatsakis/rayon.git#1cd18c3ea0c140f360f9432946b1e71446440fce"
-dependencies = [
- "deque 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

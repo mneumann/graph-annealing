@@ -52,6 +52,7 @@ struct ConfigGenome {
     rules: usize,
     initial_len: usize,
     arity: usize,
+    prob_terminal: Probability
 }
 
 #[derive(Debug)]
@@ -171,6 +172,7 @@ fn parse_config(sexp: Sexp) -> Config {
             arity: genome_map.get("arity").and_then(|v| v.get_uint()).unwrap() as usize,
             initial_len: genome_map.get("initial_len").and_then(|v| v.get_uint()).unwrap() as usize,
             max_iter: genome_map.get("max_iter").and_then(|v| v.get_uint()).unwrap() as usize,
+            prob_terminal: Probability::new(genome_map.get("prob_terminal").and_then(|v| v.get_float()).unwrap() as f32),
         },
     }
 }
@@ -208,7 +210,7 @@ fn main() {
                                    config.genome.rules, // num_rules
                                    config.genome.initial_len, // initial rule length
                                    config.genome.arity, // we use 2-ary symbols
-                                   Probability::new(0.7), // prob_terminal: XXX
+                                   config.genome.prob_terminal,
                                    2, // max_expr_depth
 
                                    w_ops,
