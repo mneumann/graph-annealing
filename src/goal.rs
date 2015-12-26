@@ -100,7 +100,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
         // XXX
         sim.iterate(20, 0.1);
 
-        let score = sim.score_sum_norm_min_degree(None);
+        let score = sim.score_sum_norm_max_degree(None);
 
         let score = 1.0 - score.get();
         score
