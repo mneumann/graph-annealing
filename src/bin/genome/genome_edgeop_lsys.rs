@@ -22,8 +22,9 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
-use lindenmayer_system::{Alphabet, Expr, LSystem, Rule, Symbol, SymbolString, apply_first_rule};
-use lindenmayer_system::Cond as Condition;
+use lindenmayer_system::{Alphabet, LSystem, Rule, Symbol, SymbolString, apply_first_rule};
+use expression::num_expr::NumExpr as Expr;
+use expression::cond::Cond;
 use lindenmayer_system::symbol::Sym2;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
@@ -53,7 +54,7 @@ defops!{RuleProductionMutOp;
     ModifyParameter,
 
     // Insert a sequence of symbols
-    InsertSequence, 
+    InsertSequence,
 
     // Delete a sequence of symbols
     DeleteSequence
@@ -94,12 +95,12 @@ impl Into<Sexp> for EdgeAlphabet {
 impl Alphabet for EdgeAlphabet {}
 
 // We use 2-ary symbols, i.e. symbols with two parameters.
-type Sym = Sym2<EdgeAlphabet, f32>;
+type Sym = Sym2<EdgeAlphabet, Expr<f32>>;
 
 /// Rules can only be stored for NonTerminals
 #[derive(Clone, Debug)]
 struct System {
-    rules: BTreeMap<RuleId, Vec<Rule<Sym>>>,
+    rules: BTreeMap<RuleId, Vec<Rule<Sym, Cond<Expr<f32>>>>>,
 }
 
 impl System {
@@ -110,13 +111,11 @@ impl System {
     fn add_rule(&mut self,
                 rule_id: RuleId,
                 production: SymbolString<Sym>,
-                condition: Condition<Expr<f32>>) {
+                condition: Cond<Expr<f32>>) {
         self.rules
             .entry(rule_id)
             .or_insert(vec![])
-            .push(Rule::new_with_condition(EdgeAlphabet::NonTerminal(rule_id),
-                                           production,
-                                           condition));
+            .push(Rule::new(EdgeAlphabet::NonTerminal(rule_id), condition, production));
     }
 
     fn random_rule_id<R: Rng>(&self, rng: &mut R) -> RuleId {
@@ -126,9 +125,9 @@ impl System {
         self.rules.iter().map(|(&k, _)| k).nth(nth).unwrap()
     }
 
-    fn with_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym>)>(&self,
-                                                              rng: &mut R,
-                                                              mut callback: F) {
+    fn with_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym, Cond<Expr<f32>>>)>(&self,
+                                                                               rng: &mut R,
+                                                                               mut callback: F) {
         let rule_id = self.random_rule_id(rng);
 
         if let Some(local_rules) = self.rules.get(&rule_id) {
@@ -140,7 +139,7 @@ impl System {
         }
     }
 
-    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym>) -> Rule<Sym>>(&mut self,
+    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym, Cond<Expr<f32>>>) -> Rule<Sym, Cond<Expr<f32>>>>(&mut self,
                                                                               rng: &mut R,
                                                                               mut update: F) {
         let rule_to_modify = self.random_rule_id(rng);
@@ -205,7 +204,7 @@ impl SymbolGenerator {
                                   expr_depth: usize)
                                   -> SymbolString<S>
         where R: Rng,
-              S: Symbol<A = EdgeAlphabet, T = f32>
+              S: Symbol<A = EdgeAlphabet, Expr = Expr<f32>>
     {
         SymbolString((0..len)
                          .into_iter()
@@ -220,7 +219,7 @@ impl SymbolGenerator {
                         expr_depth: usize)
                         -> S
         where R: Rng,
-              S: Symbol<A = EdgeAlphabet, T = f32>
+              S: Symbol<A = EdgeAlphabet, Expr = Expr<f32>>
     {
         S::from_iter(self.gen_symbol_value(rng),
                      (0..symbol_arity)
@@ -256,10 +255,7 @@ impl SymbolGenerator {
 
     /// Generate a simple condition like:
     ///     Arg(n) or 0.0 [>=] or [<=] constant expr
-    fn gen_simple_rule_condition<R: Rng>(&self,
-                                         rng: &mut R,
-                                         num_params: usize)
-                                         -> Condition<Expr<f32>> {
+    fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, num_params: usize) -> Cond<Expr<f32>> {
         let lhs = if num_params > 0 {
             Expr::Var(rng.gen_range(0, num_params))
         } else {
@@ -269,9 +265,9 @@ impl SymbolGenerator {
         let rhs = random_const_expr(rng, &self.const_expr_weighted_op);
 
         if rng.gen::<bool>() {
-            Condition::GreaterEqual(Box::new(lhs), Box::new(rhs))
+            Cond::GreaterEqual(Box::new(lhs), Box::new(rhs))
         } else {
-            Condition::LessEqual(Box::new(lhs), Box::new(rhs))
+            Cond::LessEqual(Box::new(lhs), Box::new(rhs))
         }
     }
 }
@@ -388,10 +384,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     // * Flip condition (NOT)
     fn mutate_rule_condition<R: Rng>(&self,
                                      _rng: &mut R,
-                                     cond: Condition<Expr<f32>>)
-                                     -> Condition<Expr<f32>> {
+                                     cond: Cond<Expr<f32>>)
+                                     -> Cond<Expr<f32>> {
         // XXX: Simply negate it for now.
-        Condition::Not(Box::new(cond))
+        Cond::Not(Box::new(cond))
     }
 
     // XXX
@@ -506,7 +502,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
         prod
     }
 
-    fn mutate_rule<R: Rng>(&self, rng: &mut R, rule: Rule<Sym>) -> Rule<Sym> {
+    fn mutate_rule<R: Rng>(&self,
+                           rng: &mut R,
+                           rule: Rule<Sym, Cond<Expr<f32>>>)
+                           -> Rule<Sym, Cond<Expr<f32>>> {
         let Rule {symbol, condition, successor} = rule;
         let rule_mut_op = self.rule_mut_op.ind_sample(rng);
         match rule_mut_op {
@@ -603,8 +602,8 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                                                    arity,
                                                    expr_depth);
             let condition = if rule_id == 0 {
-                // The axiomatic rule (rule number 0) has Condition::True.
-                Condition::True
+                // The axiomatic rule (rule number 0) has Cond::True.
+                Cond::True
             } else {
                 self.symbol_generator.gen_simple_rule_condition(rng, arity)
             };

@@ -1,6 +1,6 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use lindenmayer_system::Expr;
-use lindenmayer_system::Cond as Condition;
+use expression::num_expr::NumExpr as Expr;
+use expression::cond::Cond as Condition;
 use rand::Rng;
 use rand::distributions::IndependentSample;
 

@@ -32,3 +32,4 @@ evo = { git = "https://github.com/mneumann/evo-rs.git" }
 graph-sgf = { git = "https://github.com/mneumann/graph-sgf.git" }
 graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }
 lindenmayer-system = { git = "https://github.com/mneumann/lindenmayer-system.git" }
+expression = { git = "https://github.com/mneumann/expression-rs.git" }
