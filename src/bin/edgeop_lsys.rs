@@ -16,6 +16,7 @@ extern crate lindenmayer_system;
 extern crate graph_edge_evolution;
 extern crate asexp;
 extern crate expression;
+extern crate expression_num;
 
 #[path="genome/genome_edgeop_lsys.rs"]
 pub mod genome;

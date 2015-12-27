@@ -7,12 +7,13 @@ dependencies = [
  "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
- "expression 0.1.0 (git+https://github.com/mneumann/expression-rs.git)",
+ "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression-num 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-edge-evolution 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
  "graph-neighbor-matching 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-sgf 0.0.1 (git+https://github.com/mneumann/graph-sgf.git)",
- "lindenmayer-system 0.1.0 (git+https://github.com/mneumann/lindenmayer-system.git)",
+ "lindenmayer-system 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "pcg 0.0.1 (git+https://github.com/codahale/pcg.git)",
@@ -36,11 +37,6 @@ dependencies = [
 name = "ansi_term"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "asexp"
-version = "0.1.0"
-source = "git+https://github.com/mneumann/asexp-rs.git#5031783ff1964eeb88c8e03aa63a1c698db2ab6a"
 
 [[package]]
 name = "asexp"
@@ -93,10 +89,19 @@ dependencies = [
 
 [[package]]
 name = "expression"
-version = "0.1.0"
-source = "git+https://github.com/mneumann/expression-rs.git#5a9d030df8018a93389360dc1fa68d08fb681ff7"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "expression-num"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -148,12 +153,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lindenmayer-system"
-version = "0.1.0"
-source = "git+https://github.com/mneumann/lindenmayer-system.git#b4bde115daa803a7e1df83c217558611c4c8ff9c"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "asexp 0.1.0 (git+https://github.com/mneumann/asexp-rs.git)",
- "expression 0.1.0 (git+https://github.com/mneumann/expression-rs.git)",
- "turtle 0.1.0 (git+https://github.com/mneumann/turtle-rs.git)",
+ "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "turtle 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -258,8 +262,8 @@ dependencies = [
 
 [[package]]
 name = "turtle"
-version = "0.1.0"
-source = "git+https://github.com/mneumann/turtle-rs.git#2e43cd651b29a27e293605e7a81355565978ed42"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "vec_map"

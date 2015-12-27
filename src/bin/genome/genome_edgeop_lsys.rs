@@ -22,10 +22,11 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
-use lindenmayer_system::{Alphabet, LSystem, Rule, Symbol, SymbolString, apply_first_rule};
-use expression::num_expr::NumExpr as Expr;
+use lindenmayer_system::Alphabet;
+use lindenmayer_system::parametric::{PRule, PSym2, ParametricSymbol, ParametricSystem,
+                                     apply_first_rule};
+use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
-use lindenmayer_system::symbol::Sym2;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
                     random_expr};
@@ -95,12 +96,15 @@ impl Into<Sexp> for EdgeAlphabet {
 impl Alphabet for EdgeAlphabet {}
 
 // We use 2-ary symbols, i.e. symbols with two parameters.
-type Sym = Sym2<EdgeAlphabet, Expr<f32>>;
+const SYM_ARITY: usize = 2;
+type Sym = PSym2<EdgeAlphabet, Expr<f32>>;
+type SymParam = PSym2<EdgeAlphabet, f32>;
+type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, f32>, Cond<Expr<f32>>>;
 
 /// Rules can only be stored for NonTerminals
 #[derive(Clone, Debug)]
 struct System {
-    rules: BTreeMap<RuleId, Vec<Rule<Sym, Cond<Expr<f32>>>>>,
+    rules: BTreeMap<RuleId, Vec<Rule>>,
 }
 
 impl System {
@@ -108,14 +112,14 @@ impl System {
         System { rules: BTreeMap::new() }
     }
 
-    fn add_rule(&mut self,
-                rule_id: RuleId,
-                production: SymbolString<Sym>,
-                condition: Cond<Expr<f32>>) {
+    fn add_rule(&mut self, rule_id: RuleId, production: Vec<Sym>, condition: Cond<Expr<f32>>) {
         self.rules
             .entry(rule_id)
             .or_insert(vec![])
-            .push(Rule::new(EdgeAlphabet::NonTerminal(rule_id), condition, production));
+            .push(Rule::new(EdgeAlphabet::NonTerminal(rule_id),
+                            condition,
+                            production,
+                            SYM_ARITY));
     }
 
     fn random_rule_id<R: Rng>(&self, rng: &mut R) -> RuleId {
@@ -125,9 +129,7 @@ impl System {
         self.rules.iter().map(|(&k, _)| k).nth(nth).unwrap()
     }
 
-    fn with_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym, Cond<Expr<f32>>>)>(&self,
-                                                                               rng: &mut R,
-                                                                               mut callback: F) {
+    fn with_random_rule<R: Rng, F: FnMut(&mut R, &Rule)>(&self, rng: &mut R, mut callback: F) {
         let rule_id = self.random_rule_id(rng);
 
         if let Some(local_rules) = self.rules.get(&rule_id) {
@@ -139,9 +141,9 @@ impl System {
         }
     }
 
-    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule<Sym, Cond<Expr<f32>>>) -> Rule<Sym, Cond<Expr<f32>>>>(&mut self,
-                                                                              rng: &mut R,
-                                                                              mut update: F) {
+    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule) -> Rule>(&mut self,
+                                                                    rng: &mut R,
+                                                                    mut update: F) {
         let rule_to_modify = self.random_rule_id(rng);
 
         if let Some(local_rules) = self.rules.get_mut(&rule_to_modify) {
@@ -165,8 +167,9 @@ impl System {
     }
 }
 
-impl LSystem<Sym> for System {
-    fn apply_first_rule(&self, sym: &Sym) -> Option<SymbolString<Sym>> {
+impl ParametricSystem for System {
+    type Rule = Rule;
+    fn apply_first_rule(&self, sym: &SymParam) -> Option<Vec<SymParam>> {
         match sym.symbol() {
             // We don't store rules for terminal symbols.
             &EdgeAlphabet::Terminal(_) => None,
@@ -202,14 +205,14 @@ impl SymbolGenerator {
                                   symbol_arity: usize,
                                   num_params: usize,
                                   expr_depth: usize)
-                                  -> SymbolString<S>
+                                  -> Vec<S>
         where R: Rng,
-              S: Symbol<A = EdgeAlphabet, Expr = Expr<f32>>
+              S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr<f32>>
     {
-        SymbolString((0..len)
-                         .into_iter()
-                         .map(|_| self.gen_symbol(rng, symbol_arity, num_params, expr_depth))
-                         .collect())
+        (0..len)
+            .into_iter()
+            .map(|_| self.gen_symbol(rng, symbol_arity, num_params, expr_depth))
+            .collect()
     }
 
     fn gen_symbol<R, S>(&self,
@@ -219,12 +222,13 @@ impl SymbolGenerator {
                         expr_depth: usize)
                         -> S
         where R: Rng,
-              S: Symbol<A = EdgeAlphabet, Expr = Expr<f32>>
+              S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr<f32>>
     {
-        S::from_iter(self.gen_symbol_value(rng),
-                     (0..symbol_arity)
-                         .into_iter()
-                         .map(|_| self.gen_expr(rng, num_params, expr_depth)))
+        S::new_from_iter(self.gen_symbol_value(rng),
+                         (0..symbol_arity)
+                             .into_iter()
+                             .map(|_| self.gen_expr(rng, num_params, expr_depth)))
+            .unwrap()
 
     }
 
@@ -244,6 +248,7 @@ impl SymbolGenerator {
         EdgeAlphabet::NonTerminal(self.nonterminal_symbols.ind_sample(rng))
     }
 
+    // move into crate expression-num
     fn gen_expr<R: Rng>(&self, rng: &mut R, num_params: usize, expr_depth: usize) -> Expr<f32> {
         random_expr(rng,
                     num_params,
@@ -286,7 +291,7 @@ pub struct Toolbox<N: Debug, E: Debug> {
     recursive_expr_op: OwnedWeightedChoice<RecursiveExprOp>,
 
     /// Arguments to the axiom rule.
-    pub axiom_args: Vec<Expr<f32>>,
+    pub axiom_args: Vec<f32>,
 
     /// Maximum number of iterations of the L-system  (XXX: Limit also based on generated length)
     pub iterations: usize,
@@ -345,7 +350,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
             recursive_expr_op: OwnedWeightedChoice::new(RecursiveExprOp::uniform_distribution()),
 
             // we use n-ary symbols, so we need n parameters. (XXX)
-            axiom_args: (0..symbol_arity).map(|_| Expr::Const(0.0)).collect(),
+            axiom_args: (0..symbol_arity).map(|_| 0.0).collect(),
 
             // maximum 3 iterations of the L-system.
             iterations: iterations,
@@ -394,30 +399,27 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     //     * Replace one symbol
     //     * Make change to symbol parameter expression (add a constant, lift to more complex expression)
     //     * insert / remove sequence of symbols.
-    fn mutate_rule_production<R: Rng>(&self,
-                                      rng: &mut R,
-                                      mut prod: SymbolString<Sym>)
-                                      -> SymbolString<Sym> {
+    fn mutate_rule_production<R: Rng>(&self, rng: &mut R, mut prod: Vec<Sym>) -> Vec<Sym> {
         let rule_prod_mut_op = self.rule_prod_mut_op.ind_sample(rng);
         match rule_prod_mut_op {
             RuleProductionMutOp::ReplaceSymbol => {
                 // choose a random element, and replace it with a terminal or non-terminal
-                let len = prod.0.len();
+                let len = prod.len();
                 if len > 0 {
                     let idx = rng.gen_range(0, len);
                     let sym_value = self.symbol_generator.gen_symbol_value(rng);
-                    prod.0[idx].set_symbol(sym_value); // replace symbol value
+                    *prod[idx].symbol_mut() = sym_value; // replace symbol value
                 } else {
                     println!("unmodified rule production symbol");
                 }
             }
             RuleProductionMutOp::ModifyParameter => {
                 // choose a random element, and modify one of it's parameters
-                let len = prod.0.len();
+                let len = prod.len();
                 if len > 0 {
                     let idx = rng.gen_range(0, len);
 
-                    let mut args = prod.0[idx].args().to_vec();
+                    let mut args = prod[idx].params().to_vec();
                     let arity = args.len();
                     if arity > 0 {
                         let argsidx = rng.gen_range(0, arity);
@@ -450,9 +452,9 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                         println!("unmodified rule production parameter 1");
                     }
 
-                    let sym_value = prod.0[idx].symbol().clone();
+                    let sym_value = prod[idx].symbol().clone();
                     // replace symbol with modified parameters
-                    prod.0[idx] = Sym::from_iter(sym_value, args.into_iter());
+                    prod[idx] = Sym::new_from_iter(sym_value, args.into_iter()).unwrap();
                 } else {
                     println!("unmodified rule production parameter");
                 }
@@ -464,12 +466,12 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 //     * Number of symbols to insert
                 //     * Insert Position
                 // Insert at most 4 symbols. XXX
-                let max_number_of_symbols = cmp::min(4, cmp::max(1, prod.0.len() / 2));
+                let max_number_of_symbols = cmp::min(4, cmp::max(1, prod.len() / 2));
                 assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= 4);
 
                 let number_of_symbols = rng.gen_range(0, max_number_of_symbols) + 1;
                 assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
-                let insert_position = rng.gen_range(0, prod.0.len() + 1);
+                let insert_position = rng.gen_range(0, prod.len() + 1);
 
                 let arity = self.symbol_arity;
                 let expr_depth = 0;
@@ -479,49 +481,44 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                                                                          arity,
                                                                          expr_depth);
 
-                let new_production = insert_vec_at(prod.0, new_symbols.0, insert_position);
+                let new_production = insert_vec_at(prod, new_symbols, insert_position);
 
-                return SymbolString(new_production);
+                return new_production;
             }
             RuleProductionMutOp::DeleteSequence => {
                 // * Number of symbols to delete
                 // * At position
-                let max_number_of_symbols = cmp::min(4, cmp::max(1, prod.0.len() / 2));
+                let max_number_of_symbols = cmp::min(4, cmp::max(1, prod.len() / 2));
                 assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= 4);
 
                 let number_of_symbols = rng.gen_range(0, max_number_of_symbols) + 1;
                 assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
-                let remove_position = rng.gen_range(0, prod.0.len() + 1);
+                let remove_position = rng.gen_range(0, prod.len() + 1);
 
-                let new_production = remove_at(prod.0, remove_position, number_of_symbols);
+                let new_production = remove_at(prod, remove_position, number_of_symbols);
 
-                return SymbolString(new_production);
+                return new_production;
 
             }
         }
         prod
     }
 
-    fn mutate_rule<R: Rng>(&self,
-                           rng: &mut R,
-                           rule: Rule<Sym, Cond<Expr<f32>>>)
-                           -> Rule<Sym, Cond<Expr<f32>>> {
-        let Rule {symbol, condition, successor} = rule;
+    fn mutate_rule<R: Rng>(&self, rng: &mut R, rule: Rule) -> Rule {
+        let Rule {symbol, condition, production, arity, ..} = rule;
         let rule_mut_op = self.rule_mut_op.ind_sample(rng);
         match rule_mut_op {
             RuleMutOp::ModifyCondition => {
-                Rule {
-                    symbol: symbol,
-                    condition: self.mutate_rule_condition(rng, condition),
-                    successor: successor,
-                }
+                Rule::new(symbol,
+                          self.mutate_rule_condition(rng, condition),
+                          production,
+                          arity)
             }
             RuleMutOp::ModifyProduction => {
-                Rule {
-                    symbol: symbol,
-                    condition: condition,
-                    successor: self.mutate_rule_production(rng, successor),
-                }
+                Rule::new(symbol,
+                          condition,
+                          self.mutate_rule_production(rng, production),
+                          arity)
             }
         }
     }
@@ -558,14 +555,13 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
             new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
                 let new_production = linear_2point_crossover_random(rng,
-                                                                    &rule_p1.successor.0,
-                                                                    &rule_p2.successor.0);
+                                                                    &rule_p1.production,
+                                                                    &rule_p2.production);
 
-                Rule {
-                    successor: SymbolString(new_production),
-                    condition: rule_p1.condition.clone(),
-                    symbol: rule_p1.symbol.clone(),
-                }
+                Rule::new(rule_p1.symbol.clone(),
+                          rule_p1.condition.clone(),
+                          new_production,
+                          SYM_ARITY)
             });
 
         });
@@ -664,11 +660,10 @@ impl<'a> Into<Sexp> for &'a Genome {
             for rule in vec_rules.iter() {
                 let sym = Into::<Sexp>::into(rule.symbol.clone());
                 let cond = Into::<Sexp>::into(&rule.condition);
-                let succ: Vec<Sexp> = rule.successor
-                                          .0
+                let succ: Vec<Sexp> = rule.production
                                           .iter()
                                           .map(|s| {
-                                              let args: Vec<Sexp> = s.args()
+                                              let args: Vec<Sexp> = s.params()
                                                                      .iter()
                                                                      .map(|a| a.into())
                                                                      .collect();
@@ -686,19 +681,19 @@ impl<'a> Into<Sexp> for &'a Genome {
 
 impl Genome {
     /// Develops the L-system into a vector of edge operations
-    pub fn to_edge_ops(&self, axiom_args: &[Expr<f32>], iterations: usize) -> Vec<(EdgeOp, f32)> {
-        let axiom = SymbolString(vec![Sym2::new_parametric(EdgeAlphabet::NonTerminal(0),
-                                                           (axiom_args[0].clone(),
-                                                            axiom_args[1].clone()))]);
+    pub fn to_edge_ops(&self, axiom_args: &[f32], iterations: usize) -> Vec<(EdgeOp, f32)> {
+        let axiom = vec![SymParam::new_from_iter(EdgeAlphabet::NonTerminal(0),
+                                                 axiom_args.iter().take(SYM_ARITY).cloned())
+                             .unwrap()];
         // XXX: limit #iterations based on produced length
         let (s, _iter) = self.system.develop(axiom, iterations);
         // println!("produced string: {:?}", s);
         // println!("stopped after iterations: {:?}", iter);
 
-        let edge_ops: Vec<_> = s.0.into_iter().filter_map(|op| {
+        let edge_ops: Vec<_> = s.into_iter().filter_map(|op| {
             match op.symbol() {
                 &EdgeAlphabet::Terminal(ref edge_op) => {
-                    if let Some(&Expr::Const(param)) = op.args().get(0) {
+                    if let Some(&param) = op.params().get(0) {
                         Some((edge_op.clone(), param.fract())) // NOTE: we only use the fractional part of the float
                     } else {
                         println!("Invalid parameter");

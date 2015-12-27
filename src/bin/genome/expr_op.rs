@@ -1,5 +1,5 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use expression::num_expr::NumExpr as Expr;
+use expression_num::NumExpr as Expr;
 use rand::{Closed01, Open01, Rng};
 use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
