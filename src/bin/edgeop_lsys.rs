@@ -204,7 +204,7 @@ struct Config {
     k: usize,
     seed: Vec<u64>,
     objectives: Vec<Objective>,
-    graph: Graph<(), (), Directed>,
+    graph: Graph<f32, f32, Directed>,
     edge_ops: Vec<(EdgeOp, u32)>,
     var_ops: Vec<(VarOp, u32)>,
     genome: ConfigGenome,
@@ -214,6 +214,18 @@ struct Config {
 struct Objective {
     fitness_function: FitnessFunction,
     threshold: f32,
+}
+
+fn convert_weight(w: Option<&Sexp>) -> Option<f32> {
+    match w {
+        Some(s) => {
+            s.get_float().map(|f| f as f32)
+        }
+        None => {
+            // use a default
+            Some(0.0)
+        }
+    }
 }
 
 fn parse_config(sexp: Sexp) -> Config {
@@ -261,7 +273,7 @@ fn parse_config(sexp: Sexp) -> Config {
     // read graph
     let graph_file = map.get("graph").unwrap().get_str().unwrap();
     println!("Using graph file: {}", graph_file);
-    let graph = read_graph(File::open(graph_file).unwrap(), |w| {println!("node weight: {:?}", w); Some(())}, |w| {println!("edge weight: {:?}", w); Some(())}).unwrap();
+    let graph = read_graph(File::open(graph_file).unwrap(), convert_weight, convert_weight).unwrap();
     println!("graph: {:?}", graph);
 
     // Parse weighted operation choice from command line
