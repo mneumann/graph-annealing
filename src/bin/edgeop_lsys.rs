@@ -46,7 +46,11 @@ use petgraph::graph::NodeIndex;
 
 const MAX_OBJECTIVES: usize = 3;
 
-fn read_graph<R:Read>(mut rd: R) -> Result<Graph<(), (), Directed>, &'static str> {
+fn read_graph<R, NodeWeightFn, EdgeWeightFn, NW, EW>(mut rd: R, mut node_weight_fn: NodeWeightFn, mut edge_weight_fn: EdgeWeightFn) -> Result<Graph<NW, EW, Directed>, &'static str>
+where R:Read,
+      NodeWeightFn: FnMut(Option<&Sexp>) -> Option<NW>,
+      EdgeWeightFn: FnMut(Option<&Sexp>) -> Option<EW>
+{
     let mut s = String::new();
     match rd.read_to_string(&mut s) {
         Err(_) => return Err("failed to read file"),
@@ -95,7 +99,13 @@ fn read_graph<R:Read>(mut rd: R) -> Result<Graph<(), (), Directed>, &'static str
         // XXX: allow other id types
         if let Some(id) = node_info.get("id").and_then(|i| i.get_uint()) {
             println!("node-id: {}", id);
-            let idx = graph.add_node(());
+            let weight = match node_weight_fn(node_info.get("weight")) {
+                Some(w) => w,
+                None => {
+                    return Err("invalid node weight");
+                }
+            };
+            let idx = graph.add_node(weight);
             println!("node-idx: {:?}", idx);
 
             if let Some(_) = node_map.insert(id, idx) {
@@ -130,9 +140,40 @@ fn read_graph<R:Read>(mut rd: R) -> Result<Graph<(), (), Directed>, &'static str
                         if let Some(target_id) = edge_def.get_uint() {
                             let dst_idx = node_map[&target_id];
                             println!("dst-node-idx: {:?}", dst_idx);
-                            let _ = graph.add_edge(src_idx, dst_idx, ());
+
+                            let weight = match edge_weight_fn(None) {
+                                Some(w) => w,
+                                None => {
+                                    return Err("invalid edge weight");
+                                }
+                            };
+
+                            let _ = graph.add_edge(src_idx, dst_idx, weight);
                         } else {
-                            return Err("invalid edge node id");
+                            let mut valid = false;
+
+                            if let &Sexp::Tuple(ref list) = edge_def {
+                                // (node-id weight) tuple
+                                if list.len() == 2 {
+                                    if let Some(target_id) = list[0].get_uint() {
+                                        let dst_idx = node_map[&target_id];
+                                        println!("dst-node-idx: {:?}", dst_idx);
+
+                                        let weight = match edge_weight_fn(list.get(1)) {
+                                            Some(w) => w,
+                                            None => {
+                                                return Err("invalid edge weight");
+                                            }
+                                        };
+
+                                        let _ = graph.add_edge(src_idx, dst_idx, weight);
+                                        valid = true;
+                                    }
+                                }
+                            }
+                            if !valid {
+                                return Err("invalid edge node id");
+                            }
                         }
                     }
                 }
@@ -220,7 +261,7 @@ fn parse_config(sexp: Sexp) -> Config {
     // read graph
     let graph_file = map.get("graph").unwrap().get_str().unwrap();
     println!("Using graph file: {}", graph_file);
-    let graph = read_graph(File::open(graph_file).unwrap()).unwrap();
+    let graph = read_graph(File::open(graph_file).unwrap(), |w| {println!("node weight: {:?}", w); Some(())}, |w| {println!("edge weight: {:?}", w); Some(())}).unwrap();
     println!("graph: {:?}", graph);
 
     // Parse weighted operation choice from command line
