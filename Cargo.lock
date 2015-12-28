@@ -10,7 +10,7 @@ dependencies = [
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "expression-closed01 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "expression-num 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "graph-edge-evolution 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
  "graph-neighbor-matching 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lindenmayer-system 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -122,7 +122,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "graph-edge-evolution"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/mneumann/graph-edge-evolution.git#ec085fcf0b49bc26e82259e39c0b31a8544111ea"
 
 [[package]]
 name = "graph-layout"

@@ -13,7 +13,15 @@ defops!{EdgeOp;
     Reverse,
     Save,
     Restore,
-    Output
+    Output,
+
+    SetEdgeWeight,
+    IncEdgeWeight,
+    DecEdgeWeight,
+
+    SetNodeWeight,
+    IncNodeWeight,
+    DecNodeWeight
 }
 
 impl Into<Sexp> for EdgeOp {
@@ -23,7 +31,7 @@ impl Into<Sexp> for EdgeOp {
 }
 
 pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
-    let mut builder: GraphBuilder<f32, ()> = GraphBuilder::new();
+    let mut builder: GraphBuilder<f32, f32> = GraphBuilder::new();
     for &(op, f) in edgeops {
         let graph_op = match op {
             EdgeOp::Dup => EdgeOperation::Duplicate { weight: f },
@@ -36,6 +44,14 @@ pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
             EdgeOp::Reverse => EdgeOperation::Reverse,
             EdgeOp::Save => EdgeOperation::Save,
             EdgeOp::Restore => EdgeOperation::Restore,
+
+            EdgeOp::SetEdgeWeight => EdgeOperation::SetEdgeWeight {weight: f},
+            EdgeOp::IncEdgeWeight => EdgeOperation::IncEdgeWeight {weight: f},
+            EdgeOp::DecEdgeWeight => EdgeOperation::DecEdgeWeight {weight: f},
+
+            EdgeOp::SetNodeWeight => EdgeOperation::SetNodeWeight {weight: f},
+            EdgeOp::IncNodeWeight => EdgeOperation::IncNodeWeight {weight: f},
+            EdgeOp::DecNodeWeight => EdgeOperation::DecNodeWeight {weight: f},
         };
         builder.apply_operation(graph_op);
     }

@@ -21,8 +21,8 @@ triadic-census = "0.1.0"
 
 closed01 = "0.1.1"
 
-#graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
-graph-edge-evolution = "0.1.0"
+graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
+#graph-edge-evolution = "0.1.0"
 
 asexp = "0.1.0"
 
