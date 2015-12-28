@@ -3,7 +3,7 @@
 
 // NOTES:
 //
-// * When we need a value within (0, 1], we simply cut off the integral part und use fractional part
+// * When we need a value within [0, 1), we simply cut off the integral part und use fractional part
 //   only.
 //
 // * We start out with a simple Genome, which gets more and more complex through mating.
