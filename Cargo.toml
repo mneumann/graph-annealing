@@ -26,9 +26,11 @@ graph-edge-evolution = "0.1.0"
 
 asexp = "0.1.0"
 
-lindenmayer-system = "0.2.0"
+lindenmayer-system = "0.3.0"
+
 expression = "0.3.0"
 expression-num = "0.1.0"
+expression-closed01 = "0.1.0"
 
 pcg = { git = "https://github.com/codahale/pcg.git" }
 evo = { git = "https://github.com/mneumann/evo-rs.git" }

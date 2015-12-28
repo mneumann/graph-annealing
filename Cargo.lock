@@ -8,12 +8,13 @@ dependencies = [
  "crossbeam 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression-closed01 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "expression-num 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-edge-evolution 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
  "graph-neighbor-matching 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-sgf 0.0.1 (git+https://github.com/mneumann/graph-sgf.git)",
- "lindenmayer-system 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lindenmayer-system 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "pcg 0.0.1 (git+https://github.com/codahale/pcg.git)",
@@ -96,6 +97,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "expression-closed01"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "expression-num"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -153,10 +164,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lindenmayer-system"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "turtle 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

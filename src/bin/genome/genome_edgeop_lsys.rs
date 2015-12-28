@@ -24,7 +24,7 @@ use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
 use lindenmayer_system::{Alphabet, DualAlphabet};
 use lindenmayer_system::parametric::{PRule, PSym2, ParametricSymbol, ParametricRule, ParametricSystem,
-                                     apply_first_rule};
+                                     PDualMapSystem};
 use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
@@ -32,7 +32,6 @@ use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_con
                     random_expr};
 use simple_parallel::Pool;
 use crossbeam;
-use std::collections::BTreeMap;
 use std::cmp;
 use std::fmt::Debug;
 use asexp::Sexp;
@@ -119,79 +118,7 @@ const SYM_ARITY: usize = 2;
 type Sym = PSym2<EdgeAlphabet, Expr<f32>>;
 type SymParam = PSym2<EdgeAlphabet, f32>;
 type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, f32>, Cond<Expr<f32>>>;
-
-/// Rules can only be stored for NonTerminals
-#[derive(Clone, Debug)]
-struct System {
-    rules: BTreeMap<RuleId, Vec<Rule>>,
-}
-
-impl System {
-    fn new() -> System {
-        System { rules: BTreeMap::new() }
-    }
-
-    fn add_rule(&mut self, rule: Rule) {
-        if let &EdgeAlphabet::NonTerminal(rule_id) = rule.symbol() {
-            self.rules
-                .entry(rule_id)
-                .or_insert(vec![])
-                .push(rule);
-        }
-    }
-
-    fn random_rule_id<R: Rng>(&self, rng: &mut R) -> RuleId {
-        let len = self.rules.len();
-        assert!(len > 0);
-        let nth = rng.gen_range(0, len);
-        self.rules.iter().map(|(&k, _)| k).nth(nth).unwrap()
-    }
-
-    fn with_random_rule<R: Rng, F: FnMut(&mut R, Option<&Rule>)>(&self, rng: &mut R, mut callback: F) {
-        let rule_id = self.random_rule_id(rng);
-
-        if let Some(local_rules) = self.rules.get(&rule_id) {
-            let len = local_rules.len();
-            if len > 0 {
-                let idx = rng.gen_range(0, len);
-                callback(rng, Some(&local_rules[idx]));
-                return;
-            }
-        }
-
-        callback(rng, None);
-    }
-
-    fn with_random_rule_mut<R: Rng, F: FnMut(&mut R, Option<&mut Rule>)>(&mut self, rng: &mut R, mut callback: F) {
-        let rule_id = self.random_rule_id(rng);
-
-        if let Some(local_rules) = self.rules.get_mut(&rule_id) {
-            let len = local_rules.len();
-            if len > 0 {
-                let idx = rng.gen_range(0, len);
-                callback(rng, Some(&mut local_rules[idx]));
-                return;
-            }
-        }
-
-        callback(rng, None);
-    }
-}
-
-impl ParametricSystem for System {
-    type Rule = Rule;
-    fn apply_first_rule(&self, sym: &SymParam) -> Option<Vec<SymParam>> {
-        match sym.symbol() {
-            // We don't store rules for terminal symbols.
-            &EdgeAlphabet::Terminal(_) => None,
-
-            // Only apply rules for non-terminals
-            &EdgeAlphabet::NonTerminal(id) => {
-                self.rules.get(&id).and_then(|rules| apply_first_rule(&rules[..], sym))
-            }
-        }
-    }
-}
+type System = PDualMapSystem<EdgeAlphabet, Rule>;
 
 pub struct SymbolGenerator {
     pub max_expr_depth: usize,
@@ -675,8 +602,7 @@ pub struct Genome {
 impl<'a> Into<Sexp> for &'a Genome {
     fn into(self) -> Sexp {
         let mut rules = Vec::<Sexp>::new();
-        for (_k, vec_rules) in self.system.rules.iter() {
-            for rule in vec_rules.iter() {
+        self.system.each_rule(|rule| {
                 let sym = Into::<Sexp>::into(rule.symbol.clone());
                 let cond = Into::<Sexp>::into(&rule.condition);
                 let succ: Vec<Sexp> = rule.production
@@ -691,8 +617,7 @@ impl<'a> Into<Sexp> for &'a Genome {
                                           })
                                           .collect();
                 rules.push(Sexp::from((sym, cond, succ)));
-            }
-        }
+        });
 
         Sexp::from(("genome", rules))
     }
