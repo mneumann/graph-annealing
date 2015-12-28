@@ -34,6 +34,4 @@ expression-closed01 = "0.1.0"
 
 pcg = { git = "https://github.com/codahale/pcg.git" }
 evo = { git = "https://github.com/mneumann/evo-rs.git" }
-graph-sgf = { git = "https://github.com/mneumann/graph-sgf.git" }
 graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }
-

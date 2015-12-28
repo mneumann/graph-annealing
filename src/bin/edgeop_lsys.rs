@@ -9,7 +9,6 @@ extern crate crossbeam;
 extern crate simple_parallel;
 extern crate num_cpus;
 extern crate pcg;
-extern crate graph_sgf;
 extern crate triadic_census;
 extern crate time;
 extern crate lindenmayer_system;
@@ -33,9 +32,7 @@ use graph_annealing::goal::{FitnessFunction, Goal};
 use graph_annealing::stat::Stat;
 use simple_parallel::Pool;
 use petgraph::{Directed, Graph};
-use graph_sgf::{PetgraphReader, Unweighted};
 use triadic_census::OptDenseDigraph;
-use std::io::BufReader;
 use std::fs::File;
 use genome::VarOp;
 use genome::edgeop::{EdgeOp, edgeops_to_graph};
@@ -44,8 +41,110 @@ use std::io::Read;
 use asexp::Sexp;
 use asexp::sexp::prettyprint;
 use std::env;
+use std::collections::BTreeMap;
+use petgraph::graph::NodeIndex;
 
 const MAX_OBJECTIVES: usize = 3;
+
+fn read_graph<R:Read>(mut rd: R) -> Result<Graph<(), (), Directed>, &'static str> {
+    let mut s = String::new();
+    match rd.read_to_string(&mut s) {
+        Err(_) => return Err("failed to read file"),
+        Ok(_) => {}
+    }
+    let sexp = match Sexp::parse_toplevel(&s) {
+        Err(()) => return Err("failed to parse"),
+        Ok(sexp) => sexp
+    };
+
+    println!("{}", sexp);
+
+    let mut map = match sexp.into_map() {
+        Err(s) => return Err(s),
+        Ok(m) => m,
+    };
+
+    println!("{:?}", map);
+
+    match map["version"].get_uint() {
+        Some(1) => {}
+        _ => {
+            return Err("invalid version. Expect 1")
+        }
+    }
+
+    let nodes = if let Some(Sexp::Map(v)) = map.remove("nodes") {
+        v
+    } else {
+        return Err("no nodes given or invalid");
+    };
+
+    println!("{:?}", nodes);
+
+    let mut graph = Graph::new();
+
+    // maps nodes as defined in the graph file to node-ids as used in the graph
+    let mut node_map: BTreeMap<u64, NodeIndex> = BTreeMap::new();
+
+    // iterate once to add all nodes
+    for &(ref node_key, _) in nodes.iter() {
+        // XXX: allow other id types
+        if let Some(id) = node_key.get_uint() {
+            println!("node-id: {}", id);
+            let idx = graph.add_node(());
+            println!("node-idx: {:?}", idx);
+
+            if let Some(_) = node_map.insert(id, idx) {
+                return Err("duplicate node-id");
+            }
+        } else {
+            return Err("invalid non-integer node key");
+        }
+    }
+
+    println!("node_map: {:?}", node_map);
+
+    // iterate again, to add all edges
+    for (node_key, node_def) in nodes.into_iter() {
+        // XXX: allow other id types
+        let id = node_key.get_uint().unwrap();
+        println!("node-id: {}", id);
+
+        // XXX: set node weight.
+
+        let src_idx = node_map[&id];
+        println!("src-node-idx: {:?}", src_idx);
+
+        println!("{}", node_def);
+
+        let mut node_info = node_def.into_map().unwrap();
+
+        if let Some(node_weight) = node_info.remove("weight") {
+            println!("node_weight: {}", node_weight);
+        }
+
+        if let Some(edges) = node_info.remove("edges") {
+            match edges {
+                Sexp::Array(edge_list) => {
+                    for edge_def in edge_list.iter() {
+                        if let Some(target_id) = edge_def.get_uint() {
+                            let dst_idx = node_map[&target_id];
+                            println!("dst-node-idx: {:?}", dst_idx);
+                            let _ = graph.add_edge(src_idx, dst_idx, ());
+                        } else {
+                            return Err("invalid edge node id");
+                        }
+                    }
+                }
+                _ => {
+                    return Err("Invalid edge list");
+                }
+            }
+        }
+    }
+
+    Ok(graph)
+}
 
 #[derive(Debug)]
 struct ConfigGenome {
@@ -64,7 +163,7 @@ struct Config {
     k: usize,
     seed: Vec<u64>,
     objectives: Vec<Objective>,
-    graph: Graph<Unweighted, Unweighted, Directed>,
+    graph: Graph<(), (), Directed>,
     edge_ops: Vec<(EdgeOp, u32)>,
     var_ops: Vec<(VarOp, u32)>,
     genome: ConfigGenome,
@@ -121,11 +220,8 @@ fn parse_config(sexp: Sexp) -> Config {
     // read graph
     let graph_file = map.get("graph").unwrap().get_str().unwrap();
     println!("Using graph file: {}", graph_file);
-    let graph = {
-        let mut f = BufReader::new(File::open(graph_file).unwrap());
-        let graph: Graph<Unweighted, Unweighted, Directed> = PetgraphReader::from_sgf(&mut f);
-        graph
-    };
+    let graph = read_graph(File::open(graph_file).unwrap()).unwrap();
+    println!("graph: {:?}", graph);
 
     // Parse weighted operation choice from command line
     let mut edge_ops: Vec<(EdgeOp, u32)> = Vec::new();

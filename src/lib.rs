@@ -5,7 +5,6 @@ extern crate triadic_census;
 extern crate graph_layout;
 extern crate graph_neighbor_matching;
 extern crate graph_edge_evolution;
-extern crate graph_sgf;
 extern crate closed01;
 
 /// Defines a public enum that can be converted to and from a string.

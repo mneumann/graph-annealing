@@ -13,7 +13,6 @@ dependencies = [
  "graph-edge-evolution 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
  "graph-neighbor-matching 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "graph-sgf 0.0.1 (git+https://github.com/mneumann/graph-sgf.git)",
  "lindenmayer-system 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -138,14 +137,6 @@ dependencies = [
  "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "munkres 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "graph-sgf"
-version = "0.0.1"
-source = "git+https://github.com/mneumann/graph-sgf.git#951b3a7662c7569b1729f89eb01b899362407780"
-dependencies = [
- "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

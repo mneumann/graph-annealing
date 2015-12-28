@@ -1,0 +1,8 @@
+version 1
+nodes {
+    0 {edges [2 3 4]}
+    1 {edges [2 3 4]}
+    2 {}
+    3 {}
+    4 {}
+}
