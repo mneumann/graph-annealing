@@ -144,29 +144,32 @@ impl System {
         callback(rng, None);
     }
 
-    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule) -> Rule>(&mut self,
-                                                                    rng: &mut R,
-                                                                    mut update: F) {
-        let rule_to_modify = self.random_rule_id(rng);
+    fn with_random_rule_mut<R: Rng, F: FnMut(&mut R, Option<&mut Rule>)>(&mut self, rng: &mut R, mut callback: F) {
+        let rule_id = self.random_rule_id(rng);
 
-        if let Some(local_rules) = self.rules.get_mut(&rule_to_modify) {
-            // modify one of the rule -> successor pairs
+        if let Some(local_rules) = self.rules.get_mut(&rule_id) {
             let len = local_rules.len();
             if len > 0 {
                 let idx = rng.gen_range(0, len);
-                let new_rule = {
-                    let rule = &local_rules[idx];
-                    // println!("Mutate rule before: {:?}", rule);
-                    update(rng, rule)
-                };
-                // println!("Mutate rule after: {:?}", new_rule);
-                local_rules[idx] = new_rule;
+                callback(rng, Some(&mut local_rules[idx]));
+                return;
+            }
+        }
+
+        callback(rng, None);
+    }
+
+    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule) -> Rule>(&mut self,
+                                                                    rng: &mut R,
+                                                                    mut update: F) {
+        self.with_random_rule_mut(rng, |rng, opt_rule| {
+            if let Some(rule) = opt_rule {
+                let new_rule = update(rng, rule as &Rule);
+                *rule = new_rule;
             } else {
                 println!("no modification");
             }
-        } else {
-            println!("no modification");
-        }
+        });
     }
 }
 
@@ -556,6 +559,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
         p2.system.with_random_rule(rng, |rng, opt_rule_p2| {
             // println!("p2 called with random rule: {:?}", rule_p2);
             if let Some(rule_p2) = opt_rule_p2 {
+
                 new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
                     let new_production = linear_2point_crossover_random(rng,
                                                                         &rule_p1.production,
