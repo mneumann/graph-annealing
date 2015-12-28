@@ -158,19 +158,6 @@ impl System {
 
         callback(rng, None);
     }
-
-    fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule) -> Rule>(&mut self,
-                                                                    rng: &mut R,
-                                                                    mut update: F) {
-        self.with_random_rule_mut(rng, |rng, opt_rule| {
-            if let Some(rule) = opt_rule {
-                let new_rule = update(rng, rule as &Rule);
-                *rule = new_rule;
-            } else {
-                println!("no modification");
-            }
-        });
-    }
 }
 
 impl ParametricSystem for System {
@@ -541,7 +528,11 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     pub fn mutate<R: Rng>(&self, rng: &mut R, ind: &Genome) -> Genome {
         let mut new_ind = ind.clone();
 
-        new_ind.system.replace_random_rule(rng, |rng, rule| self.mutate_rule(rng, rule.clone()));
+        new_ind.system.with_random_rule_mut(rng, |rng, opt_rule| {
+            if let Some(rule) = opt_rule {
+                *rule = self.mutate_rule(rng, rule.clone());
+            }
+        });
 
         new_ind
     }
@@ -560,15 +551,15 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
             // println!("p2 called with random rule: {:?}", rule_p2);
             if let Some(rule_p2) = opt_rule_p2 {
 
-                new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
-                    let new_production = linear_2point_crossover_random(rng,
-                                                                        &rule_p1.production,
-                                                                        &rule_p2.production);
-
-                    Rule::new(rule_p1.symbol.clone(),
-                              rule_p1.condition.clone(),
-                              new_production,
-                              SYM_ARITY)
+                new_ind.system.with_random_rule_mut(rng, |rng, opt_rule_p1| {
+                    if let Some(rule_p1) = opt_rule_p1 {
+                        let new_production = linear_2point_crossover_random(rng,
+                                                                            &rule_p1.production,
+                                                                            &rule_p2.production);
+                        rule_p1.production = new_production;
+                    } else {
+                        println!("no modification");
+                    }
                 });
             }
         });
