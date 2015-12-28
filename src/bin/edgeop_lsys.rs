@@ -73,11 +73,15 @@ fn read_graph<R:Read>(mut rd: R) -> Result<Graph<(), (), Directed>, &'static str
         }
     }
 
-    let nodes = if let Some(Sexp::Map(v)) = map.remove("nodes") {
-        v
+    let mut nodes;
+    if let Some(Sexp::Array(v)) = map.remove("nodes") {
+        nodes = Vec::new();
+        for entry in v {
+            nodes.push(entry.into_map().unwrap());
+        }
     } else {
         return Err("no nodes given or invalid");
-    };
+    }
 
     println!("{:?}", nodes);
 
@@ -87,9 +91,9 @@ fn read_graph<R:Read>(mut rd: R) -> Result<Graph<(), (), Directed>, &'static str
     let mut node_map: BTreeMap<u64, NodeIndex> = BTreeMap::new();
 
     // iterate once to add all nodes
-    for &(ref node_key, _) in nodes.iter() {
+    for node_info in nodes.iter() {
         // XXX: allow other id types
-        if let Some(id) = node_key.get_uint() {
+        if let Some(id) = node_info.get("id").and_then(|i| i.get_uint()) {
             println!("node-id: {}", id);
             let idx = graph.add_node(());
             println!("node-idx: {:?}", idx);
@@ -98,26 +102,22 @@ fn read_graph<R:Read>(mut rd: R) -> Result<Graph<(), (), Directed>, &'static str
                 return Err("duplicate node-id");
             }
         } else {
-            return Err("invalid non-integer node key");
+            return Err("non-existing or invalid non-integer node key");
         }
     }
 
     println!("node_map: {:?}", node_map);
 
     // iterate again, to add all edges
-    for (node_key, node_def) in nodes.into_iter() {
+    for mut node_info in nodes.into_iter() {
         // XXX: allow other id types
-        let id = node_key.get_uint().unwrap();
+        let id = node_info.get("id").and_then(|i| i.get_uint()).unwrap();
         println!("node-id: {}", id);
 
         // XXX: set node weight.
 
         let src_idx = node_map[&id];
         println!("src-node-idx: {:?}", src_idx);
-
-        println!("{}", node_def);
-
-        let mut node_info = node_def.into_map().unwrap();
 
         if let Some(node_weight) = node_info.remove("weight") {
             println!("node_weight: {}", node_weight);
