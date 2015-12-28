@@ -22,8 +22,8 @@ use rand::distributions::range::Range;
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
-use lindenmayer_system::Alphabet;
-use lindenmayer_system::parametric::{PRule, PSym2, ParametricSymbol, ParametricSystem,
+use lindenmayer_system::{Alphabet, DualAlphabet};
+use lindenmayer_system::parametric::{PRule, PSym2, ParametricSymbol, ParametricRule, ParametricSystem,
                                      apply_first_rule};
 use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
@@ -95,6 +95,25 @@ impl Into<Sexp> for EdgeAlphabet {
 
 impl Alphabet for EdgeAlphabet {}
 
+impl DualAlphabet for EdgeAlphabet {
+    type Terminal = EdgeOp;
+    type NonTerminal = RuleId;
+
+    fn nonterminal(&self) -> Option<&Self::NonTerminal> {
+        match self {
+            &EdgeAlphabet::Terminal(..) => None,
+            &EdgeAlphabet::NonTerminal(ref nt) => Some(nt),
+        }
+    }
+
+    fn terminal(&self) -> Option<&Self::Terminal> {
+        match self {
+            &EdgeAlphabet::Terminal(ref t) => Some(t),
+            &EdgeAlphabet::NonTerminal(..) => None,
+        }
+    }
+}
+
 // We use 2-ary symbols, i.e. symbols with two parameters.
 const SYM_ARITY: usize = 2;
 type Sym = PSym2<EdgeAlphabet, Expr<f32>>;
@@ -112,14 +131,13 @@ impl System {
         System { rules: BTreeMap::new() }
     }
 
-    fn add_rule(&mut self, rule_id: RuleId, production: Vec<Sym>, condition: Cond<Expr<f32>>) {
-        self.rules
-            .entry(rule_id)
-            .or_insert(vec![])
-            .push(Rule::new(EdgeAlphabet::NonTerminal(rule_id),
-                            condition,
-                            production,
-                            SYM_ARITY));
+    fn add_rule(&mut self, rule: Rule) {
+        if let &EdgeAlphabet::NonTerminal(rule_id) = rule.symbol() {
+            self.rules
+                .entry(rule_id)
+                .or_insert(vec![])
+                .push(rule);
+        }
     }
 
     fn random_rule_id<R: Rng>(&self, rng: &mut R) -> RuleId {
@@ -601,7 +619,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
             } else {
                 self.symbol_generator.gen_simple_rule_condition(rng, arity)
             };
-            system.add_rule(rule_id, production, condition);
+            system.add_rule(Rule::new(EdgeAlphabet::NonTerminal(rule_id),
+                            condition,
+                            production,
+                            SYM_ARITY));
         }
 
         Genome { system: system }
