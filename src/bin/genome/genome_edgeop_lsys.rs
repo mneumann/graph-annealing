@@ -129,16 +129,19 @@ impl System {
         self.rules.iter().map(|(&k, _)| k).nth(nth).unwrap()
     }
 
-    fn with_random_rule<R: Rng, F: FnMut(&mut R, &Rule)>(&self, rng: &mut R, mut callback: F) {
+    fn with_random_rule<R: Rng, F: FnMut(&mut R, Option<&Rule>)>(&self, rng: &mut R, mut callback: F) {
         let rule_id = self.random_rule_id(rng);
 
         if let Some(local_rules) = self.rules.get(&rule_id) {
             let len = local_rules.len();
             if len > 0 {
                 let idx = rng.gen_range(0, len);
-                callback(rng, &local_rules[idx]);
+                callback(rng, Some(&local_rules[idx]));
+                return;
             }
         }
+
+        callback(rng, None);
     }
 
     fn replace_random_rule<R: Rng, F: FnMut(&mut R, &Rule) -> Rule>(&mut self,
@@ -550,20 +553,20 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     pub fn crossover<R: Rng>(&self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
         let mut new_ind = p1.clone();
 
-        p2.system.with_random_rule(rng, |rng, rule_p2| {
+        p2.system.with_random_rule(rng, |rng, opt_rule_p2| {
             // println!("p2 called with random rule: {:?}", rule_p2);
+            if let Some(rule_p2) = opt_rule_p2 {
+                new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
+                    let new_production = linear_2point_crossover_random(rng,
+                                                                        &rule_p1.production,
+                                                                        &rule_p2.production);
 
-            new_ind.system.replace_random_rule(rng, |rng, rule_p1| {
-                let new_production = linear_2point_crossover_random(rng,
-                                                                    &rule_p1.production,
-                                                                    &rule_p2.production);
-
-                Rule::new(rule_p1.symbol.clone(),
-                          rule_p1.condition.clone(),
-                          new_production,
-                          SYM_ARITY)
-            });
-
+                    Rule::new(rule_p1.symbol.clone(),
+                              rule_p1.condition.clone(),
+                              new_production,
+                              SYM_ARITY)
+                });
+            }
         });
 
         new_ind
