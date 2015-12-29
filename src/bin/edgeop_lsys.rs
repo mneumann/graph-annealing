@@ -36,7 +36,7 @@ use triadic_census::OptDenseDigraph;
 use std::fs::File;
 use genome::VarOp;
 use genome::edgeop::{EdgeOp, edgeops_to_graph};
-use genome::expr_op::{ConstExprOp, FlatExprOp};
+use genome::expr_op::FlatExprOp;
 use std::io::Read;
 use asexp::Sexp;
 use asexp::sexp::prettyprint;
@@ -360,7 +360,6 @@ fn main() {
                                    2, // max_expr_depth
                                    w_ops,
                                    FlatExprOp::uniform_distribution(),
-                                   ConstExprOp::uniform_distribution(),
                                    w_var_ops);
 
     assert!(config.seed.len() == 2);

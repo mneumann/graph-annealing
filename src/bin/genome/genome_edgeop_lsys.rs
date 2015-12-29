@@ -28,8 +28,7 @@ use lindenmayer_system::parametric::{PRule, PSym2, ParametricSymbol, ParametricR
 use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{ConstExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
-                    random_flat_expr};
+use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr};
 use simple_parallel::Pool;
 use crossbeam;
 use std::cmp;
@@ -131,7 +130,6 @@ pub struct SymbolGenerator {
     pub prob_terminal: Probability,
 
     pub flat_expr_weighted_op: OwnedWeightedChoice<FlatExprOp>,
-    pub const_expr_weighted_op: OwnedWeightedChoice<ConstExprOp>,
 }
 
 impl SymbolGenerator {
@@ -192,7 +190,7 @@ impl SymbolGenerator {
 
 
     /// Generate a simple condition like:
-    ///     Arg(n) or 0.0 [>=] or [<=] constant expr
+    ///     Arg(n) or 0.0 [>=] or [<=] flat expr
     fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, num_params: usize) -> Cond<Expr<f32>> {
         let lhs = if num_params > 0 {
             Expr::Var(rng.gen_range(0, num_params))
@@ -200,7 +198,7 @@ impl SymbolGenerator {
             Expr::Const(0.0)
         };
 
-        let rhs = random_const_expr(rng, &self.const_expr_weighted_op);
+        let rhs = random_flat_expr(rng, &self.flat_expr_weighted_op, num_params);
 
         if rng.gen::<bool>() {
             Cond::GreaterEqual(Box::new(lhs), Box::new(rhs))
@@ -256,7 +254,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
                terminal_symbols: Vec<Weighted<EdgeOp>>,
                flat_expr_weighted_op: Vec<Weighted<FlatExprOp>>,
-               const_expr_weighted_op: Vec<Weighted<ConstExprOp>>,
 
                var_op: Vec<Weighted<VarOp>>)
                -> Toolbox<N, E> {
@@ -306,7 +303,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 prob_terminal: prob_terminal,
 
                 flat_expr_weighted_op: OwnedWeightedChoice::new(flat_expr_weighted_op),
-                const_expr_weighted_op: OwnedWeightedChoice::new(const_expr_weighted_op),
             },
         }
     }
