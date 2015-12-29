@@ -1,7 +1,7 @@
 use petgraph::{Directed, Graph};
 use petgraph::algo::{connected_components, scc};
 use triadic_census::{OptDenseDigraph, TriadicCensus};
-use graph_neighbor_matching::{Edge, GraphSimilarityMatrix, IgnoreNodeColors};
+use graph_neighbor_matching::{Edge, GraphSimilarityMatrix, IgnoreNodeColors, ScoreNorm};
 use closed01::Closed01;
 use std::fmt::Debug;
 use std::f32::{INFINITY, NEG_INFINITY};
@@ -15,6 +15,7 @@ defops!{FitnessFunction;
     NeighborMatchingMaxDeg,
     NeighborMatchingAvg,
     NeighborMatchingEdgeWeightsMaxDeg,
+    NeighborMatchingEdgeWeightsMinDeg,
     TriadicDistance
 }
 
@@ -121,16 +122,19 @@ impl Goal<N, E> {
                 self.strongly_connected_components_distance(g) as f32
             }
             FitnessFunction::NeighborMatchingMinDeg => {
-                self.neighbor_matching_score_min_deg(g, cache) as f32
+                self.neighbor_matching_score_sum_norm(g, cache, ScoreNorm::MinDegree) as f32
             }
             FitnessFunction::NeighborMatchingMaxDeg => {
-                self.neighbor_matching_score_max_deg(g, cache) as f32
+                self.neighbor_matching_score_sum_norm(g, cache, ScoreNorm::MaxDegree) as f32
             }
             FitnessFunction::NeighborMatchingAvg => {
                 self.neighbor_matching_score_avg(g, cache) as f32
             }
             FitnessFunction::NeighborMatchingEdgeWeightsMaxDeg => {
-                self.neighbor_matching_score_edge_weights_max_deg(g, cache) as f32
+                self.neighbor_matching_score_edge_weights_sum_norm(g, cache, ScoreNorm::MaxDegree) as f32
+            }
+            FitnessFunction::NeighborMatchingEdgeWeightsMinDeg => {
+                self.neighbor_matching_score_edge_weights_sum_norm(g, cache, ScoreNorm::MinDegree) as f32
             }
             FitnessFunction::TriadicDistance => self.triadic_distance(g) as f32,
         }
@@ -151,10 +155,11 @@ impl Goal<N, E> {
         ((self.target_strongly_connected_components as isize) - scc).abs() as usize
     }
 
-    pub fn neighbor_matching_score_min_deg(&self,
-                                           g: &OptDenseDigraph<N, E>,
-                                           cache: &mut Cache)
-                                           -> f32 {
+    pub fn neighbor_matching_score_sum_norm(&self,
+                                            g: &OptDenseDigraph<N, E>,
+                                            cache: &mut Cache,
+                                            norm: ScoreNorm)
+                                            -> f32 {
         if let None = cache.edge_list {
             cache.edge_list = Some(graph_to_edgelist(g.ref_graph()));
         }
@@ -165,24 +170,7 @@ impl Goal<N, E> {
                                                  NGraph::new(&in_b[..], &out_b[..]),
                                                  IgnoreNodeColors);
         sim.iterate(NEIGHBORMATCHING_ITERATIONS, NEIGHBORMATCHING_EPS);
-        sim.score_sum_norm_min_degree(None).inv().get()
-    }
-
-    pub fn neighbor_matching_score_max_deg(&self,
-                                           g: &OptDenseDigraph<N, E>,
-                                           cache: &mut Cache)
-                                           -> f32 {
-        if let None = cache.edge_list {
-            cache.edge_list = Some(graph_to_edgelist(g.ref_graph()));
-        }
-
-        let &(ref in_b, ref out_b) = cache.edge_list.as_ref().unwrap();
-        let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.target_in_a[..],
-                                                             &self.target_out_a[..]),
-                                                 NGraph::new(&in_b[..], &out_b[..]),
-                                                 IgnoreNodeColors);
-        sim.iterate(NEIGHBORMATCHING_ITERATIONS, NEIGHBORMATCHING_EPS);
-        sim.score_sum_norm_max_degree(None).inv().get()
+        sim.score_optimal_sum_norm(None, norm).inv().get()
     }
 
     pub fn neighbor_matching_score_avg(&self, g: &OptDenseDigraph<N, E>, cache: &mut Cache) -> f32 {
@@ -199,10 +187,11 @@ impl Goal<N, E> {
         sim.score_average().inv().get()
     }
 
-    pub fn neighbor_matching_score_edge_weights_max_deg(&self,
-                                           g: &OptDenseDigraph<N, E>,
-                                           cache: &mut Cache)
-                                           -> f32 {
+    pub fn neighbor_matching_score_edge_weights_sum_norm(&self,
+                                                         g: &OptDenseDigraph<N, E>,
+                                                         cache: &mut Cache,
+                                                         norm: ScoreNorm)
+                                                         -> f32 {
         if let None = cache.edge_list {
             cache.edge_list = Some(graph_to_edgelist(g.ref_graph()));
         }
@@ -216,6 +205,6 @@ impl Goal<N, E> {
 
         let assignment = sim.optimal_node_assignment();
 
-        sim.score_outgoing_edge_weights(&assignment).inv().get()
+        sim.score_outgoing_edge_weights_sum_norm(&assignment, norm).inv().get()
     }
 }

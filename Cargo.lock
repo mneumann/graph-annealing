@@ -132,7 +132,7 @@ source = "git+https://github.com/mneumann/graph-layout-rs.git#a304a5200ca34035bf
 [[package]]
 name = "graph-neighbor-matching"
 version = "0.2.2"
-source = "git+https://github.com/mneumann/graph-neighbor-matching.git#7287bafe7b843d17c8ff451c31a8accdd71f7ff0"
+source = "git+https://github.com/mneumann/graph-neighbor-matching.git#2d9e4851cd8d6ddddb5f5a98929feab4f83d9733"
 dependencies = [
  "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "munkres 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
