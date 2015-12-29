@@ -30,20 +30,22 @@ use genome::{Genome, Toolbox};
 use graph_annealing::helper::{draw_graph, to_weighted_vec};
 use graph_annealing::goal::{FitnessFunction, Goal};
 use graph_annealing::goal;
+pub use graph_annealing::UniformDistribution;
 use graph_annealing::stat::Stat;
 use simple_parallel::Pool;
 use petgraph::{Directed, Graph, EdgeDirection};
 use triadic_census::OptDenseDigraph;
 use std::fs::File;
-use genome::VarOp;
+use genome::{VarOp, RuleMutOp, RuleProductionMutOp};
 use genome::edgeop::{EdgeOp, edgeops_to_graph};
-use genome::expr_op::FlatExprOp;
+use genome::expr_op::{FlatExprOp, RecursiveExprOp};
 use std::io::Read;
 use asexp::Sexp;
 use asexp::sexp::prettyprint;
 use std::env;
 use std::collections::BTreeMap;
 use petgraph::graph::NodeIndex;
+use std::fmt::Debug;
 
 const MAX_OBJECTIVES: usize = 3;
 
@@ -243,6 +245,10 @@ struct Config {
     graph: Graph<f32, f32, Directed>,
     edge_ops: Vec<(EdgeOp, u32)>,
     var_ops: Vec<(VarOp, u32)>,
+    rule_mut_ops: Vec<(RuleMutOp, u32)>,
+    rule_prod_ops: Vec<(RuleProductionMutOp, u32)>,
+    flat_expr_op: Vec<(FlatExprOp, u32)>,
+    recursive_expr_op: Vec<(RecursiveExprOp, u32)>,
     genome: ConfigGenome,
 }
 
@@ -251,6 +257,23 @@ struct Objective {
     fitness_function: FitnessFunction,
     threshold: f32,
 }
+
+fn parse_ops<T,I>(map: &BTreeMap<String, Sexp>, key: &str) -> Vec<(T, u32)> where
+    T: FromStr<Err=I> + UniformDistribution,
+    I: Debug
+{
+    if let Some(&Sexp::Map(ref list)) = map.get(key) {
+        let mut ops: Vec<(T, u32)> = Vec::new();
+        for &(ref k, ref v) in list.iter() {
+            ops.push((T::from_str(k.get_str().unwrap()).unwrap(),
+                          v.get_uint().unwrap() as u32));
+        }
+        ops
+    } else {
+        T::uniform_distribution()
+    }
+}
+
 
 fn convert_weight(w: Option<&Sexp>) -> Option<f32> {
     match w {
@@ -313,28 +336,6 @@ fn parse_config(sexp: Sexp) -> Config {
                     .unwrap();
     println!("graph: {:?}", graph);
 
-    // Parse weighted operation choice from command line
-    let mut edge_ops: Vec<(EdgeOp, u32)> = Vec::new();
-    if let Some(&Sexp::Map(ref list)) = map.get("edgeops") {
-        for &(ref k, ref v) in list.iter() {
-            edge_ops.push((EdgeOp::from_str(k.get_str().unwrap()).unwrap(),
-                           v.get_uint().unwrap() as u32));
-        }
-    } else {
-        panic!("Map expected");
-    }
-
-    // Parse weighted variation operators from command line
-    let mut var_ops: Vec<(VarOp, u32)> = Vec::new();
-    if let Some(&Sexp::Map(ref list)) = map.get("varops") {
-        for &(ref k, ref v) in list.iter() {
-            var_ops.push((VarOp::from_str(k.get_str().unwrap()).unwrap(),
-                          v.get_uint().unwrap() as u32));
-        }
-    } else {
-        panic!();
-    }
-
     let genome_map = map.get("genome").unwrap().clone().into_map().unwrap();
 
     Config {
@@ -345,8 +346,12 @@ fn parse_config(sexp: Sexp) -> Config {
         seed: seed,
         objectives: objectives,
         graph: graph,
-        edge_ops: edge_ops,
-        var_ops: var_ops,
+        edge_ops: parse_ops(&map, "edge_ops"),
+        var_ops: parse_ops(&map, "var_ops"),
+        rule_mut_ops: parse_ops(&map, "rule_mut_ops"),
+        rule_prod_ops: parse_ops(&map, "rule_prod_mut_ops"),
+        flat_expr_op: parse_ops(&map, "flat_expr_ops"),
+        recursive_expr_op: parse_ops(&map, "recursive_expr_ops"),
         genome: ConfigGenome {
             rules: genome_map.get("rules").and_then(|v| v.get_uint()).unwrap() as usize,
             symbol_arity: genome_map.get("symbol_arity").and_then(|v| v.get_uint()).unwrap() as usize,
@@ -376,12 +381,6 @@ fn main() {
 
     println!("{:#?}", config);
 
-    let w_ops = to_weighted_vec(&config.edge_ops);
-    assert!(w_ops.len() > 0);
-
-    let w_var_ops = to_weighted_vec(&config.var_ops);
-    assert!(w_var_ops.len() > 0);
-
     let num_objectives = config.objectives.len();
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
@@ -396,9 +395,15 @@ fn main() {
                                    config.genome.symbol_arity, // we use 2-ary symbols
                                    config.genome.num_params,
                                    config.genome.prob_terminal,
-                                   w_ops,
-                                   FlatExprOp::uniform_distribution(),
-                                   w_var_ops);
+                                   to_weighted_vec(&config.edge_ops),
+
+                                   to_weighted_vec(&config.flat_expr_op),
+                                   to_weighted_vec(&config.recursive_expr_op),
+
+                                   to_weighted_vec(&config.var_ops),
+                                   to_weighted_vec(&config.rule_mut_ops),
+                                   to_weighted_vec(&config.rule_prod_ops)
+                                   );
 
     assert!(config.seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([config.seed[0], config.seed[1]]);

@@ -46,6 +46,10 @@ macro_rules! def_str_enum {
     }
 }
 
+pub trait UniformDistribution {
+    fn uniform_distribution() -> Vec<(Self, u32)>;
+}
+
 #[macro_export]
 macro_rules! defops {
     ($name:ident; $( $key:ident ),+) => {
@@ -56,11 +60,11 @@ macro_rules! defops {
             pub fn all() -> Vec<$name> {
                 vec![ $($name::$key),+ ]
             }
-            // XXX: move
-            #[allow(dead_code)]
-            pub fn uniform_distribution() -> Vec<::rand::distributions::Weighted<$name>> {
-                Self::all().iter().map(|&item|
-                    ::rand::distributions::Weighted{weight:1,item:item}).collect()
+        }
+
+        impl ::UniformDistribution for $name {
+            fn uniform_distribution() -> Vec<($name, u32)> {
+                Self::all().iter().map(|&item| (item, 1)).collect()
             }
         }
 

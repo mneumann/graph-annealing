@@ -244,9 +244,20 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
                terminal_symbols: Vec<Weighted<EdgeOp>>,
                flat_expr_weighted_op: Vec<Weighted<FlatExprOp>>,
+               recursive_expr_op: Vec<Weighted<RecursiveExprOp>>,
 
-               var_op: Vec<Weighted<VarOp>>)
+               var_op: Vec<Weighted<VarOp>>,
+               rule_mut_op: Vec<Weighted<RuleMutOp>>,
+               rule_prod_mut_op: Vec<Weighted<RuleProductionMutOp>>,
+               )
                -> Toolbox<N, E> {
+
+        assert!(terminal_symbols.len() > 0);
+        assert!(flat_expr_weighted_op.len() > 0);
+        assert!(var_op.len() > 0);
+        assert!(rule_mut_op.len() > 0);
+        assert!(rule_prod_mut_op.len() > 0);
+        assert!(recursive_expr_op.len() > 0);
 
         assert!(num_rules > 0);
 
@@ -260,15 +271,11 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
             pool: pool,
             fitness_functions: fitness_functions,
 
-            // XXX:
             var_op: OwnedWeightedChoice::new(var_op),
+            rule_mut_op: OwnedWeightedChoice::new(rule_mut_op),
+            rule_prod_mut_op: OwnedWeightedChoice::new(rule_prod_mut_op),
 
-            // XXX
-            rule_mut_op: OwnedWeightedChoice::new(RuleMutOp::uniform_distribution()),
-            // XXX
-            rule_prod_mut_op: OwnedWeightedChoice::new(RuleProductionMutOp::uniform_distribution()),
-
-            recursive_expr_op: OwnedWeightedChoice::new(RecursiveExprOp::uniform_distribution()),
+            recursive_expr_op: OwnedWeightedChoice::new(recursive_expr_op),
 
             // we use n-ary symbols, so we need n parameters. (XXX)
             axiom_args: (0..symbol_arity).map(|_| 0.0).collect(),
