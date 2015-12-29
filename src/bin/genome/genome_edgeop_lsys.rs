@@ -29,7 +29,7 @@ use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
-                    random_expr};
+                    random_flat_expr};
 use simple_parallel::Pool;
 use crossbeam;
 use std::cmp;
@@ -141,23 +141,21 @@ impl SymbolGenerator {
                                   rng: &mut R,
                                   len: usize,
                                   symbol_arity: usize,
-                                  num_params: usize,
-                                  expr_depth: usize)
+                                  num_params: usize)
                                   -> Vec<S>
         where R: Rng,
               S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr<f32>>
     {
         (0..len)
             .into_iter()
-            .map(|_| self.gen_symbol(rng, symbol_arity, num_params, expr_depth))
+            .map(|_| self.gen_symbol(rng, symbol_arity, num_params))
             .collect()
     }
 
     fn gen_symbol<R, S>(&self,
                         rng: &mut R,
                         symbol_arity: usize,
-                        num_params: usize,
-                        expr_depth: usize)
+                        num_params: usize)
                         -> S
         where R: Rng,
               S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr<f32>>
@@ -165,7 +163,7 @@ impl SymbolGenerator {
         S::new_from_iter(self.gen_symbol_value(rng),
                          (0..symbol_arity)
                              .into_iter()
-                             .map(|_| self.gen_expr(rng, num_params, expr_depth)))
+                             .map(|_| self.gen_expr(rng, num_params)))
             .unwrap()
 
     }
@@ -187,12 +185,10 @@ impl SymbolGenerator {
     }
 
     // move into crate expression-num
-    fn gen_expr<R: Rng>(&self, rng: &mut R, num_params: usize, expr_depth: usize) -> Expr<f32> {
-        random_expr(rng,
-                    num_params,
-                    expr_depth,
-                    &self.expr_weighted_op,
-                    &self.flat_expr_weighted_op)
+    fn gen_expr<R: Rng>(&self, rng: &mut R, num_params: usize) -> Expr<f32> {
+        random_flat_expr(rng,
+                    &self.flat_expr_weighted_op,
+                    num_params)
     }
 
 
@@ -368,19 +364,19 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                         let new_expr = match rec_expr_op {
                             RecursiveExprOp::Reciprocz => Expr::Recipz(Box::new(expr)),
                             RecursiveExprOp::Add => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
                                 Expr::Add(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Sub => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
                                 Expr::Sub(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Mul => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
                                 Expr::Mul(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Divz => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */, 0);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
                                 Expr::Divz(Box::new(expr), Box::new(op2))
                             }
                         };
@@ -412,12 +408,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 let insert_position = rng.gen_range(0, prod.len() + 1);
 
                 let arity = self.symbol_arity;
-                let expr_depth = 0;
                 let new_symbols = self.symbol_generator.gen_symbolstring(rng,
                                                                          number_of_symbols,
                                                                          arity,
-                                                                         arity,
-                                                                         expr_depth);
+                                                                         arity);
 
                 let new_production = insert_vec_at(prod, new_symbols, insert_position);
 
@@ -530,16 +524,12 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         let arity = self.symbol_arity;
 
-        // we start out flat.
-        let expr_depth = 0;
-
         for rule_id in 0..self.num_rules as RuleId {
             let production = self.symbol_generator
                                  .gen_symbolstring(rng,
                                                    self.initial_rule_length,
                                                    arity,
-                                                   arity,
-                                                   expr_depth);
+                                                   arity);
             let condition = if rule_id == 0 {
                 // The axiomatic rule (rule number 0) has Cond::True.
                 Cond::True
