@@ -1,6 +1,6 @@
 version 1
 nodes [
-    {id 0 edges [2 3 4] weight 1.2}
+    {id 0 edges [(2 1.2) 3 4] weight 1.2}
     {id 1 edges [2 3 4] weight 1.2}
     {id 2}
     {id 3}
