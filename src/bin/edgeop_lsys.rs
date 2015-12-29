@@ -33,10 +33,10 @@ use graph_annealing::goal;
 pub use graph_annealing::UniformDistribution;
 use graph_annealing::stat::Stat;
 use simple_parallel::Pool;
-use petgraph::{Directed, Graph, EdgeDirection};
+use petgraph::{Directed, EdgeDirection, Graph};
 use triadic_census::OptDenseDigraph;
 use std::fs::File;
-use genome::{VarOp, RuleMutOp, RuleProductionMutOp};
+use genome::{RuleMutOp, RuleProductionMutOp, VarOp};
 use genome::edgeop::{EdgeOp, edgeops_to_graph};
 use genome::expr_op::{FlatExprOp, RecursiveExprOp};
 use std::io::Read;
@@ -49,18 +49,23 @@ use std::fmt::Debug;
 
 const MAX_OBJECTIVES: usize = 3;
 
-fn graph_to_sexp<N, E, F, G>(g:&Graph<N, E, Directed>, node_weight_map: F, edge_weight_map: G) -> Sexp
-where F: Fn(&N) -> Option<Sexp>,
-      G: Fn(&E) -> Option<Sexp>
+fn graph_to_sexp<N, E, F, G>(g: &Graph<N, E, Directed>,
+                             node_weight_map: F,
+                             edge_weight_map: G)
+                             -> Sexp
+    where F: Fn(&N) -> Option<Sexp>,
+          G: Fn(&E) -> Option<Sexp>
 {
     let mut nodes = Vec::new();
     for node_idx in g.node_indices() {
-        let edges: Vec<_> = g.edges_directed(node_idx, EdgeDirection::Outgoing).map(|(target_node, edge_weight)| {
-            match edge_weight_map(edge_weight) {
-                Some(w) => Sexp::from((target_node.index(), w)),
-                None => Sexp::from(target_node.index())
-            }
-        }).collect();
+        let edges: Vec<_> = g.edges_directed(node_idx, EdgeDirection::Outgoing)
+                             .map(|(target_node, edge_weight)| {
+                                 match edge_weight_map(edge_weight) {
+                                     Some(w) => Sexp::from((target_node.index(), w)),
+                                     None => Sexp::from(target_node.index()),
+                                 }
+                             })
+                             .collect();
 
         let mut def = vec![
                              (Sexp::from("id"), Sexp::from(node_idx.index())),
@@ -258,15 +263,15 @@ struct Objective {
     threshold: f32,
 }
 
-fn parse_ops<T,I>(map: &BTreeMap<String, Sexp>, key: &str) -> Vec<(T, u32)> where
-    T: FromStr<Err=I> + UniformDistribution,
-    I: Debug
+fn parse_ops<T, I>(map: &BTreeMap<String, Sexp>, key: &str) -> Vec<(T, u32)>
+    where T: FromStr<Err = I> + UniformDistribution,
+          I: Debug
 {
     if let Some(&Sexp::Map(ref list)) = map.get(key) {
         let mut ops: Vec<(T, u32)> = Vec::new();
         for &(ref k, ref v) in list.iter() {
             ops.push((T::from_str(k.get_str().unwrap()).unwrap(),
-                          v.get_uint().unwrap() as u32));
+                      v.get_uint().unwrap() as u32));
         }
         ops
     } else {
@@ -402,8 +407,7 @@ fn main() {
 
                                    to_weighted_vec(&config.var_ops),
                                    to_weighted_vec(&config.rule_mut_ops),
-                                   to_weighted_vec(&config.rule_prod_ops)
-                                   );
+                                   to_weighted_vec(&config.rule_prod_ops));
 
     assert!(config.seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([config.seed[0], config.seed[1]]);
@@ -500,10 +504,14 @@ fn main() {
 
             // output as sexp
             println!("Found graph");
-            let sexp = graph_to_sexp(g.ref_graph(), |&nw| Some(Sexp::from(nw)), |&ew| Some(Sexp::from(ew)));
+            let sexp = graph_to_sexp(g.ref_graph(),
+                                     |&nw| Some(Sexp::from(nw)),
+                                     |&ew| Some(Sexp::from(ew)));
             pp_sexp(&sexp);
             println!("Target graph");
-            let sexp = graph_to_sexp(&goal::normalize_graph(&config.graph), |nw| Some(Sexp::from(nw.get())), |ew| Some(Sexp::from(ew.get())));
+            let sexp = graph_to_sexp(&goal::normalize_graph(&config.graph),
+                                     |nw| Some(Sexp::from(nw.get())),
+                                     |ew| Some(Sexp::from(ew.get())));
             pp_sexp(&sexp);
 
             draw_graph(g.ref_graph(),

@@ -248,8 +248,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
                var_op: Vec<Weighted<VarOp>>,
                rule_mut_op: Vec<Weighted<RuleMutOp>>,
-               rule_prod_mut_op: Vec<Weighted<RuleProductionMutOp>>,
-               )
+               rule_prod_mut_op: Vec<Weighted<RuleProductionMutOp>>)
                -> Toolbox<N, E> {
 
         assert!(terminal_symbols.len() > 0);
@@ -335,7 +334,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                     let sym_value = self.symbol_generator.gen_symbol_value(rng);
                     *prod[idx].symbol_mut() = sym_value; // replace symbol value
                 } else {
-                    //println!("unmodified rule production symbol");
+                    // println!("unmodified rule production symbol");
                 }
             }
             RuleProductionMutOp::ModifyParameter => {
@@ -374,14 +373,14 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
                         args[argsidx] = new_expr;
                     } else {
-                        //println!("unmodified rule production parameter 1");
+                        // println!("unmodified rule production parameter 1");
                     }
 
                     let sym_value = prod[idx].symbol().clone();
                     // replace symbol with modified parameters
                     prod[idx] = Sym::new_from_iter(sym_value, args.into_iter()).unwrap();
                 } else {
-                    //println!("unmodified rule production parameter");
+                    // println!("unmodified rule production parameter");
                 }
             }
             RuleProductionMutOp::InsertSequence => {
@@ -391,15 +390,20 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 //     * Number of symbols to insert
                 //     * Insert Position
                 // Insert at most INS_MAX_NUMBER_OF_SYMBOLS symbols.
-                let max_number_of_symbols = cmp::min(INS_MAX_NUMBER_OF_SYMBOLS, cmp::max(1, prod.len() / 2));
-                assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= INS_MAX_NUMBER_OF_SYMBOLS);
+                let max_number_of_symbols = cmp::min(INS_MAX_NUMBER_OF_SYMBOLS,
+                                                     cmp::max(1, prod.len() / 2));
+                assert!(max_number_of_symbols >= 1 &&
+                        max_number_of_symbols <= INS_MAX_NUMBER_OF_SYMBOLS);
 
                 let number_of_symbols = rng.gen_range(0, max_number_of_symbols) + 1;
                 assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
                 let insert_position = rng.gen_range(0, prod.len() + 1);
 
                 let new_symbols = self.symbol_generator
-                                      .gen_symbolstring(rng, number_of_symbols, self.symbol_arity, self.num_params);
+                                      .gen_symbolstring(rng,
+                                                        number_of_symbols,
+                                                        self.symbol_arity,
+                                                        self.num_params);
 
                 let new_production = insert_vec_at(prod, new_symbols, insert_position);
 
@@ -409,8 +413,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 // * Number of symbols to delete
                 // * At position
                 // Delete at most DEL_MAX_NUMBER_OF_SYMBOLS symbols.
-                let max_number_of_symbols = cmp::min(DEL_MAX_NUMBER_OF_SYMBOLS, cmp::max(1, prod.len() / 2));
-                assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= DEL_MAX_NUMBER_OF_SYMBOLS);
+                let max_number_of_symbols = cmp::min(DEL_MAX_NUMBER_OF_SYMBOLS,
+                                                     cmp::max(1, prod.len() / 2));
+                assert!(max_number_of_symbols >= 1 &&
+                        max_number_of_symbols <= DEL_MAX_NUMBER_OF_SYMBOLS);
 
                 let number_of_symbols = rng.gen_range(0, max_number_of_symbols) + 1;
                 assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
@@ -512,7 +518,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         for rule_id in 0..self.num_rules as RuleId {
             let production = self.symbol_generator
-                                 .gen_symbolstring(rng, self.initial_rule_length, self.symbol_arity, self.num_params);
+                                 .gen_symbolstring(rng,
+                                                   self.initial_rule_length,
+                                                   self.symbol_arity,
+                                                   self.num_params);
             let condition = if rule_id == 0 {
                 // The axiomatic rule (rule number 0) has Cond::True.
                 Cond::True
