@@ -21,7 +21,7 @@ dependencies = [
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "simple_parallel 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.34 (registry+https://github.com/rust-lang/crates.io-index)",
- "triadic-census 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "triadic-census 0.1.1 (git+https://github.com/mneumann/triadic-census-rs.git)",
 ]
 
 [[package]]
@@ -257,7 +257,7 @@ dependencies = [
 [[package]]
 name = "triadic-census"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/mneumann/triadic-census-rs.git#77f9dab7bb355fa01d78785230955fd3eb0113bb"
 dependencies = [
  "fixedbitset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",

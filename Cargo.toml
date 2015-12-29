@@ -16,8 +16,8 @@ time = "0.1"
 #graph-neighbor-matching = {git = "https://github.com/mneumann/graph-neighbor-matching.git"}
 graph-neighbor-matching = "0.2.1"
 
-#triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
-triadic-census = "0.1.0"
+triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
+#triadic-census = "0.1.0"
 
 closed01 = "0.1.1"
 

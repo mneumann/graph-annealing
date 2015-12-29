@@ -30,7 +30,7 @@ impl Into<Sexp> for EdgeOp {
     }
 }
 
-pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
+pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<f32, f32> {
     let mut builder: GraphBuilder<f32, f32> = GraphBuilder::new();
     for &(op, f) in edgeops {
         let graph_op = match op {
@@ -56,18 +56,18 @@ pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
         builder.apply_operation(graph_op);
     }
 
-    let mut g: OptDenseDigraph<(), ()> = OptDenseDigraph::new(builder.count_nodes());
+    let mut g: OptDenseDigraph<f32, f32> = OptDenseDigraph::new(builder.count_nodes());
 
     // maps node_idx to index used within the graph.
     let mut node_map: BTreeMap<usize, usize> = BTreeMap::new(); // XXX: with_capacity
 
-    builder.visit_nodes(|node_idx, _| {
-        let graph_idx = g.add_node();
+    builder.visit_nodes(|node_idx, &w| {
+        let graph_idx = g.add_node_with_weight(w);
         node_map.insert(node_idx, graph_idx);
     });
 
-    builder.visit_edges(|(a, b), _| {
-        g.add_edge(node_map[&a], node_map[&b]);
+    builder.visit_edges(|(a, b), &w| {
+        g.add_edge_with_weight(node_map[&a], node_map[&b], w);
     });
 
     return g;

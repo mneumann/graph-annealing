@@ -535,8 +535,8 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Mate<Genome> for To
     }
 }
 
-impl<N:Clone+Sync+Default + Debug,E:Clone+Sync+Default + Debug> FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<N,E> {
-/// Evaluates the fitness of a Genome population.
+impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
+    /// Evaluates the fitness of a Genome population.
     fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
 
         let pool = &mut self.pool;
@@ -548,14 +548,14 @@ impl<N:Clone+Sync+Default + Debug,E:Clone+Sync+Default + Debug> FitnessEval<Geno
 
         crossbeam::scope(|scope| {
             pool.map(scope, pop, |ind| {
-                let edge_ops = ind.to_edge_ops(axiom_args, iterations);
-                let g = edgeops_to_graph(&edge_ops);
-                let mut cache = Cache::new();
+                    let edge_ops = ind.to_edge_ops(axiom_args, iterations);
+                    let g = edgeops_to_graph(&edge_ops);
+                    let mut cache = Cache::new();
 
-                MultiObjective3::from(
-                    fitness_functions.iter().map(|&f| goal.apply_fitness_function(f, &g, &mut cache))
-                )
-            })
+                    MultiObjective3::from(fitness_functions.iter().map(|&f| {
+                        goal.apply_fitness_function(f, &g, &mut cache)
+                    }))
+                })
                 .collect()
         })
     }
