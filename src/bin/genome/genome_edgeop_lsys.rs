@@ -223,6 +223,9 @@ pub struct Toolbox<N: Debug, E: Debug> {
     /// Symbol arity
     symbol_arity: usize,
 
+    /// Number of available parameters (<= symbol_arity).
+    num_params: usize,
+
     /// Used symbol generator
     symbol_generator: SymbolGenerator,
 }
@@ -236,6 +239,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                num_rules: usize,
                initial_rule_length: usize,
                symbol_arity: usize,
+               num_params: usize,
                prob_terminal: Probability,
 
                terminal_symbols: Vec<Weighted<EdgeOp>>,
@@ -248,6 +252,8 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         // this is fixed for now, because we use fixed 2-ary symbols.
         assert!(symbol_arity == 2);
+
+        assert!(num_params <= symbol_arity);
 
         Toolbox {
             goal: goal,
@@ -276,6 +282,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
             initial_rule_length: initial_rule_length,
 
             symbol_arity: symbol_arity,
+            num_params: num_params,
 
             symbol_generator: SymbolGenerator {
                 terminal_symbols: OwnedWeightedChoice::new(terminal_symbols),
@@ -341,19 +348,19 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                         let new_expr = match rec_expr_op {
                             RecursiveExprOp::Reciprocz => Expr::Recipz(Box::new(expr)),
                             RecursiveExprOp::Add => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
                                 Expr::Add(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Sub => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
                                 Expr::Sub(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Mul => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
                                 Expr::Mul(Box::new(expr), Box::new(op2))
                             }
                             RecursiveExprOp::Divz => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.symbol_arity /* XXX number of parameters */);
+                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
                                 Expr::Divz(Box::new(expr), Box::new(op2))
                             }
                         };
@@ -384,9 +391,8 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
                 let insert_position = rng.gen_range(0, prod.len() + 1);
 
-                let arity = self.symbol_arity;
                 let new_symbols = self.symbol_generator
-                                      .gen_symbolstring(rng, number_of_symbols, arity, arity);
+                                      .gen_symbolstring(rng, number_of_symbols, self.symbol_arity, self.num_params);
 
                 let new_production = insert_vec_at(prod, new_symbols, insert_position);
 
@@ -497,16 +503,14 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     pub fn random_genome<R: Rng>(&self, rng: &mut R) -> Genome {
         let mut system = System::new();
 
-        let arity = self.symbol_arity;
-
         for rule_id in 0..self.num_rules as RuleId {
             let production = self.symbol_generator
-                                 .gen_symbolstring(rng, self.initial_rule_length, arity, arity);
+                                 .gen_symbolstring(rng, self.initial_rule_length, self.symbol_arity, self.num_params);
             let condition = if rule_id == 0 {
                 // The axiomatic rule (rule number 0) has Cond::True.
                 Cond::True
             } else {
-                self.symbol_generator.gen_simple_rule_condition(rng, arity)
+                self.symbol_generator.gen_simple_rule_condition(rng, self.num_params)
             };
             system.add_rule(Rule::new(EdgeAlphabet::NonTerminal(rule_id),
                                       condition,
