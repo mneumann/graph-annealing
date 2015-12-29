@@ -14,6 +14,7 @@ defops!{FitnessFunction;
     NeighborMatchingMinDeg,
     NeighborMatchingMaxDeg,
     NeighborMatchingAvg,
+    NeighborMatchingEdgeWeightsMaxDeg,
     TriadicDistance
 }
 
@@ -128,6 +129,9 @@ impl Goal<N, E> {
             FitnessFunction::NeighborMatchingAvg => {
                 self.neighbor_matching_score_avg(g, cache) as f32
             }
+            FitnessFunction::NeighborMatchingEdgeWeightsMaxDeg => {
+                self.neighbor_matching_score_edge_weights_max_deg(g, cache) as f32
+            }
             FitnessFunction::TriadicDistance => self.triadic_distance(g) as f32,
         }
     }
@@ -193,5 +197,25 @@ impl Goal<N, E> {
                                                  IgnoreNodeColors);
         sim.iterate(NEIGHBORMATCHING_ITERATIONS, NEIGHBORMATCHING_EPS);
         sim.score_average().inv().get()
+    }
+
+    pub fn neighbor_matching_score_edge_weights_max_deg(&self,
+                                           g: &OptDenseDigraph<N, E>,
+                                           cache: &mut Cache)
+                                           -> f32 {
+        if let None = cache.edge_list {
+            cache.edge_list = Some(graph_to_edgelist(g.ref_graph()));
+        }
+
+        let &(ref in_b, ref out_b) = cache.edge_list.as_ref().unwrap();
+        let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.target_in_a[..],
+                                                             &self.target_out_a[..]),
+                                                 NGraph::new(&in_b[..], &out_b[..]),
+                                                 IgnoreNodeColors);
+        sim.iterate(NEIGHBORMATCHING_ITERATIONS, NEIGHBORMATCHING_EPS);
+
+        let assignment = sim.optimal_node_assignment();
+
+        sim.score_outgoing_edge_weights(&assignment).inv().get()
     }
 }
