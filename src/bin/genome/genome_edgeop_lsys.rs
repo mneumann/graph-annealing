@@ -120,8 +120,6 @@ type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, f32>, Cond<Expr<f32>>>;
 type System = PDualMapSystem<EdgeAlphabet, Rule>;
 
 pub struct SymbolGenerator {
-    pub max_expr_depth: usize,
-
     // terminal symbols
     pub terminal_symbols: OwnedWeightedChoice<EdgeOp>,
     pub nonterminal_symbols: Range<u32>,
@@ -250,7 +248,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                initial_rule_length: usize,
                symbol_arity: usize,
                prob_terminal: Probability,
-               max_expr_depth: usize,
 
                terminal_symbols: Vec<Weighted<EdgeOp>>,
                flat_expr_weighted_op: Vec<Weighted<FlatExprOp>>,
@@ -292,8 +289,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
             symbol_arity: symbol_arity,
 
             symbol_generator: SymbolGenerator {
-                max_expr_depth: max_expr_depth,
-
                 terminal_symbols: OwnedWeightedChoice::new(terminal_symbols),
 
                 nonterminal_symbols: Range::new(0, num_rules as u32),

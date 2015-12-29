@@ -357,7 +357,6 @@ fn main() {
                                    config.genome.initial_len, // initial rule length
                                    config.genome.symbol_arity, // we use 2-ary symbols
                                    config.genome.prob_terminal,
-                                   2, // max_expr_depth
                                    w_ops,
                                    FlatExprOp::uniform_distribution(),
                                    w_var_ops);
