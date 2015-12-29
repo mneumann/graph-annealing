@@ -200,8 +200,6 @@ impl SymbolGenerator {
     }
 }
 
-
-
 pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
     pool: Pool,
@@ -326,7 +324,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                     let sym_value = self.symbol_generator.gen_symbol_value(rng);
                     *prod[idx].symbol_mut() = sym_value; // replace symbol value
                 } else {
-                    println!("unmodified rule production symbol");
+                    //println!("unmodified rule production symbol");
                 }
             }
             RuleProductionMutOp::ModifyParameter => {
@@ -365,14 +363,14 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
                         args[argsidx] = new_expr;
                     } else {
-                        println!("unmodified rule production parameter 1");
+                        //println!("unmodified rule production parameter 1");
                     }
 
                     let sym_value = prod[idx].symbol().clone();
                     // replace symbol with modified parameters
                     prod[idx] = Sym::new_from_iter(sym_value, args.into_iter()).unwrap();
                 } else {
-                    println!("unmodified rule production parameter");
+                    //println!("unmodified rule production parameter");
                 }
             }
             RuleProductionMutOp::InsertSequence => {
@@ -410,7 +408,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 let new_production = remove_at(prod, remove_position, number_of_symbols);
 
                 return new_production;
-
             }
         }
         prod

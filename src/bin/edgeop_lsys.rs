@@ -29,9 +29,10 @@ use evo::nsga2::{self, FitnessEval};
 use genome::{Genome, Toolbox};
 use graph_annealing::helper::{draw_graph, to_weighted_vec};
 use graph_annealing::goal::{FitnessFunction, Goal};
+use graph_annealing::goal;
 use graph_annealing::stat::Stat;
 use simple_parallel::Pool;
-use petgraph::{Directed, Graph};
+use petgraph::{Directed, Graph, EdgeDirection};
 use triadic_census::OptDenseDigraph;
 use std::fs::File;
 use genome::VarOp;
@@ -45,6 +46,38 @@ use std::collections::BTreeMap;
 use petgraph::graph::NodeIndex;
 
 const MAX_OBJECTIVES: usize = 3;
+
+fn graph_to_sexp<N, E, F, G>(g:&Graph<N, E, Directed>, node_weight_map: F, edge_weight_map: G) -> Sexp
+where F: Fn(&N) -> Option<Sexp>,
+      G: Fn(&E) -> Option<Sexp>
+{
+    let mut nodes = Vec::new();
+    for node_idx in g.node_indices() {
+        let edges: Vec<_> = g.edges_directed(node_idx, EdgeDirection::Outgoing).map(|(target_node, edge_weight)| {
+            match edge_weight_map(edge_weight) {
+                Some(w) => Sexp::from((target_node.index(), w)),
+                None => Sexp::from(target_node.index())
+            }
+        }).collect();
+
+        let mut def = vec![
+                             (Sexp::from("id"), Sexp::from(node_idx.index())),
+                             (Sexp::from("edges"), Sexp::Array(edges)),
+        ];
+
+        match node_weight_map(&g[node_idx]) {
+            Some(w) => def.push((Sexp::from("weight"), w)),
+            None => {}
+        }
+
+        nodes.push(Sexp::Map(def));
+    }
+
+    Sexp::Map(vec![
+              (Sexp::from("version"), Sexp::from(1usize)),
+              (Sexp::from("nodes"), Sexp::Array(nodes)),
+    ])
+}
 
 fn read_graph<R, NodeWeightFn, EdgeWeightFn, NW, EW>
     (mut rd: R,
@@ -456,6 +489,14 @@ fn main() {
             let ind = &pop[rd.idx];
             let edge_ops = ind.to_edge_ops(&toolbox.axiom_args, toolbox.iterations);
             let g = edgeops_to_graph(&edge_ops);
+
+            // output as sexp
+            println!("Found graph");
+            let sexp = graph_to_sexp(g.ref_graph(), |&nw| Some(Sexp::from(nw)), |&ew| Some(Sexp::from(ew)));
+            pp_sexp(&sexp);
+            println!("Target graph");
+            let sexp = graph_to_sexp(&goal::normalize_graph(&config.graph), |nw| Some(Sexp::from(nw.get())), |ew| Some(Sexp::from(ew.get())));
+            pp_sexp(&sexp);
 
             draw_graph(g.ref_graph(),
                        // XXX: name

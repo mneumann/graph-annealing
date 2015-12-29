@@ -12,7 +12,7 @@ dependencies = [
  "expression-num 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
- "graph-neighbor-matching 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graph-neighbor-matching 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lindenmayer-system 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -131,7 +131,7 @@ source = "git+https://github.com/mneumann/graph-layout-rs.git#a304a5200ca34035bf
 
 [[package]]
 name = "graph-neighbor-matching"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",

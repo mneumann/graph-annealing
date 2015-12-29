@@ -57,6 +57,16 @@ fn normalize_to_closed01(w: f32, range: (f32, f32)) -> Closed01<f32> {
     }
 }
 
+// We need to normalize the node and edge weights into the range [0,1]
+pub fn normalize_graph(g: &Graph<f32, f32, Directed>) -> Graph<Closed01<f32>, Closed01<f32>, Directed> {
+    // Determine value range range of node/edge weights
+    let node_range = determine_node_value_range(g);
+    let edge_range = determine_edge_value_range(g);
+
+    g.map(|_, &nw| normalize_to_closed01(nw, node_range), |_, &ew| normalize_to_closed01(ew, edge_range))
+}
+
+
 // We need to normalize the edge weights into the range [0,1]
 fn graph_to_edgelist(g: &Graph<f32, f32, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
     let mut in_a: Vec<Vec<Edge>> = (0..g.node_count()).map(|_| Vec::new()).collect();

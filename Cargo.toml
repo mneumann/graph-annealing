@@ -14,7 +14,7 @@ num_cpus = "0.2"
 time = "0.1"
 
 #graph-neighbor-matching = {git = "https://github.com/mneumann/graph-neighbor-matching.git"}
-graph-neighbor-matching = "0.3.0"
+graph-neighbor-matching = "0.3.1"
 
 #triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
 triadic-census = "0.2.0"
