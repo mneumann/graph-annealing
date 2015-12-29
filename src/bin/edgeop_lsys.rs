@@ -46,10 +46,14 @@ use petgraph::graph::NodeIndex;
 
 const MAX_OBJECTIVES: usize = 3;
 
-fn read_graph<R, NodeWeightFn, EdgeWeightFn, NW, EW>(mut rd: R, mut node_weight_fn: NodeWeightFn, mut edge_weight_fn: EdgeWeightFn) -> Result<Graph<NW, EW, Directed>, &'static str>
-where R:Read,
-      NodeWeightFn: FnMut(Option<&Sexp>) -> Option<NW>,
-      EdgeWeightFn: FnMut(Option<&Sexp>) -> Option<EW>
+fn read_graph<R, NodeWeightFn, EdgeWeightFn, NW, EW>
+    (mut rd: R,
+     mut node_weight_fn: NodeWeightFn,
+     mut edge_weight_fn: EdgeWeightFn)
+     -> Result<Graph<NW, EW, Directed>, &'static str>
+    where R: Read,
+          NodeWeightFn: FnMut(Option<&Sexp>) -> Option<NW>,
+          EdgeWeightFn: FnMut(Option<&Sexp>) -> Option<EW>
 {
     let mut s = String::new();
     match rd.read_to_string(&mut s) {
@@ -58,7 +62,7 @@ where R:Read,
     }
     let sexp = match Sexp::parse_toplevel(&s) {
         Err(()) => return Err("failed to parse"),
-        Ok(sexp) => sexp
+        Ok(sexp) => sexp,
     };
 
     println!("{}", sexp);
@@ -72,9 +76,7 @@ where R:Read,
 
     match map["version"].get_uint() {
         Some(1) => {}
-        _ => {
-            return Err("invalid version. Expect 1")
-        }
+        _ => return Err("invalid version. Expect 1"),
     }
 
     let mut nodes;
@@ -218,9 +220,7 @@ struct Objective {
 
 fn convert_weight(w: Option<&Sexp>) -> Option<f32> {
     match w {
-        Some(s) => {
-            s.get_float().map(|f| f as f32)
-        }
+        Some(s) => s.get_float().map(|f| f as f32),
         None => {
             // use a default
             Some(0.0)
@@ -273,7 +273,10 @@ fn parse_config(sexp: Sexp) -> Config {
     // read graph
     let graph_file = map.get("graph").unwrap().get_str().unwrap();
     println!("Using graph file: {}", graph_file);
-    let graph = read_graph(File::open(graph_file).unwrap(), convert_weight, convert_weight).unwrap();
+    let graph = read_graph(File::open(graph_file).unwrap(),
+                           convert_weight,
+                           convert_weight)
+                    .unwrap();
     println!("graph: {:?}", graph);
 
     // Parse weighted operation choice from command line

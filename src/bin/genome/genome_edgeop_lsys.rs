@@ -23,8 +23,8 @@ use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
 use lindenmayer_system::{Alphabet, DualAlphabet};
-use lindenmayer_system::parametric::{PRule, PSym2, ParametricSymbol, ParametricRule, ParametricSystem,
-                                     PDualMapSystem};
+use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym2, ParametricRule,
+                                     ParametricSymbol, ParametricSystem};
 use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
@@ -147,11 +147,7 @@ impl SymbolGenerator {
             .collect()
     }
 
-    fn gen_symbol<R, S>(&self,
-                        rng: &mut R,
-                        symbol_arity: usize,
-                        num_params: usize)
-                        -> S
+    fn gen_symbol<R, S>(&self, rng: &mut R, symbol_arity: usize, num_params: usize) -> S
         where R: Rng,
               S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr<f32>>
     {
@@ -181,9 +177,7 @@ impl SymbolGenerator {
 
     // move into crate expression-num
     fn gen_expr<R: Rng>(&self, rng: &mut R, num_params: usize) -> Expr<f32> {
-        random_flat_expr(rng,
-                    &self.flat_expr_weighted_op,
-                    num_params)
+        random_flat_expr(rng, &self.flat_expr_weighted_op, num_params)
     }
 
 
@@ -396,10 +390,8 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 let insert_position = rng.gen_range(0, prod.len() + 1);
 
                 let arity = self.symbol_arity;
-                let new_symbols = self.symbol_generator.gen_symbolstring(rng,
-                                                                         number_of_symbols,
-                                                                         arity,
-                                                                         arity);
+                let new_symbols = self.symbol_generator
+                                      .gen_symbolstring(rng, number_of_symbols, arity, arity);
 
                 let new_production = insert_vec_at(prod, new_symbols, insert_position);
 
@@ -514,10 +506,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         for rule_id in 0..self.num_rules as RuleId {
             let production = self.symbol_generator
-                                 .gen_symbolstring(rng,
-                                                   self.initial_rule_length,
-                                                   arity,
-                                                   arity);
+                                 .gen_symbolstring(rng, self.initial_rule_length, arity, arity);
             let condition = if rule_id == 0 {
                 // The axiomatic rule (rule number 0) has Cond::True.
                 Cond::True
@@ -525,9 +514,9 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 self.symbol_generator.gen_simple_rule_condition(rng, arity)
             };
             system.add_rule(Rule::new(EdgeAlphabet::NonTerminal(rule_id),
-                            condition,
-                            production,
-                            SYM_ARITY));
+                                      condition,
+                                      production,
+                                      SYM_ARITY));
         }
 
         Genome { system: system }
@@ -581,20 +570,20 @@ impl<'a> Into<Sexp> for &'a Genome {
     fn into(self) -> Sexp {
         let mut rules = Vec::<Sexp>::new();
         self.system.each_rule(|rule| {
-                let sym = Into::<Sexp>::into(rule.symbol.clone());
-                let cond = Into::<Sexp>::into(&rule.condition);
-                let succ: Vec<Sexp> = rule.production
-                                          .iter()
-                                          .map(|s| {
-                                              let args: Vec<Sexp> = s.params()
-                                                                     .iter()
-                                                                     .map(|a| a.into())
-                                                                     .collect();
-                                              Sexp::from((Into::<Sexp>::into((*s.symbol()).clone()),
-                                                          Sexp::Array(args)))
-                                          })
-                                          .collect();
-                rules.push(Sexp::from((sym, cond, succ)));
+            let sym = Into::<Sexp>::into(rule.symbol.clone());
+            let cond = Into::<Sexp>::into(&rule.condition);
+            let succ: Vec<Sexp> = rule.production
+                                      .iter()
+                                      .map(|s| {
+                                          let args: Vec<Sexp> = s.params()
+                                                                 .iter()
+                                                                 .map(|a| a.into())
+                                                                 .collect();
+                                          Sexp::from((Into::<Sexp>::into((*s.symbol()).clone()),
+                                                      Sexp::Array(args)))
+                                      })
+                                      .collect();
+            rules.push(Sexp::from((sym, cond, succ)));
         });
 
         Sexp::from(("genome", rules))

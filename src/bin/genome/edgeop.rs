@@ -45,13 +45,13 @@ pub fn edgeops_to_graph(edgeops: &[(EdgeOp, f32)]) -> OptDenseDigraph<(), ()> {
             EdgeOp::Save => EdgeOperation::Save,
             EdgeOp::Restore => EdgeOperation::Restore,
 
-            EdgeOp::SetEdgeWeight => EdgeOperation::SetEdgeWeight {weight: f},
-            EdgeOp::IncEdgeWeight => EdgeOperation::IncEdgeWeight {weight: f},
-            EdgeOp::DecEdgeWeight => EdgeOperation::DecEdgeWeight {weight: f},
+            EdgeOp::SetEdgeWeight => EdgeOperation::SetEdgeWeight { weight: f },
+            EdgeOp::IncEdgeWeight => EdgeOperation::IncEdgeWeight { weight: f },
+            EdgeOp::DecEdgeWeight => EdgeOperation::DecEdgeWeight { weight: f },
 
-            EdgeOp::SetNodeWeight => EdgeOperation::SetNodeWeight {weight: f},
-            EdgeOp::IncNodeWeight => EdgeOperation::IncNodeWeight {weight: f},
-            EdgeOp::DecNodeWeight => EdgeOperation::DecNodeWeight {weight: f},
+            EdgeOp::SetNodeWeight => EdgeOperation::SetNodeWeight { weight: f },
+            EdgeOp::IncNodeWeight => EdgeOperation::IncNodeWeight { weight: f },
+            EdgeOp::DecNodeWeight => EdgeOperation::DecNodeWeight { weight: f },
         };
         builder.apply_operation(graph_op);
     }
