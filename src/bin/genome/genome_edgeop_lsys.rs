@@ -28,7 +28,7 @@ use lindenmayer_system::parametric::{PRule, PSym2, ParametricSymbol, ParametricR
 use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{ConstExprOp, ExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
+use self::expr_op::{ConstExprOp, FlatExprOp, RecursiveExprOp, random_const_expr,
                     random_flat_expr};
 use simple_parallel::Pool;
 use crossbeam;
@@ -130,7 +130,6 @@ pub struct SymbolGenerator {
     /// The probability with which a terminal value (i.e. an EdgeOp) is choosen.
     pub prob_terminal: Probability,
 
-    pub expr_weighted_op: OwnedWeightedChoice<ExprOp>,
     pub flat_expr_weighted_op: OwnedWeightedChoice<FlatExprOp>,
     pub const_expr_weighted_op: OwnedWeightedChoice<ConstExprOp>,
 }
@@ -256,7 +255,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                max_expr_depth: usize,
 
                terminal_symbols: Vec<Weighted<EdgeOp>>,
-               expr_weighted_op: Vec<Weighted<ExprOp>>,
                flat_expr_weighted_op: Vec<Weighted<FlatExprOp>>,
                const_expr_weighted_op: Vec<Weighted<ConstExprOp>>,
 
@@ -307,7 +305,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 // we favor terminals over non-terminals
                 prob_terminal: prob_terminal,
 
-                expr_weighted_op: OwnedWeightedChoice::new(expr_weighted_op),
                 flat_expr_weighted_op: OwnedWeightedChoice::new(flat_expr_weighted_op),
                 const_expr_weighted_op: OwnedWeightedChoice::new(const_expr_weighted_op),
             },
