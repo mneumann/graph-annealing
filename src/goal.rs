@@ -59,6 +59,9 @@ impl Cache {
     }
 }
 
+const NEIGHBORMATCHING_ITERATIONS: usize = 20;
+const NEIGHBORMATCHING_EPS: f32 = 0.1;
+
 impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
     pub fn new(g: OptDenseDigraph<N, E>) -> Goal<N, E> {
         let census = TriadicCensus::from(&g);
@@ -132,9 +135,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
                                                              &self.target_out_a[..]),
                                                  NGraph::new(&in_b[..], &out_b[..]),
                                                  IgnoreNodeColors);
-        // XXX
-        sim.iterate(20, 0.1);
-
+        sim.iterate(NEIGHBORMATCHING_ITERATIONS, NEIGHBORMATCHING_EPS);
         sim.score_sum_norm_min_degree(None).inv().get()
     }
 
@@ -152,9 +153,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
                                                              &self.target_out_a[..]),
                                                  NGraph::new(&in_b[..], &out_b[..]),
                                                  IgnoreNodeColors);
-        // XXX
-        sim.iterate(20, 0.1);
-
+        sim.iterate(NEIGHBORMATCHING_ITERATIONS, NEIGHBORMATCHING_EPS);
         sim.score_sum_norm_max_degree(None).inv().get()
     }
 
@@ -172,9 +171,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Goal<N, E> {
                                                              &self.target_out_a[..]),
                                                  NGraph::new(&in_b[..], &out_b[..]),
                                                  IgnoreNodeColors);
-        // XXX
-        sim.iterate(20, 0.1);
-
+        sim.iterate(NEIGHBORMATCHING_ITERATIONS, NEIGHBORMATCHING_EPS);
         sim.score_average().inv().get()
     }
 }
