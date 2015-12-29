@@ -407,7 +407,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 let max_number_of_symbols = cmp::min(DEL_MAX_NUMBER_OF_SYMBOLS, cmp::max(1, prod.len() / 2));
                 assert!(max_number_of_symbols >= 1 && max_number_of_symbols <= DEL_MAX_NUMBER_OF_SYMBOLS);
 
-                let number_of_symbols = 1; //rng.gen_range(0, max_number_of_symbols) + 1;
+                let number_of_symbols = rng.gen_range(0, max_number_of_symbols) + 1;
                 assert!(number_of_symbols > 0 && number_of_symbols <= max_number_of_symbols);
                 let remove_position = rng.gen_range(0, prod.len() + 1);
 
