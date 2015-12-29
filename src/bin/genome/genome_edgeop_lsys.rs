@@ -166,18 +166,10 @@ impl SymbolGenerator {
 
     fn gen_symbol_value<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
         if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_terminal) {
-            self.gen_terminal(rng)
+            EdgeAlphabet::Terminal(self.terminal_symbols.ind_sample(rng))
         } else {
-            self.gen_nonterminal(rng)
+            EdgeAlphabet::NonTerminal(self.nonterminal_symbols.ind_sample(rng))
         }
-    }
-
-    fn gen_terminal<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
-        EdgeAlphabet::Terminal(self.terminal_symbols.ind_sample(rng))
-    }
-
-    fn gen_nonterminal<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
-        EdgeAlphabet::NonTerminal(self.nonterminal_symbols.ind_sample(rng))
     }
 
     // move into crate expression-num
