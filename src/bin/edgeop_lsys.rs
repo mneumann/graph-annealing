@@ -16,6 +16,7 @@ extern crate graph_edge_evolution;
 extern crate asexp;
 extern crate expression;
 extern crate expression_num;
+extern crate matplotlib;
 
 #[path="genome/genome_edgeop_lsys.rs"]
 pub mod genome;
@@ -46,6 +47,7 @@ use std::env;
 use std::collections::BTreeMap;
 use petgraph::graph::NodeIndex;
 use std::fmt::Debug;
+use matplotlib::{Env, Plot};
 
 const MAX_OBJECTIVES: usize = 3;
 
@@ -375,6 +377,11 @@ fn pp_sexp(s: &Sexp) {
 }
 
 fn main() {
+    let env = Env::new();
+    let plot = Plot::new(&env);
+    plot.interactive();
+    plot.show();
+
     let ncpus = num_cpus::get();
     println!("Using {} CPUs", ncpus);
 
@@ -432,6 +439,8 @@ fn main() {
     for iteration in 0..config.ngen {
         print!("# {:>6}", iteration);
         let before = time::precise_time_ns();
+        // XXX Would be nice if nsga2::iterate() would return us the
+        // pareto front number. We could use it to color the output.
         let (new_pop, new_fit) = nsga2::iterate(&mut rng,
                                                 pop,
                                                 fit,
@@ -446,6 +455,18 @@ fn main() {
         assert!(fit.len() > 0);
 
         let duration_ms = (duration as f32) / 1_000_000.0;
+
+        // XXX: Assume we have at least two objectives
+        let mut x = Vec::new();
+        let mut y = Vec::new();
+        for f in fit.iter() {
+            x.push(f.objectives[0]);
+            y.push(f.objectives[1]);
+        }
+        plot.clf();
+        plot.title(&format!("Iteration: {}", iteration));
+        plot.scatter(&x, &y);
+        plot.draw();
 
         let mut num_optima = 0;
         for f in fit.iter() {
