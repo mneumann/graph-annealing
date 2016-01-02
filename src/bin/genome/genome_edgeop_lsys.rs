@@ -353,23 +353,11 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
                         let rec_expr_op = self.recursive_expr_op.ind_sample(rng);
                         let new_expr = match rec_expr_op {
-                            RecursiveExprOp::Reciprocz => Expr::Recipz(Box::new(expr)),
-                            RecursiveExprOp::Add => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
-                                Expr::Add(Box::new(expr), Box::new(op2))
-                            }
-                            RecursiveExprOp::Sub => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
-                                Expr::Sub(Box::new(expr), Box::new(op2))
-                            }
-                            RecursiveExprOp::Mul => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
-                                Expr::Mul(Box::new(expr), Box::new(op2))
-                            }
-                            RecursiveExprOp::Divz => {
-                                let op2 = self.symbol_generator.gen_expr(rng, self.num_params);
-                                Expr::Divz(Box::new(expr), Box::new(op2))
-                            }
+                            RecursiveExprOp::Reciprocz => expr.op_recipz(),
+                            RecursiveExprOp::Add => expr.op_add(self.symbol_generator.gen_expr(rng, self.num_params)),
+                            RecursiveExprOp::Sub => expr.op_sub(self.symbol_generator.gen_expr(rng, self.num_params)),
+                            RecursiveExprOp::Mul => expr.op_mul(self.symbol_generator.gen_expr(rng, self.num_params)),
+                            RecursiveExprOp::Divz => expr.op_divz(self.symbol_generator.gen_expr(rng, self.num_params)),
                         };
 
                         args[argsidx] = new_expr;
