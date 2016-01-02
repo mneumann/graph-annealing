@@ -2,7 +2,7 @@
 name = "graph_annealing"
 version = "0.1.0"
 dependencies = [
- "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -46,7 +46,7 @@ dependencies = [
 
 [[package]]
 name = "asexp"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -102,7 +102,7 @@ name = "expression"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -110,7 +110,7 @@ name = "expression-closed01"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -120,7 +120,7 @@ name = "expression-num"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "asexp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

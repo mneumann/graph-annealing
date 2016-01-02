@@ -511,43 +511,54 @@ fn main() {
     let rank_dist = nsga2::select(&fit[..], config.mu, num_objectives);
     assert!(rank_dist.len() == config.mu);
 
-    let mut j = 0;
+    let mut best_solutions: Vec<(&Genome, _)> = Vec::new();
 
     for rd in rank_dist.iter() {
         if rd.rank == 0 {
-            println!("-------------------------------------------");
-            println!("rd: {:?}", rd);
-            println!("fitness: {:?}", fit[rd.idx]);
-            // println!("genome: {:?}", pop[rd.idx]);
-            pp_sexp(&(&pop[rd.idx]).into());
-
-            // if fit[rd.idx].objectives[0] < 1.0 {
-            let ind = &pop[rd.idx];
-            let edge_ops = ind.to_edge_ops(&toolbox.axiom_args, toolbox.iterations);
-            let g = edgeops_to_graph(&edge_ops);
-
-            // output as sexp
-            println!("Found graph");
-            let sexp = graph_to_sexp(g.ref_graph(),
-                                     |&nw| Some(Sexp::from(nw)),
-                                     |&ew| Some(Sexp::from(ew)));
-            pp_sexp(&sexp);
-            println!("Target graph");
-            let sexp = graph_to_sexp(&goal::normalize_graph(&config.graph),
-                                     |nw| Some(Sexp::from(nw.get())),
-                                     |ew| Some(Sexp::from(ew.get())));
-            pp_sexp(&sexp);
-
-            draw_graph(g.ref_graph(),
-                       // XXX: name
-                       &format!("edgeop_lsys_g{}_f{}_i{}.svg",
-                                config.ngen,
-                                fit[rd.idx].objectives[1] as usize,
-                                j));
-            j += 1;
-            // }
+            best_solutions.push((&pop[rd.idx], fit[rd.idx].clone()));
         }
     }
+
+    println!("Target graph");
+    let sexp = graph_to_sexp(&goal::normalize_graph(&config.graph),
+                             |nw| Some(Sexp::from(nw.get())),
+                             |ew| Some(Sexp::from(ew.get())));
+    pp_sexp(&sexp);
+
+    let mut solutions: Vec<Sexp> = Vec::new();
+
+    for (i, &(ind, ref fitness)) in best_solutions.iter().enumerate() {
+        let genome: Sexp = ind.into();
+
+        let edge_ops = ind.to_edge_ops(&toolbox.axiom_args, toolbox.iterations);
+        let g = edgeops_to_graph(&edge_ops);
+
+        // output as sexp
+        let graph_sexp = graph_to_sexp(g.ref_graph(),
+                                 |&nw| Some(Sexp::from(nw)),
+                                 |&ew| Some(Sexp::from(ew)));
+
+        solutions.push(Sexp::Map(
+                vec![
+                    (Sexp::from("fitness"), Sexp::from((fitness.objectives[0], fitness.objectives[1], fitness.objectives[2]))),
+                    (Sexp::from("genome"), genome),
+                    (Sexp::from("graph"), graph_sexp),
+                ]
+                ));
+
+        /*
+        draw_graph(g.ref_graph(),
+                   // XXX: name
+                   &format!("edgeop_lsys_g{}_f{}_i{}.svg",
+                            config.ngen,
+                            fitness.objectives[1] as usize,
+                            i));
+                            */
+    }
+
+    pp_sexp(&Sexp::from(("solutions", Sexp::Array(solutions)))); 
+
+    //println!("])");
 
     println!("{:#?}", config);
 }
