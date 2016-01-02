@@ -5,9 +5,9 @@ extern crate evo;
 extern crate petgraph;
 #[macro_use]
 extern crate graph_annealing;
-extern crate crossbeam;
-extern crate simple_parallel;
-extern crate num_cpus;
+//extern crate crossbeam;
+//extern crate simple_parallel;
+//extern crate num_cpus;
 extern crate pcg;
 extern crate triadic_census;
 extern crate time;
@@ -17,6 +17,7 @@ extern crate asexp;
 extern crate expression;
 extern crate expression_num;
 extern crate matplotlib;
+extern crate rayon;
 
 #[path="genome/genome_edgeop_lsys.rs"]
 pub mod genome;
@@ -33,7 +34,7 @@ use graph_annealing::goal::{FitnessFunction, Goal};
 use graph_annealing::goal;
 pub use graph_annealing::UniformDistribution;
 use graph_annealing::stat::Stat;
-use simple_parallel::Pool;
+//use simple_parallel::Pool;
 use petgraph::{Directed, EdgeDirection, Graph};
 use triadic_census::OptDenseDigraph;
 use std::fs::File;
@@ -382,8 +383,8 @@ fn main() {
     plot.interactive();
     plot.show();
 
-    let ncpus = num_cpus::get();
-    println!("Using {} CPUs", ncpus);
+    //let ncpus = num_cpus::get();
+    //println!("Using {} CPUs", ncpus);
 
     let mut s = String::new();
     let configfile = env::args().nth(1).unwrap();
@@ -396,7 +397,7 @@ fn main() {
     let num_objectives = config.objectives.len();
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
-                                   Pool::new(ncpus),
+                                   //Pool::new(ncpus),
                                    config.objectives
                                          .iter()
                                          .map(|o| o.fitness_function.clone())
@@ -463,6 +464,7 @@ fn main() {
             x.push(f.objectives[0]);
             y.push(f.objectives[1]);
         }
+
         plot.clf();
         plot.title(&format!("Iteration: {}", iteration));
         plot.grid(true);

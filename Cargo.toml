@@ -8,9 +8,9 @@ petgraph = "0.2.0"
 rand = "0.3"
 nalgebra = "0.4.0"
 #clap = "1.5.0"
-crossbeam = "0.1.0"
-simple_parallel = "0.3.0"
-num_cpus = "0.2"
+#crossbeam = "0.1.0"
+#simple_parallel = "0.3.0"
+#num_cpus = "0.2"
 time = "0.1"
 
 #graph-neighbor-matching = {git = "https://github.com/mneumann/graph-neighbor-matching.git"}
@@ -37,3 +37,7 @@ evo = { git = "https://github.com/mneumann/evo-rs.git" }
 graph-layout = { git = "https://github.com/mneumann/graph-layout-rs.git" }
 
 matplotlib = { git = "https://github.com/mneumann/matplotlib-rs.git" }
+
+#rayon = {git = "https://github.com/nikomatsakis/rayon.git", rev="e15798dfe" }
+#rayon = {path = "../rayon" }
+rayon = {git = "https://github.com/nikomatsakis/rayon.git" }

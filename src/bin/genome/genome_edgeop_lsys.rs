@@ -29,11 +29,12 @@ use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr};
-use simple_parallel::Pool;
-use crossbeam;
+//use simple_parallel::Pool;
+//use crossbeam;
 use std::cmp;
 use std::fmt::Debug;
 use asexp::Sexp;
+use rayon::par_iter::*;
 
 // How many symbols to insert at most using InsertSequence
 const INS_MAX_NUMBER_OF_SYMBOLS: usize = 1;
@@ -199,7 +200,7 @@ impl SymbolGenerator {
 
 pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
-    pool: Pool,
+    //pool: Pool,
     fitness_functions: Vec<FitnessFunction>,
 
     // Variation parameters
@@ -232,7 +233,7 @@ pub struct Toolbox<N: Debug, E: Debug> {
 
 impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     pub fn new(goal: Goal<N, E>,
-               pool: Pool,
+               //pool: Pool,
                fitness_functions: Vec<FitnessFunction>,
 
                iterations: usize,
@@ -267,7 +268,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         Toolbox {
             goal: goal,
-            pool: pool,
+            //pool: pool,
             fitness_functions: fitness_functions,
 
             var_op: OwnedWeightedChoice::new(var_op),
@@ -552,6 +553,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Mate<Genome> for To
 
 impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
     /// Evaluates the fitness of a Genome population.
+    /*
     fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
 
         let pool = &mut self.pool;
@@ -574,6 +576,26 @@ impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
                 .collect()
         })
     }
+    */
+    fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
+        let goal = &self.goal;
+        let axiom_args = &self.axiom_args[..];
+        let iterations = self.iterations;
+        let fitness_functions = &self.fitness_functions[..];
+
+        let mut result = Vec::new();
+        pop.into_par_iter().map(|ind| {
+            let edge_ops = ind.to_edge_ops(axiom_args, iterations);
+            let g = edgeops_to_graph(&edge_ops);
+            let mut cache = Cache::new();
+
+            MultiObjective3::from(fitness_functions.iter().map(|&f| {
+                goal.apply_fitness_function(f, &g, &mut cache)
+            }))
+        }).collect_into(&mut result);
+        result
+    }
+
 }
 
 #[derive(Clone, Debug)]
