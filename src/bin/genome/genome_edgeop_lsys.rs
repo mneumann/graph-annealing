@@ -25,10 +25,9 @@ use graph_annealing::helper::{insert_vec_at, remove_at};
 use lindenmayer_system::{Alphabet, DualAlphabet};
 use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym2, ParametricRule,
                                      ParametricSymbol, ParametricSystem};
-use expression_num::NumExpr as Expr;
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr};
+use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursive_expr, Expr, ExprT};
 //use simple_parallel::Pool;
 //use crossbeam;
 use std::cmp;
@@ -120,9 +119,9 @@ impl DualAlphabet for EdgeAlphabet {
 
 // We use 2-ary symbols, i.e. symbols with two parameters.
 const SYM_ARITY: usize = 2;
-type Sym = PSym2<EdgeAlphabet, Expr<f32>>;
+type Sym = PSym2<EdgeAlphabet, Expr>;
 type SymParam = PSym2<EdgeAlphabet, f32>;
-type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, f32>, Cond<Expr<f32>>>;
+type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, f32>, Cond<Expr>>;
 type System = PDualMapSystem<EdgeAlphabet, Rule>;
 
 pub struct SymbolGenerator {
@@ -145,7 +144,7 @@ impl SymbolGenerator {
                                   num_params: usize)
                                   -> Vec<S>
         where R: Rng,
-              S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr<f32>>
+              S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr>
     {
         (0..len)
             .into_iter()
@@ -155,7 +154,7 @@ impl SymbolGenerator {
 
     fn gen_symbol<R, S>(&self, rng: &mut R, symbol_arity: usize, num_params: usize) -> S
         where R: Rng,
-              S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr<f32>>
+              S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr>
     {
         S::new_from_iter(self.gen_symbol_value(rng),
                          (0..symbol_arity)
@@ -174,18 +173,18 @@ impl SymbolGenerator {
     }
 
     // move into crate expression-num
-    fn gen_expr<R: Rng>(&self, rng: &mut R, num_params: usize) -> Expr<f32> {
+    fn gen_expr<R: Rng>(&self, rng: &mut R, num_params: usize) -> Expr {
         random_flat_expr(rng, &self.flat_expr_weighted_op, num_params)
     }
 
 
     /// Generate a simple condition like:
     ///     Arg(n) or 0.0 [>=] or [<=] flat expr
-    fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, num_params: usize) -> Cond<Expr<f32>> {
+    fn gen_simple_rule_condition<R: Rng>(&self, rng: &mut R, num_params: usize) -> Cond<Expr> {
         let lhs = if num_params > 0 {
-            Expr::Var(rng.gen_range(0, num_params))
+            ExprT::Var(rng.gen_range(0, num_params))
         } else {
-            Expr::Const(0.0)
+            ExprT::Const(0.0)
         };
 
         let rhs = random_flat_expr(rng, &self.flat_expr_weighted_op, num_params);
@@ -314,8 +313,8 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     // * Flip condition (NOT)
     fn mutate_rule_condition<R: Rng>(&self,
                                      _rng: &mut R,
-                                     cond: Cond<Expr<f32>>)
-                                     -> Cond<Expr<f32>> {
+                                     cond: Cond<Expr>)
+                                     -> Cond<Expr> {
         // XXX: Simply negate it for now.
         Cond::Not(Box::new(cond))
     }
@@ -352,13 +351,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                         let expr = args[argsidx].clone();
 
                         let rec_expr_op = self.recursive_expr_op.ind_sample(rng);
-                        let new_expr = match rec_expr_op {
-                            RecursiveExprOp::Reciprocz => expr.op_recipz(),
-                            RecursiveExprOp::Add => expr.op_add(self.symbol_generator.gen_expr(rng, self.num_params)),
-                            RecursiveExprOp::Sub => expr.op_sub(self.symbol_generator.gen_expr(rng, self.num_params)),
-                            RecursiveExprOp::Mul => expr.op_mul(self.symbol_generator.gen_expr(rng, self.num_params)),
-                            RecursiveExprOp::Divz => expr.op_divz(self.symbol_generator.gen_expr(rng, self.num_params)),
-                        };
+                        let new_expr = build_recursive_expr(expr, rec_expr_op, || self.symbol_generator.gen_expr(rng, self.num_params));
 
                         args[argsidx] = new_expr;
                     } else {

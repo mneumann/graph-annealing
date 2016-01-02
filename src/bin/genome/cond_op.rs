@@ -1,5 +1,5 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use expression_num::NumExpr as Expr;
+use super::expr_op::Expr;
 use expression::cond::Cond as Condition;
 use rand::Rng;
 use rand::distributions::IndependentSample;
@@ -32,9 +32,9 @@ pub fn random_cond<R, F>(rng: &mut R,
                          weighted_op: &OwnedWeightedChoice<CondOp>,
                          weighted_op_max_depth: &OwnedWeightedChoice<CondOp>,
                          expr_fn: &mut F)
-                         -> Condition<Expr<f32>>
+                         -> Condition<Expr>
     where R: Rng,
-          F: FnMut(&mut R, usize) -> Expr<f32>
+          F: FnMut(&mut R, usize) -> Expr
 {
     let choose_from = if max_depth > 0 {
         weighted_op

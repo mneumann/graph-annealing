@@ -1,9 +1,11 @@
 use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
-use expression_num::NumExpr as Expr;
+pub use expression_num::NumExpr as ExprT;
 use rand::{Closed01, Open01, Rng};
 use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
 use std::f32::consts;
+
+pub type Expr = ExprT<f32>;
 
 /// FlatExprOp is a non-recursive expression.
 defops!{FlatExprOp;
@@ -56,40 +58,52 @@ defops!{RecursiveExprOp;
 pub fn random_flat_expr<R>(rng: &mut R,
                            weighted_flat_op: &OwnedWeightedChoice<FlatExprOp>,
                            num_params: usize)
-                           -> Expr<f32>
+                           -> Expr
     where R: Rng
 {
     let op = weighted_flat_op.ind_sample(rng);
     flat_expr_op_to_expr(rng, op, num_params)
 }
 
-fn flat_expr_op_to_expr<R: Rng>(rng: &mut R, op: FlatExprOp, num_params: usize) -> Expr<f32> {
+pub fn build_recursive_expr<F>(expr: Expr, op: RecursiveExprOp, f: F) -> Expr
+where F:FnOnce() -> Expr {
     match op {
-        FlatExprOp::Zero => Expr::Const(Zero::zero()),
+        RecursiveExprOp::Reciprocz => expr.op_recipz(),
+        RecursiveExprOp::Add => expr.op_add(f()),
+        RecursiveExprOp::Sub => expr.op_sub(f()),
+        RecursiveExprOp::Mul => expr.op_mul(f()),
+        RecursiveExprOp::Divz => expr.op_divz(f()),
+    }
+}
 
-        FlatExprOp::One => Expr::Const(One::one()),
 
-        FlatExprOp::Euler => Expr::Const(consts::E),
+fn flat_expr_op_to_expr<R: Rng>(rng: &mut R, op: FlatExprOp, num_params: usize) -> Expr {
+    match op {
+        FlatExprOp::Zero => ExprT::Const(Zero::zero()),
 
-        FlatExprOp::Pi => Expr::Const(consts::PI),
+        FlatExprOp::One => ExprT::Const(One::one()),
+
+        FlatExprOp::Euler => ExprT::Const(consts::E),
+
+        FlatExprOp::Pi => ExprT::Const(consts::PI),
 
         FlatExprOp::ConstClosed01 => {
             let n = rng.gen::<Closed01<f32>>().0;
             debug_assert!(n >= 0.0 && n <= 1.0);
-            Expr::Const(n)
+            ExprT::Const(n)
         }
 
         FlatExprOp::ConstOpen01Reciproc => {
             let n = rng.gen::<Open01<f32>>().0;
             debug_assert!(n > 0.0 && n < 1.0);
-            Expr::Const(1.0 / n)
+            ExprT::Const(1.0 / n)
         }
 
         FlatExprOp::Param => {
             if num_params > 0 {
-                Expr::Var(rng.gen_range(0, num_params))
+                ExprT::Var(rng.gen_range(0, num_params))
             } else {
-                Expr::Const(Zero::zero())
+                ExprT::Const(Zero::zero())
             }
         }
     }
