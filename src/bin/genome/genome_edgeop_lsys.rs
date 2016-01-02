@@ -27,7 +27,7 @@ use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym2, ParametricRul
                                      ParametricSymbol, ParametricSystem};
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursive_expr, Expr, ExprT};
+use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursive_expr, Expr, ExprT, ExprScalar};
 //use simple_parallel::Pool;
 //use crossbeam;
 use std::cmp;
@@ -120,8 +120,8 @@ impl DualAlphabet for EdgeAlphabet {
 // We use 2-ary symbols, i.e. symbols with two parameters.
 const SYM_ARITY: usize = 2;
 type Sym = PSym2<EdgeAlphabet, Expr>;
-type SymParam = PSym2<EdgeAlphabet, f32>;
-type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, f32>, Cond<Expr>>;
+type SymParam = PSym2<EdgeAlphabet, ExprScalar>;
+type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, ExprScalar>, Cond<Expr>>;
 type System = PDualMapSystem<EdgeAlphabet, Rule>;
 
 pub struct SymbolGenerator {

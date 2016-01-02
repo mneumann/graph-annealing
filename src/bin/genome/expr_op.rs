@@ -5,6 +5,7 @@ use rand::distributions::IndependentSample;
 use std::num::{One, Zero};
 use std::f32::consts;
 
+pub type ExprScalar = f32;
 pub type Expr = ExprT<f32>;
 
 /// FlatExprOp is a non-recursive expression.
