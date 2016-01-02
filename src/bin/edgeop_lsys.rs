@@ -465,6 +465,7 @@ fn main() {
         }
         plot.clf();
         plot.title(&format!("Iteration: {}", iteration));
+        plot.grid(true);
         plot.scatter(&x, &y);
         plot.draw();
 
@@ -545,4 +546,6 @@ fn main() {
             // }
         }
     }
+
+    println!("{:#?}", config);
 }
