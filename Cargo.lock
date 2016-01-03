@@ -3,14 +3,14 @@ name = "graph_annealing"
 version = "0.1.0"
 dependencies = [
  "asexp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "closed01 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "expression-closed01 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression-closed01 0.1.0 (git+https://github.com/mneumann/expression-closed01-rs.git)",
  "expression-num 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
- "graph-neighbor-matching 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graph-neighbor-matching 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lindenmayer-system 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "matplotlib 0.0.1 (git+https://github.com/mneumann/matplotlib-rs.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -56,7 +56,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "closed01"
-version = "0.1.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "rand 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -108,10 +108,10 @@ dependencies = [
 [[package]]
 name = "expression-closed01"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/mneumann/expression-closed01-rs.git#b7309e986a4154be72327b04317b5fc0ff131f4f"
 dependencies = [
  "asexp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "closed01 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "expression 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -141,10 +141,10 @@ source = "git+https://github.com/mneumann/graph-layout-rs.git#a304a5200ca34035bf
 
 [[package]]
 name = "graph-neighbor-matching"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "closed01 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "closed01 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "munkres 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

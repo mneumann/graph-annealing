@@ -9,7 +9,16 @@
 // * We start out with a simple Genome, which gets more and more complex through mating.
 
 pub mod edgeop;
+
+
+#[cfg(feature = "expr_num")]
+#[path = "expr_num_op.rs"]
 pub mod expr_op;
+
+#[cfg(feature = "expr_closed01")]
+#[path = "expr_closed01_op.rs"]
+pub mod expr_op;
+
 mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
@@ -27,7 +36,7 @@ use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym2, ParametricRul
                                      ParametricSymbol, ParametricSystem};
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
-use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursive_expr, Expr, ExprT, ExprScalar};
+use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursive_expr, Expr, ExprT, ExprScalar, expr_zero, expr_conv_to_f32};
 //use simple_parallel::Pool;
 //use crossbeam;
 use std::cmp;
@@ -184,7 +193,7 @@ impl SymbolGenerator {
         let lhs = if num_params > 0 {
             ExprT::Var(rng.gen_range(0, num_params))
         } else {
-            ExprT::Const(0.0)
+            ExprT::Const(expr_zero())
         };
 
         let rhs = random_flat_expr(rng, &self.flat_expr_weighted_op, num_params);
@@ -209,7 +218,7 @@ pub struct Toolbox<N: Debug, E: Debug> {
     recursive_expr_op: OwnedWeightedChoice<RecursiveExprOp>,
 
     /// Arguments to the axiom rule.
-    pub axiom_args: Vec<f32>,
+    pub axiom_args: Vec<ExprScalar>,
 
     /// Maximum number of iterations of the L-system  (XXX: Limit also based on generated length)
     pub iterations: usize,
@@ -277,7 +286,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
             recursive_expr_op: OwnedWeightedChoice::new(recursive_expr_op),
 
             // we use n-ary symbols, so we need n parameters. (XXX)
-            axiom_args: (0..symbol_arity).map(|_| 0.0).collect(),
+            axiom_args: (0..symbol_arity).map(|_| expr_zero()).collect(), // XXX
 
             // maximum 3 iterations of the L-system.
             iterations: iterations,
@@ -610,7 +619,7 @@ impl<'a> Into<Sexp> for &'a Genome {
 
 impl Genome {
     /// Develops the L-system into a vector of edge operations
-    pub fn to_edge_ops(&self, axiom_args: &[f32], iterations: usize) -> Vec<(EdgeOp, f32)> {
+    pub fn to_edge_ops(&self, axiom_args: &[ExprScalar], iterations: usize) -> Vec<(EdgeOp, f32)> {
         let axiom = vec![SymParam::new_from_iter(EdgeAlphabet::NonTerminal(0),
                                                  axiom_args.iter().take(SYM_ARITY).cloned())
                              .unwrap()];
@@ -622,8 +631,8 @@ impl Genome {
         let edge_ops: Vec<_> = s.into_iter().filter_map(|op| {
             match op.symbol() {
                 &EdgeAlphabet::Terminal(ref edge_op) => {
-                    if let Some(&param) = op.params().get(0) {
-                        Some((edge_op.clone(), param.fract())) // NOTE: we only use the fractional part of the float
+                    if let Some(param) = op.params().get(0) {
+                        Some((edge_op.clone(), expr_conv_to_f32(param))) // NOTE: we only use the fractional part of the float
                     } else {
                         println!("Invalid parameter");
                         None

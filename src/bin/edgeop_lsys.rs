@@ -16,8 +16,10 @@ extern crate graph_edge_evolution;
 extern crate asexp;
 extern crate expression;
 extern crate expression_num;
+extern crate expression_closed01;
 extern crate matplotlib;
 extern crate rayon;
+extern crate closed01;
 
 #[path="genome/genome_edgeop_lsys.rs"]
 pub mod genome;
@@ -40,7 +42,7 @@ use triadic_census::OptDenseDigraph;
 use std::fs::File;
 use genome::{RuleMutOp, RuleProductionMutOp, VarOp};
 use genome::edgeop::{EdgeOp, edgeops_to_graph};
-use genome::expr_op::{FlatExprOp, RecursiveExprOp};
+use genome::expr_op::{FlatExprOp, RecursiveExprOp, EXPR_NAME};
 use std::io::Read;
 use asexp::Sexp;
 use asexp::sexp::prettyprint;
@@ -378,6 +380,7 @@ fn pp_sexp(s: &Sexp) {
 }
 
 fn main() {
+    println!("Using expr system: {}", EXPR_NAME);
     let env = Env::new();
     let plot = Plot::new(&env);
     plot.interactive();

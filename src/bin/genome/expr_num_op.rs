@@ -8,6 +8,16 @@ use std::f32::consts;
 pub type ExprScalar = f32;
 pub type Expr = ExprT<f32>;
 
+pub const EXPR_NAME: &'static str = "ExprNum<f32>";
+
+pub fn expr_zero() -> ExprScalar {
+    0.0
+}
+
+pub fn expr_conv_to_f32(s: &ExprScalar) -> f32 {
+    s.fract()
+}
+
 /// FlatExprOp is a non-recursive expression.
 defops!{FlatExprOp;
     // 0.0

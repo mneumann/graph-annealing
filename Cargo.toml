@@ -14,12 +14,12 @@ nalgebra = "0.4.0"
 time = "0.1"
 
 #graph-neighbor-matching = {git = "https://github.com/mneumann/graph-neighbor-matching.git"}
-graph-neighbor-matching = "0.3.1"
+graph-neighbor-matching = "0.3.2"
 
 #triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
 triadic-census = "0.2.0"
 
-closed01 = "0.1.1"
+closed01 = "0.3.0"
 
 graph-edge-evolution = { git = "https://github.com/mneumann/graph-edge-evolution.git" }
 #graph-edge-evolution = "0.1.0"
@@ -30,7 +30,9 @@ lindenmayer-system = "0.3.0"
 
 expression = "0.3.0"
 expression-num = "0.2.0"
-expression-closed01 = "0.1.0"
+
+#expression-closed01 = "0.1.0"
+expression-closed01 = { git = "https://github.com/mneumann/expression-closed01-rs.git" }
 
 pcg = { git = "https://github.com/codahale/pcg.git" }
 evo = { git = "https://github.com/mneumann/evo-rs.git" }
@@ -41,3 +43,8 @@ matplotlib = { git = "https://github.com/mneumann/matplotlib-rs.git" }
 #rayon = {git = "https://github.com/nikomatsakis/rayon.git", rev="e15798dfe" }
 #rayon = {path = "../rayon" }
 rayon = {git = "https://github.com/nikomatsakis/rayon.git" }
+
+[features]
+
+expr_num = []
+expr_closed01 = []
