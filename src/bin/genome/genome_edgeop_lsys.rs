@@ -208,6 +208,7 @@ impl SymbolGenerator {
 
 pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
+    weight: f64,
     //pool: Pool,
     fitness_functions: Vec<FitnessFunction>,
 
@@ -241,6 +242,7 @@ pub struct Toolbox<N: Debug, E: Debug> {
 
 impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     pub fn new(goal: Goal<N, E>,
+               weight: f64,
                //pool: Pool,
                fitness_functions: Vec<FitnessFunction>,
 
@@ -276,6 +278,7 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         Toolbox {
             goal: goal,
+            weight: weight,
             //pool: pool,
             fitness_functions: fitness_functions,
 
@@ -582,7 +585,7 @@ impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
             MultiObjective3::from(fitness_functions.iter().map(|&f| {
                 goal.apply_fitness_function(f, &g, &mut cache)
             }))
-        }).collect_into(&mut result);
+        }).weight(self.weight).collect_into(&mut result);
         result
     }
 

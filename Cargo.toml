@@ -42,7 +42,7 @@ matplotlib = { git = "https://github.com/mneumann/matplotlib-rs.git" }
 
 #rayon = {git = "https://github.com/nikomatsakis/rayon.git", rev="e15798dfe" }
 #rayon = {path = "../rayon" }
-rayon = {git = "https://github.com/nikomatsakis/rayon.git" }
+rayon = {git = "https://github.com/nikomatsakis/rayon.git", branch = "weight" }
 
 [features]
 

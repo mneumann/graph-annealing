@@ -260,6 +260,8 @@ struct Config {
     flat_expr_op: Vec<(FlatExprOp, u32)>,
     recursive_expr_op: Vec<(RecursiveExprOp, u32)>,
     genome: ConfigGenome,
+    plot: bool,
+    weight: f64,
 }
 
 #[derive(Debug)]
@@ -311,6 +313,9 @@ fn parse_config(sexp: Sexp) -> Config {
     let k: usize = map.get("k").and_then(|v| v.get_uint()).unwrap_or(2) as usize;
     assert!(k > 0);
 
+    let plot: bool = map.get("plot").map(|v| v.get_str() == Some("true")).unwrap_or(false);
+    let weight: f64 = map.get("weight").and_then(|v| v.get_float()).unwrap_or(1.0);
+
     let seed: Vec<u64>;
     if let Some(seed_expr) = map.get("seed") {
         seed = seed_expr.get_uint_vec().unwrap();
@@ -353,6 +358,8 @@ fn parse_config(sexp: Sexp) -> Config {
         mu: mu,
         lambda: lambda,
         k: k,
+        plot: plot,
+        weight: weight,
         seed: seed,
         objectives: objectives,
         graph: graph,
@@ -383,9 +390,6 @@ fn main() {
     println!("Using expr system: {}", EXPR_NAME);
     let env = Env::new();
     let plot = Plot::new(&env);
-    plot.interactive();
-    plot.show();
-
     //let ncpus = num_cpus::get();
     //println!("Using {} CPUs", ncpus);
 
@@ -397,9 +401,16 @@ fn main() {
 
     println!("{:#?}", config);
 
+    if config.plot {
+        plot.interactive();
+        plot.show();
+    }
+
+
     let num_objectives = config.objectives.len();
 
     let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
+                                   config.weight,
                                    //Pool::new(ncpus),
                                    config.objectives
                                          .iter()
@@ -468,11 +479,13 @@ fn main() {
             y.push(f.objectives[1]);
         }
 
-        plot.clf();
-        plot.title(&format!("Iteration: {}", iteration));
-        plot.grid(true);
-        plot.scatter(&x, &y);
-        plot.draw();
+        if config.plot {
+            plot.clf();
+            plot.title(&format!("Iteration: {}", iteration));
+            plot.grid(true);
+            plot.scatter(&x, &y);
+            plot.draw();
+        }
 
         let mut num_optima = 0;
         for f in fit.iter() {
