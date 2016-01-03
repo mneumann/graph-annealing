@@ -32,7 +32,7 @@ use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
 use lindenmayer_system::{Alphabet, DualAlphabet};
-use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym2, ParametricRule,
+use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym1, PSym2, ParametricRule,
                                      ParametricSymbol, ParametricSystem};
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
@@ -126,11 +126,11 @@ impl DualAlphabet for EdgeAlphabet {
     }
 }
 
-// We use 2-ary symbols, i.e. symbols with two parameters.
-const SYM_ARITY: usize = 2;
-type Sym = PSym2<EdgeAlphabet, Expr>;
-type SymParam = PSym2<EdgeAlphabet, ExprScalar>;
-type Rule = PRule<EdgeAlphabet, Sym, PSym2<EdgeAlphabet, ExprScalar>, Cond<Expr>>;
+// We use 1-ary symbols, i.e. symbols with two parameters.
+const SYM_ARITY: usize = 1;
+type Sym = PSym1<EdgeAlphabet, Expr>;
+type SymParam = PSym1<EdgeAlphabet, ExprScalar>;
+type Rule = PRule<EdgeAlphabet, Sym, PSym1<EdgeAlphabet, ExprScalar>, Cond<Expr>>;
 type System = PDualMapSystem<EdgeAlphabet, Rule>;
 
 pub struct SymbolGenerator {
@@ -271,8 +271,8 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         assert!(num_rules > 0);
 
-        // this is fixed for now, because we use fixed 2-ary symbols.
-        assert!(symbol_arity == 2);
+        // this is fixed for now, because we use fixed 1-ary symbols.
+        assert!(symbol_arity == 1);
 
         assert!(num_params <= symbol_arity);
 
