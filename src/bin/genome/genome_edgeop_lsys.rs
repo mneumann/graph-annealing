@@ -583,7 +583,11 @@ impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
             let mut cache = Cache::new();
 
             MultiObjective3::from(fitness_functions.iter().map(|&f| {
-                goal.apply_fitness_function(f, &g, &mut cache)
+                if f == FitnessFunction::GenomeComplexity {
+                    ind.complexity()
+                } else {
+                    goal.apply_fitness_function(f, &g, &mut cache)
+                }
             }))
         }).weight(self.weight).collect_into(&mut result);
         result
@@ -621,6 +625,19 @@ impl<'a> Into<Sexp> for &'a Genome {
 }
 
 impl Genome {
+    fn complexity(&self) -> f32 {
+        let mut sym_count = 0;
+        let mut rule_count = 0;
+        self.system.each_rule(|rule| {
+            rule_count += 1;
+            for _ in rule.production.iter() {
+                sym_count += 1;
+            }
+        });
+        let sym_count = sym_count / 4;
+        sym_count as f32
+    }
+
     /// Develops the L-system into a vector of edge operations
     pub fn to_edge_ops(&self, axiom_args: &[ExprScalar], iterations: usize) -> Vec<(EdgeOp, f32)> {
         let axiom = vec![SymParam::new_from_iter(EdgeAlphabet::NonTerminal(0),

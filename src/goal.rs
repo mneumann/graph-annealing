@@ -16,7 +16,8 @@ defops!{FitnessFunction;
     NeighborMatchingAvg,
     NeighborMatchingEdgeWeightsMaxDeg,
     NeighborMatchingEdgeWeightsMinDeg,
-    TriadicDistance
+    TriadicDistance,
+    GenomeComplexity
 }
 
 pub struct Goal<N: Debug, E: Debug> {
@@ -68,8 +69,8 @@ pub fn normalize_graph(g: &Graph<f32, f32, Directed>)
           |_, &ew| normalize_to_closed01(ew, edge_range))
 }
 
-
 // We need to normalize the edge weights into the range [0,1]
+#[cfg(feature = "expr_num")]
 fn graph_to_edgelist(g: &Graph<f32, f32, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
     let mut in_a: Vec<Vec<Edge>> = (0..g.node_count()).map(|_| Vec::new()).collect();
     let mut out_a: Vec<Vec<Edge>> = (0..g.node_count()).map(|_| Vec::new()).collect();
@@ -89,6 +90,22 @@ fn graph_to_edgelist(g: &Graph<f32, f32, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<
     (in_a, out_a)
 }
 
+
+#[cfg(feature = "expr_closed01")]
+fn graph_to_edgelist(g: &Graph<f32, f32, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
+    let mut in_a: Vec<Vec<Edge>> = (0..g.node_count()).map(|_| Vec::new()).collect();
+    let mut out_a: Vec<Vec<Edge>> = (0..g.node_count()).map(|_| Vec::new()).collect();
+
+    for edge in g.raw_edges() {
+        in_a[edge.target().index()].push(Edge::new(edge.source().index(),
+                                                   Closed01::new(edge.weight)));
+        out_a[edge.source().index()].push(Edge::new(edge.target().index(),
+                                                    Closed01::new(edge.weight)));
+    }
+
+    (in_a, out_a)
+}
+
 /// This is used to cache and reuse some heavy calculations done
 /// by some FitnessFunctions.
 pub struct Cache {
@@ -102,7 +119,7 @@ impl Cache {
 }
 
 const NEIGHBORMATCHING_ITERATIONS: usize = 20;
-const NEIGHBORMATCHING_EPS: f32 = 0.1;
+const NEIGHBORMATCHING_EPS: f32 = 0.05;
 
 pub type N = f32;
 pub type E = f32;
@@ -129,6 +146,9 @@ impl Goal<N, E> {
                                   cache: &mut Cache)
                                   -> f32 {
         match fitfun {
+            FitnessFunction::GenomeComplexity => {
+                unreachable!()
+            }
             FitnessFunction::ConnectedComponents => self.connected_components_distance(g) as f32,
             FitnessFunction::StronglyConnectedComponents => {
                 self.strongly_connected_components_distance(g) as f32

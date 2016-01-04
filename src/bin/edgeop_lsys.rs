@@ -419,7 +419,7 @@ fn main() {
                                    config.genome.max_iter, // iterations
                                    config.genome.rules, // num_rules
                                    config.genome.initial_len, // initial rule length
-                                   config.genome.symbol_arity, // we use 2-ary symbols
+                                   config.genome.symbol_arity, // we use 1-ary symbols
                                    config.genome.num_params,
                                    config.genome.prob_terminal,
                                    to_weighted_vec(&config.edge_ops),
@@ -531,7 +531,10 @@ fn main() {
 
     for rd in rank_dist.iter() {
         if rd.rank == 0 {
-            best_solutions.push((&pop[rd.idx], fit[rd.idx].clone()));
+            let f = fit[rd.idx].clone();
+            if f.objectives[0] < 0.1 && f.objectives[1] < 0.1 {
+                best_solutions.push((&pop[rd.idx], f));
+            }
         }
     }
 
