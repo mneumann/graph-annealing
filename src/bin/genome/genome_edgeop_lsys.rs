@@ -45,9 +45,9 @@ use asexp::Sexp;
 use rayon::par_iter::*;
 
 // How many symbols to insert at most using InsertSequence
-const INS_MAX_NUMBER_OF_SYMBOLS: usize = 1;
+const INS_MAX_NUMBER_OF_SYMBOLS: usize = 2;
 // How many symbols to delete at most using DeleteSequence
-const DEL_MAX_NUMBER_OF_SYMBOLS: usize = 1;
+const DEL_MAX_NUMBER_OF_SYMBOLS: usize = 2;
 
 /// Rule mutation operations.
 defops!{RuleMutOp;

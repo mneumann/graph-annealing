@@ -132,7 +132,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "graph-edge-evolution"
 version = "0.1.0"
-source = "git+https://github.com/mneumann/graph-edge-evolution.git#ec085fcf0b49bc26e82259e39c0b31a8544111ea"
+source = "git+https://github.com/mneumann/graph-edge-evolution.git#b0c243ece3bafd7246ce28f0315bb8065586ad1f"
 
 [[package]]
 name = "graph-layout"
