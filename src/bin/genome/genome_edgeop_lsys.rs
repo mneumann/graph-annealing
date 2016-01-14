@@ -32,8 +32,8 @@ use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 use graph_annealing::goal::{Cache, FitnessFunction, Goal};
 use graph_annealing::helper::{insert_vec_at, remove_at};
 use lindenmayer_system::{Alphabet, DualAlphabet};
-use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym1, PSym2, ParametricRule,
-                                     ParametricSymbol, ParametricSystem};
+use lindenmayer_system::parametric::{PDualMapSystem, PRule, PSym1, ParametricRule,
+ParametricSymbol, ParametricSystem};
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursive_expr, Expr, ExprT, ExprScalar, expr_zero, expr_conv_to_f32};
@@ -86,12 +86,12 @@ defops!{VarOp;
     Crossover
 }
 
-type RuleId = u32;
+pub type RuleId = u32;
 
 // The alphabet of terminal and non-terminals we use.
 // Non-terminals are our rules, while terminals are the EdgeOps.
 #[derive(Debug, PartialEq, Eq, Clone)]
-enum EdgeAlphabet {
+pub enum EdgeAlphabet {
     Terminal(EdgeOp),
     NonTerminal(RuleId),
 }
@@ -151,27 +151,27 @@ impl SymbolGenerator {
                                   len: usize,
                                   symbol_arity: usize,
                                   num_params: usize)
-                                  -> Vec<S>
+        -> Vec<S>
         where R: Rng,
               S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr>
-    {
-        (0..len)
-            .into_iter()
-            .map(|_| self.gen_symbol(rng, symbol_arity, num_params))
-            .collect()
-    }
+              {
+                  (0..len)
+                      .into_iter()
+                      .map(|_| self.gen_symbol(rng, symbol_arity, num_params))
+                      .collect()
+              }
 
     fn gen_symbol<R, S>(&self, rng: &mut R, symbol_arity: usize, num_params: usize) -> S
         where R: Rng,
               S: ParametricSymbol<Sym = EdgeAlphabet, Param = Expr>
-    {
-        S::new_from_iter(self.gen_symbol_value(rng),
-                         (0..symbol_arity)
-                             .into_iter()
-                             .map(|_| self.gen_expr(rng, num_params)))
-            .unwrap()
+              {
+                  S::new_from_iter(self.gen_symbol_value(rng),
+                  (0..symbol_arity)
+                  .into_iter()
+                  .map(|_| self.gen_expr(rng, num_params)))
+                      .unwrap()
 
-    }
+              }
 
     fn gen_symbol_value<R: Rng>(&self, rng: &mut R) -> EdgeAlphabet {
         if rng.gen::<ProbabilityValue>().is_probable_with(self.prob_terminal) {
@@ -260,61 +260,61 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                var_op: Vec<Weighted<VarOp>>,
                rule_mut_op: Vec<Weighted<RuleMutOp>>,
                rule_prod_mut_op: Vec<Weighted<RuleProductionMutOp>>)
-               -> Toolbox<N, E> {
+        -> Toolbox<N, E> {
 
-        assert!(terminal_symbols.len() > 0);
-        assert!(flat_expr_weighted_op.len() > 0);
-        assert!(var_op.len() > 0);
-        assert!(rule_mut_op.len() > 0);
-        assert!(rule_prod_mut_op.len() > 0);
-        assert!(recursive_expr_op.len() > 0);
+            assert!(terminal_symbols.len() > 0);
+            assert!(flat_expr_weighted_op.len() > 0);
+            assert!(var_op.len() > 0);
+            assert!(rule_mut_op.len() > 0);
+            assert!(rule_prod_mut_op.len() > 0);
+            assert!(recursive_expr_op.len() > 0);
 
-        assert!(num_rules > 0);
+            assert!(num_rules > 0);
 
-        // this is fixed for now, because we use fixed 1-ary symbols.
-        assert!(symbol_arity == 1);
+            // this is fixed for now, because we use fixed 1-ary symbols.
+            assert!(symbol_arity == 1);
 
-        assert!(num_params <= symbol_arity);
+            assert!(num_params <= symbol_arity);
 
-        Toolbox {
-            goal: goal,
-            weight: weight,
-            //pool: pool,
-            fitness_functions: fitness_functions,
+            Toolbox {
+                goal: goal,
+                weight: weight,
+                //pool: pool,
+                fitness_functions: fitness_functions,
 
-            var_op: OwnedWeightedChoice::new(var_op),
-            rule_mut_op: OwnedWeightedChoice::new(rule_mut_op),
-            rule_prod_mut_op: OwnedWeightedChoice::new(rule_prod_mut_op),
+                var_op: OwnedWeightedChoice::new(var_op),
+                rule_mut_op: OwnedWeightedChoice::new(rule_mut_op),
+                rule_prod_mut_op: OwnedWeightedChoice::new(rule_prod_mut_op),
 
-            recursive_expr_op: OwnedWeightedChoice::new(recursive_expr_op),
+                recursive_expr_op: OwnedWeightedChoice::new(recursive_expr_op),
 
-            // we use n-ary symbols, so we need n parameters. (XXX)
-            axiom_args: (0..symbol_arity).map(|_| expr_zero()).collect(), // XXX
+                // we use n-ary symbols, so we need n parameters. (XXX)
+                axiom_args: (0..symbol_arity).map(|_| expr_zero()).collect(), // XXX
 
-            // maximum 3 iterations of the L-system.
-            iterations: iterations,
+                // maximum 3 iterations of the L-system.
+                iterations: iterations,
 
-            // We start with 20 rules per genome.
-            num_rules: num_rules,
+                // We start with 20 rules per genome.
+                num_rules: num_rules,
 
-            initial_rule_length: initial_rule_length,
+                initial_rule_length: initial_rule_length,
 
-            symbol_arity: symbol_arity,
-            num_params: num_params,
+                symbol_arity: symbol_arity,
+                num_params: num_params,
 
-            symbol_generator: SymbolGenerator {
-                terminal_symbols: OwnedWeightedChoice::new(terminal_symbols),
+                symbol_generator: SymbolGenerator {
+                    terminal_symbols: OwnedWeightedChoice::new(terminal_symbols),
 
-                nonterminal_symbols: Range::new(0, num_rules as u32),
+                    nonterminal_symbols: Range::new(0, num_rules as u32),
 
-                // The probability with which a terminal value is choosen.
-                // we favor terminals over non-terminals
-                prob_terminal: prob_terminal,
+                    // The probability with which a terminal value is choosen.
+                    // we favor terminals over non-terminals
+                    prob_terminal: prob_terminal,
 
-                flat_expr_weighted_op: OwnedWeightedChoice::new(flat_expr_weighted_op),
-            },
+                    flat_expr_weighted_op: OwnedWeightedChoice::new(flat_expr_weighted_op),
+                },
+            }
         }
-    }
 
     // XXX
     // The mutation can operate on the logic level (AND, OR, NOT) or on the expression level
@@ -326,10 +326,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     fn mutate_rule_condition<R: Rng>(&self,
                                      _rng: &mut R,
                                      cond: Cond<Expr>)
-                                     -> Cond<Expr> {
-        // XXX: Simply negate it for now.
-        Cond::Not(Box::new(cond))
-    }
+        -> Cond<Expr> {
+            // XXX: Simply negate it for now.
+            Cond::Not(Box::new(cond))
+        }
 
     // XXX
     //     * Replace one symbol
@@ -394,10 +394,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 let insert_position = rng.gen_range(0, prod.len() + 1);
 
                 let new_symbols = self.symbol_generator
-                                      .gen_symbolstring(rng,
-                                                        number_of_symbols,
-                                                        self.symbol_arity,
-                                                        self.num_params);
+                    .gen_symbolstring(rng,
+                                      number_of_symbols,
+                                      self.symbol_arity,
+                                      self.num_params);
 
                 let new_production = insert_vec_at(prod, new_symbols, insert_position);
 
@@ -512,10 +512,10 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
         for rule_id in 0..self.num_rules as RuleId {
             let production = self.symbol_generator
-                                 .gen_symbolstring(rng,
-                                                   self.initial_rule_length,
-                                                   self.symbol_arity,
-                                                   self.num_params);
+                .gen_symbolstring(rng,
+                                  self.initial_rule_length,
+                                  self.symbol_arity,
+                                  self.num_params);
             let condition = if rule_id == 0 {
                 // The axiomatic rule (rule number 0) has Cond::True.
                 Cond::True
@@ -523,9 +523,9 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
                 self.symbol_generator.gen_simple_rule_condition(rng, self.num_params)
             };
             system.add_rule(Rule::new(EdgeAlphabet::NonTerminal(rule_id),
-                                      condition,
-                                      production,
-                                      SYM_ARITY));
+            condition,
+            production,
+            SYM_ARITY));
         }
 
         Genome { system: system }
@@ -547,29 +547,29 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Mate<Genome> for To
 impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
     /// Evaluates the fitness of a Genome population.
     /*
-    fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
+       fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
 
-        let pool = &mut self.pool;
-        let goal = &self.goal;
-        let axiom_args = &self.axiom_args[..];
-        let iterations = self.iterations;
+       let pool = &mut self.pool;
+       let goal = &self.goal;
+       let axiom_args = &self.axiom_args[..];
+       let iterations = self.iterations;
 
-        let fitness_functions = &self.fitness_functions[..];
+       let fitness_functions = &self.fitness_functions[..];
 
-        crossbeam::scope(|scope| {
-            pool.map(scope, pop, |ind| {
-                    let edge_ops = ind.to_edge_ops(axiom_args, iterations);
-                    let g = edgeops_to_graph(&edge_ops);
-                    let mut cache = Cache::new();
+       crossbeam::scope(|scope| {
+       pool.map(scope, pop, |ind| {
+       let edge_ops = ind.to_edge_ops(axiom_args, iterations);
+       let g = edgeops_to_graph(&edge_ops);
+       let mut cache = Cache::new();
 
-                    MultiObjective3::from(fitness_functions.iter().map(|&f| {
-                        goal.apply_fitness_function(f, &g, &mut cache)
-                    }))
-                })
-                .collect()
-        })
-    }
-    */
+       MultiObjective3::from(fitness_functions.iter().map(|&f| {
+       goal.apply_fitness_function(f, &g, &mut cache)
+       }))
+       })
+       .collect()
+       })
+       }
+       */
     fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
         let goal = &self.goal;
         let axiom_args = &self.axiom_args[..];
@@ -607,16 +607,16 @@ impl<'a> Into<Sexp> for &'a Genome {
             let sym = Into::<Sexp>::into(rule.symbol.clone());
             let cond = Into::<Sexp>::into(&rule.condition);
             let succ: Vec<Sexp> = rule.production
-                                      .iter()
-                                      .map(|s| {
-                                          let args: Vec<Sexp> = s.params()
-                                                                 .iter()
-                                                                 .map(|a| a.into())
-                                                                 .collect();
-                                          Sexp::from((Into::<Sexp>::into((*s.symbol()).clone()),
-                                                      Sexp::Array(args)))
-                                      })
-                                      .collect();
+                .iter()
+                .map(|s| {
+                    let args: Vec<Sexp> = s.params()
+                        .iter()
+                        .map(|a| a.into())
+                        .collect();
+                    Sexp::from((Into::<Sexp>::into((*s.symbol()).clone()),
+                    Sexp::Array(args)))
+                })
+            .collect();
             rules.push(Sexp::from((sym, cond, succ)));
         });
 
@@ -641,8 +641,8 @@ impl Genome {
     /// Develops the L-system into a vector of edge operations
     pub fn to_edge_ops(&self, axiom_args: &[ExprScalar], iterations: usize) -> Vec<(EdgeOp, f32)> {
         let axiom = vec![SymParam::new_from_iter(EdgeAlphabet::NonTerminal(0),
-                                                 axiom_args.iter().take(SYM_ARITY).cloned())
-                             .unwrap()];
+        axiom_args.iter().take(SYM_ARITY).cloned())
+            .unwrap()];
         // XXX: limit #iterations based on produced length
         let (s, _iter) = self.system.develop(axiom, iterations);
         // println!("produced string: {:?}", s);

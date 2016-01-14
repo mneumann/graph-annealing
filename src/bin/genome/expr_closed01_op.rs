@@ -2,7 +2,7 @@ use graph_annealing::owned_weighted_choice::OwnedWeightedChoice;
 pub use expression_closed01::Closed01Expr as ExprT;
 use rand::distributions::IndependentSample;
 use closed01::Closed01;
-use rand::{Rand, Rng};
+use rand::Rng;
 
 pub type ExprScalar = Closed01<f32>;
 pub type Expr = ExprT;
@@ -105,5 +105,3 @@ where F:FnOnce() -> Expr {
 
     }
 }
-
-

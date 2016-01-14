@@ -1,5 +1,3 @@
-#![feature(zero_one)]
-
 extern crate rand;
 extern crate evo;
 extern crate petgraph;
@@ -31,7 +29,7 @@ use pcg::PcgRng;
 use evo::Probability;
 use evo::nsga2::{self, FitnessEval};
 use genome::{Genome, Toolbox};
-use graph_annealing::helper::{draw_graph, to_weighted_vec};
+use graph_annealing::helper::to_weighted_vec;
 use graph_annealing::goal::{FitnessFunction, Goal};
 use graph_annealing::goal;
 pub use graph_annealing::UniformDistribution;
@@ -546,7 +544,7 @@ fn main() {
 
     let mut solutions: Vec<Sexp> = Vec::new();
 
-    for (i, &(ind, ref fitness)) in best_solutions.iter().enumerate() {
+    for (_i, &(ind, ref fitness)) in best_solutions.iter().enumerate() {
         let genome: Sexp = ind.into();
 
         let edge_ops = ind.to_edge_ops(&toolbox.axiom_args, toolbox.iterations);
