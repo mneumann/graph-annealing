@@ -46,7 +46,7 @@ macro_rules! def_str_enum {
     }
 }
 
-pub trait UniformDistribution {
+pub trait UniformDistribution: Sized {
     fn uniform_distribution() -> Vec<(Self, u32)>;
 }
 

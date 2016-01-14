@@ -44,5 +44,6 @@ rayon = {git = "https://github.com/nikomatsakis/rayon.git"}
 
 [features]
 
+default = ["expr_closed01"]
 expr_num = []
 expr_closed01 = []
