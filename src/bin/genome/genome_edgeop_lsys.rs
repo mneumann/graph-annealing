@@ -10,7 +10,6 @@
 
 pub mod edgeop;
 
-
 #[cfg(feature = "expr_num")]
 #[path = "expr_num_op.rs"]
 pub mod expr_op;
@@ -37,8 +36,6 @@ ParametricSymbol, ParametricSystem};
 use expression::cond::Cond;
 use self::edgeop::{EdgeOp, edgeops_to_graph};
 use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursive_expr, Expr, ExprT, ExprScalar, expr_zero, expr_conv_to_f32};
-//use simple_parallel::Pool;
-//use crossbeam;
 use std::cmp;
 use std::fmt::Debug;
 use asexp::Sexp;
@@ -546,30 +543,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Mate<Genome> for To
 
 impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
     /// Evaluates the fitness of a Genome population.
-    /*
-       fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
-
-       let pool = &mut self.pool;
-       let goal = &self.goal;
-       let axiom_args = &self.axiom_args[..];
-       let iterations = self.iterations;
-
-       let fitness_functions = &self.fitness_functions[..];
-
-       crossbeam::scope(|scope| {
-       pool.map(scope, pop, |ind| {
-       let edge_ops = ind.to_edge_ops(axiom_args, iterations);
-       let g = edgeops_to_graph(&edge_ops);
-       let mut cache = Cache::new();
-
-       MultiObjective3::from(fitness_functions.iter().map(|&f| {
-       goal.apply_fitness_function(f, &g, &mut cache)
-       }))
-       })
-       .collect()
-       })
-       }
-       */
     fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
         let goal = &self.goal;
         let axiom_args = &self.axiom_args[..];
