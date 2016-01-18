@@ -31,10 +31,9 @@ use evo::nsga2::{self, FitnessEval};
 use genome::{Genome, Toolbox};
 use graph_annealing::helper::to_weighted_vec;
 use graph_annealing::goal::{FitnessFunction, Goal};
-use graph_annealing::goal;
+use graph_annealing::graph;
 pub use graph_annealing::UniformDistribution;
 use graph_annealing::stat::Stat;
-//use simple_parallel::Pool;
 use petgraph::{Directed, EdgeDirection, Graph};
 use triadic_census::OptDenseDigraph;
 use std::fs::File;
@@ -537,7 +536,7 @@ fn main() {
     }
 
     println!("Target graph");
-    let sexp = graph_to_sexp(&goal::normalize_graph(&config.graph),
+    let sexp = graph_to_sexp(&graph::normalize_graph(&config.graph),
                              |nw| Some(Sexp::from(nw.get())),
                              |ew| Some(Sexp::from(ew.get())));
     pp_sexp(&sexp);
