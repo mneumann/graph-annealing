@@ -2,6 +2,7 @@
 name = "graph_annealing"
 version = "0.1.0"
 dependencies = [
+ "artificial-genome 0.0.1 (git+https://github.com/mneumann/artificial-genome-rs)",
  "asexp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "closed01 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
@@ -43,6 +44,15 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "memchr 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "artificial-genome"
+version = "0.0.1"
+source = "git+https://github.com/mneumann/artificial-genome-rs#04ad2f770c6e5c28210a76a38ea8551827ae73db"
+dependencies = [
+ "fixedbitset 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
