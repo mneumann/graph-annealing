@@ -2,8 +2,7 @@ use closed01::Closed01;
 use petgraph::{Directed, Graph};
 use graph_neighbor_matching::{Edge, GraphSimilarityMatrix, IgnoreNodeColors, ScoreNorm};
 use graph_neighbor_matching::Graph as NGraph;
-
-pub type WeightedDigraph = Graph<Closed01<f32>, Closed01<f32>, Directed>;
+use super::graph::WeightedDigraph;
 
 pub trait Objective {
     type Input;
