@@ -209,6 +209,8 @@ fn parse_config(sexp: Sexp) -> Config {
                     .unwrap();
     println!("graph: {:?}", graph);
 
+    let graph = graph::normalize_graph(&graph);
+
     let genome_map = map.get("genome").unwrap().clone().into_map().unwrap();
 
     Config {
@@ -391,7 +393,7 @@ fn main() {
     }
 
     println!("Target graph");
-    let sexp = graph_to_sexp(&graph::normalize_graph(&config.graph),
+    let sexp = graph_to_sexp(&graph::normalize_graph_closed01(&config.graph),
                              |nw| Some(Sexp::from(nw.get())),
                              |ew| Some(Sexp::from(ew.get())));
     println!("{}", pp(&sexp));
