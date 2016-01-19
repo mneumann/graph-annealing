@@ -22,8 +22,7 @@ mod cond_op;
 
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
-use evo::nsga2::{FitnessEval, Mate};
-use evo::mo::MultiObjective3;
+use nsga2::mo::MultiObjective3;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
 use rand::distributions::range::Range;
@@ -39,7 +38,6 @@ use self::expr_op::{FlatExprOp, RecursiveExprOp, random_flat_expr, build_recursi
 use std::cmp;
 use std::fmt::Debug;
 use asexp::Sexp;
-use rayon::par_iter::*;
 
 // How many symbols to insert at most using InsertSequence
 const INS_MAX_NUMBER_OF_SYMBOLS: usize = 2;
@@ -205,8 +203,6 @@ impl SymbolGenerator {
 
 pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
-    weight: f64,
-    //pool: Pool,
     fitness_functions: Vec<FitnessFunction>,
 
     // Variation parameters
@@ -237,10 +233,36 @@ pub struct Toolbox<N: Debug, E: Debug> {
     symbol_generator: SymbolGenerator,
 }
 
-impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
+pub type N = f32;
+pub type E = f32;
+
+impl Toolbox<N, E> {
+
+    // p1 is potentially "better" than p2
+    pub fn mate<R: Rng>(&self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
+        match self.var_op.ind_sample(rng) {
+            VarOp::Copy => p1.clone(),
+            VarOp::Mutate => self.mutate(rng, p1),
+            VarOp::Crossover => self.crossover(rng, p1, p2),
+        }
+    }
+
+    /// Evaluates the fitness of a Genome population.
+    pub fn fitness(&self, ind: &Genome) -> MultiObjective3<f32> {
+        let edge_ops = ind.to_edge_ops(&self.axiom_args, self.iterations);
+        let g = edgeops_to_graph(&edge_ops);
+        let mut cache = Cache::new();
+
+        MultiObjective3::from(self.fitness_functions.iter().map(|&f| {
+            if f == FitnessFunction::GenomeComplexity {
+                ind.complexity()
+            } else {
+                self.goal.apply_fitness_function(f, &g, &mut cache)
+            }
+        }))
+    }
+
     pub fn new(goal: Goal<N, E>,
-               weight: f64,
-               //pool: Pool,
                fitness_functions: Vec<FitnessFunction>,
 
                iterations: usize,
@@ -275,8 +297,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
 
             Toolbox {
                 goal: goal,
-                weight: weight,
-                //pool: pool,
                 fitness_functions: fitness_functions,
 
                 var_op: OwnedWeightedChoice::new(var_op),
@@ -529,44 +549,6 @@ impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Toolbox<N, E> {
     }
 }
 
-impl<N: Clone + Default + Debug, E: Clone + Default + Debug> Mate<Genome> for Toolbox<N, E> {
-    // p1 is potentially "better" than p2
-    fn mate<R: Rng>(&mut self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
-
-        match self.var_op.ind_sample(rng) {
-            VarOp::Copy => p1.clone(),
-            VarOp::Mutate => self.mutate(rng, p1),
-            VarOp::Crossover => self.crossover(rng, p1, p2),
-        }
-    }
-}
-
-impl FitnessEval<Genome, MultiObjective3<f32>> for Toolbox<f32, f32> {
-    /// Evaluates the fitness of a Genome population.
-    fn fitness(&mut self, pop: &[Genome]) -> Vec<MultiObjective3<f32>> {
-        let goal = &self.goal;
-        let axiom_args = &self.axiom_args[..];
-        let iterations = self.iterations;
-        let fitness_functions = &self.fitness_functions[..];
-
-        let mut result = Vec::new();
-        pop.into_par_iter().map(|ind| {
-            let edge_ops = ind.to_edge_ops(axiom_args, iterations);
-            let g = edgeops_to_graph(&edge_ops);
-            let mut cache = Cache::new();
-
-            MultiObjective3::from(fitness_functions.iter().map(|&f| {
-                if f == FitnessFunction::GenomeComplexity {
-                    ind.complexity()
-                } else {
-                    goal.apply_fitness_function(f, &g, &mut cache)
-                }
-            }))
-        }).weight(self.weight).collect_into(&mut result);
-        result
-    }
-
-}
 
 #[derive(Clone, Debug)]
 pub struct Genome {

@@ -1,19 +1,14 @@
-use closed01::Closed01;
-use petgraph::{Directed, Graph};
 use graph_neighbor_matching::{Edge, GraphSimilarityMatrix, IgnoreNodeColors, ScoreNorm};
 use graph_neighbor_matching::Graph as NGraph;
 use super::graph::WeightedDigraph;
 
 pub trait Objective {
-    type Input;
-    type Output;
-
-    fn eval(&self, inp: &Self::Input) -> Self::Output; 
+    fn eval(&self, inp: &WeightedDigraph) -> f32;
 }
 
 pub struct NeighborMatching {
     score_norm: ScoreNorm,
-    edge_list: (Vec<Vec<Edge>>, Vec<Vec<Edge>>), 
+    edge_list: (Vec<Vec<Edge>>, Vec<Vec<Edge>>),
 
     // number of iterations
     iters: usize,
@@ -35,7 +30,11 @@ fn graph_to_edgelist(g: &WeightedDigraph) -> (Vec<Vec<Edge>>, Vec<Vec<Edge>>) {
 }
 
 impl NeighborMatching {
-    pub fn new(target_graph: WeightedDigraph, score_norm: ScoreNorm, iters: usize, eps: f32) -> NeighborMatching {
+    pub fn new(target_graph: WeightedDigraph,
+               score_norm: ScoreNorm,
+               iters: usize,
+               eps: f32)
+               -> NeighborMatching {
         NeighborMatching {
             score_norm: score_norm,
             edge_list: graph_to_edgelist(&target_graph),
@@ -45,12 +44,8 @@ impl NeighborMatching {
     }
 }
 
-impl Objective for NeighborMatching
-{
-    type Input = Graph<Closed01<f32>, Closed01<f32>, Directed>;
-    type Output = Closed01<f32>;
-
-    fn eval(&self, input: &Self::Input) -> Self::Output {
+impl Objective for NeighborMatching {
+    fn eval(&self, input: &WeightedDigraph) -> f32 {
         let (in_b, out_b) = graph_to_edgelist(input);
 
         let mut sim = GraphSimilarityMatrix::new(NGraph::new(&self.edge_list.0[..],
@@ -58,6 +53,6 @@ impl Objective for NeighborMatching
                                                  NGraph::new(&in_b[..], &out_b[..]),
                                                  IgnoreNodeColors);
         sim.iterate(self.iters, self.eps);
-        sim.score_optimal_sum_norm(None, self.score_norm).inv()
+        sim.score_optimal_sum_norm(None, self.score_norm).inv().get()
     }
 }

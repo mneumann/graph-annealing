@@ -12,10 +12,11 @@ dependencies = [
  "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
  "graph-io-gml 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
- "graph-neighbor-matching 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "graph-neighbor-matching 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "lindenmayer-system 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "matplotlib 0.0.1 (git+https://github.com/mneumann/matplotlib-rs.git)",
  "nalgebra 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nsga2 0.0.1 (git+https://github.com/mneumann/nsga2-rs)",
  "pcg 0.0.1 (git+https://github.com/codahale/pcg.git)",
  "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -101,7 +102,7 @@ dependencies = [
 [[package]]
 name = "evo"
 version = "0.0.1"
-source = "git+https://github.com/mneumann/evo-rs.git#98248900260e3d492d9a30c65355311677e75157"
+source = "git+https://github.com/mneumann/evo-rs.git#6a9715e71b28e0015f4e18779468989c7ac39f40"
 dependencies = [
  "bit-vec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -161,7 +162,7 @@ source = "git+https://github.com/mneumann/graph-layout-rs.git#85f1ab27b0aa32374f
 
 [[package]]
 name = "graph-neighbor-matching"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "closed01 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -230,6 +231,15 @@ dependencies = [
  "num 0.1.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "nsga2"
+version = "0.0.1"
+source = "git+https://github.com/mneumann/nsga2-rs#3765727314c6aacc16a9f019028cfc398c0251e7"
+dependencies = [
+ "rand 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rayon 0.0.1 (git+https://github.com/nikomatsakis/rayon.git)",
 ]
 
 [[package]]

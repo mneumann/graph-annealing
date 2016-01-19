@@ -16,6 +16,8 @@ time = "0.1"
 #graph-neighbor-matching = {git = "https://github.com/mneumann/graph-neighbor-matching.git"}
 graph-neighbor-matching = "0.3.2"
 
+nsga2 = {git = "https://github.com/mneumann/nsga2-rs"}
+
 #triadic-census = { git = "https://github.com/mneumann/triadic-census-rs.git" }
 triadic-census = "0.2.0"
 

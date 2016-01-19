@@ -56,10 +56,10 @@ fn graph_to_edgelist(g: &Graph<f32, f32, Directed>) -> (Vec<Vec<Edge>>, Vec<Vec<
     let mut out_a: Vec<Vec<Edge>> = (0..g.node_count()).map(|_| Vec::new()).collect();
 
     for edge in g.raw_edges() {
-        in_a[edge.target().index()].push(Edge::new(edge.source().index(),
-                                                   Closed01::new(edge.weight)));
-        out_a[edge.source().index()].push(Edge::new(edge.target().index(),
-                                                    Closed01::new(edge.weight)));
+        in_a[edge.target().index()]
+            .push(Edge::new(edge.source().index(), Closed01::new(edge.weight)));
+        out_a[edge.source().index()]
+            .push(Edge::new(edge.target().index(), Closed01::new(edge.weight)));
     }
 
     (in_a, out_a)
@@ -105,9 +105,7 @@ impl Goal<N, E> {
                                   cache: &mut Cache)
                                   -> f32 {
         match fitfun {
-            FitnessFunction::GenomeComplexity => {
-                unreachable!()
-            }
+            FitnessFunction::GenomeComplexity => unreachable!(),
             FitnessFunction::ConnectedComponents => self.connected_components_distance(g) as f32,
             FitnessFunction::StronglyConnectedComponents => {
                 self.strongly_connected_components_distance(g) as f32

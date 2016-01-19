@@ -1,3 +1,4 @@
+#![feature(associated_type_defaults)]
 extern crate evo;
 extern crate rand;
 extern crate petgraph;

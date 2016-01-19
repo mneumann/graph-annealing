@@ -16,6 +16,7 @@ extern crate matplotlib;
 extern crate rayon;
 extern crate closed01;
 extern crate graph_io_gml;
+extern crate nsga2;
 
 #[path="genome/genome_edgeop_lsys.rs"]
 pub mod genome;
@@ -25,7 +26,7 @@ use rand::{Rng, SeedableRng};
 use rand::os::OsRng;
 use pcg::PcgRng;
 use evo::Probability;
-use evo::nsga2::{self, FitnessEval};
+use nsga2::UnratedPopulation;
 use genome::{Genome, Toolbox};
 use graph_annealing::helper::to_weighted_vec;
 use graph_annealing::goal::{FitnessFunction, Goal};
@@ -51,24 +52,24 @@ const MAX_OBJECTIVES: usize = 3;
 fn graph_to_sexp<N, E, F, G>(g: &Graph<N, E, Directed>,
                              node_weight_map: F,
                              edge_weight_map: G)
-                             -> Sexp
+    -> Sexp
     where F: Fn(&N) -> Option<Sexp>,
           G: Fn(&E) -> Option<Sexp>
 {
     let mut nodes = Vec::new();
     for node_idx in g.node_indices() {
         let edges: Vec<_> = g.edges_directed(node_idx, EdgeDirection::Outgoing)
-                             .map(|(target_node, edge_weight)| {
-                                 match edge_weight_map(edge_weight) {
-                                     Some(w) => Sexp::from((target_node.index(), w)),
-                                     None => Sexp::from(target_node.index()),
-                                 }
-                             })
-                             .collect();
+            .map(|(target_node, edge_weight)| {
+                match edge_weight_map(edge_weight) {
+                    Some(w) => Sexp::from((target_node.index(), w)),
+                    None => Sexp::from(target_node.index()),
+                }
+            })
+        .collect();
 
         let mut def = vec![
-                             (Sexp::from("id"), Sexp::from(node_idx.index())),
-                             (Sexp::from("edges"), Sexp::Array(edges)),
+            (Sexp::from("id"), Sexp::from(node_idx.index())),
+            (Sexp::from("edges"), Sexp::Array(edges)),
         ];
 
         match node_weight_map(&g[node_idx]) {
@@ -122,14 +123,14 @@ struct Objective {
 }
 
 fn parse_ops<T, I>(map: &BTreeMap<String, Sexp>, key: &str) -> Vec<(T, u32)>
-    where T: FromStr<Err = I> + UniformDistribution,
-          I: Debug
+where T: FromStr<Err = I> + UniformDistribution,
+      I: Debug
 {
     if let Some(&Sexp::Map(ref list)) = map.get(key) {
         let mut ops: Vec<(T, u32)> = Vec::new();
         for &(ref k, ref v) in list.iter() {
             ops.push((T::from_str(k.get_str().unwrap()).unwrap(),
-                      v.get_uint().unwrap() as u32));
+            v.get_uint().unwrap() as u32));
         }
         ops
     } else {
@@ -204,9 +205,9 @@ fn parse_config(sexp: Sexp) -> Config {
     };
 
     let graph = graph_io_gml::parse_gml(&graph_s,
-                           &convert_weight,
-                           &convert_weight)
-                    .unwrap();
+                                        &convert_weight,
+                                        &convert_weight)
+        .unwrap();
     println!("graph: {:?}", graph);
 
     let graph = graph::normalize_graph(&graph);
@@ -263,72 +264,66 @@ fn main() {
 
     let num_objectives = config.objectives.len();
 
-    let mut toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
-                                   config.weight,
-                                   //Pool::new(ncpus),
-                                   config.objectives
-                                         .iter()
-                                         .map(|o| o.fitness_function.clone())
-                                         .collect(),
-                                   config.genome.max_iter, // iterations
-                                   config.genome.rules, // num_rules
-                                   config.genome.initial_len, // initial rule length
-                                   config.genome.symbol_arity, // we use 1-ary symbols
-                                   config.genome.num_params,
-                                   config.genome.prob_terminal,
-                                   to_weighted_vec(&config.edge_ops),
+    let toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
+    config.objectives
+    .iter()
+    .map(|o| o.fitness_function.clone())
+    .collect(),
+    config.genome.max_iter, // iterations
+    config.genome.rules, // num_rules
+    config.genome.initial_len, // initial rule length
+    config.genome.symbol_arity, // we use 1-ary symbols
+    config.genome.num_params,
+    config.genome.prob_terminal,
+    to_weighted_vec(&config.edge_ops),
 
-                                   to_weighted_vec(&config.flat_expr_op),
-                                   to_weighted_vec(&config.recursive_expr_op),
+    to_weighted_vec(&config.flat_expr_op),
+    to_weighted_vec(&config.recursive_expr_op),
 
-                                   to_weighted_vec(&config.var_ops),
-                                   to_weighted_vec(&config.rule_mut_ops),
-                                   to_weighted_vec(&config.rule_prod_ops));
+    to_weighted_vec(&config.var_ops),
+    to_weighted_vec(&config.rule_mut_ops),
+    to_weighted_vec(&config.rule_prod_ops));
 
     assert!(config.seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([config.seed[0], config.seed[1]]);
 
     // create initial random population
     let initial_population: Vec<Genome> = (0..config.mu)
-                                              .map(|_| toolbox.random_genome(&mut rng))
-                                              .collect();
+        .map(|_| toolbox.random_genome(&mut rng))
+        .collect();
+
+    let initial_population: UnratedPopulation<Genome> = From::from(initial_population);
 
     // output initial population to stdout.
-    for ind in initial_population.iter() {
+    for ind in initial_population.individuals() {
         println!("{}", pp(&ind.into()));
     }
 
     // evaluate fitness
-    let fitness: Vec<_> = toolbox.fitness(&initial_population[..]);
-    assert!(fitness.len() == initial_population.len());
-
-    let mut pop = initial_population;
-    let mut fit = fitness;
+    let mut rated_population = initial_population.rate_in_parallel(&|ind| toolbox.fitness(ind), config.weight);
 
     for iteration in 0..config.ngen {
         print!("# {:>6}", iteration);
         let before = time::precise_time_ns();
         // XXX Would be nice if nsga2::iterate() would return us the
         // pareto front number. We could use it to color the output.
-        let (new_pop, new_fit) = nsga2::iterate(&mut rng,
-                                                pop,
-                                                fit,
-                                                config.mu,
-                                                config.lambda,
-                                                config.k,
-                                                num_objectives,
-                                                &mut toolbox);
+
+        let selected_population = rated_population.select(config.mu, num_objectives);
+
+        let rated_offspring = selected_population.reproduce(&mut rng, config.lambda, config.k, 
+                                                            &mut |rng, p1, p2| toolbox.mate(rng, p1, p2)).rate_in_parallel(
+                                                                &mut |ind| toolbox.fitness(ind), config.weight);
+
+        rated_population = selected_population.merge(rated_offspring); 
+
         let duration = time::precise_time_ns() - before;
-        pop = new_pop;
-        fit = new_fit;
-        assert!(fit.len() > 0);
 
         let duration_ms = (duration as f32) / 1_000_000.0;
 
         // XXX: Assume we have at least two objectives
         let mut x = Vec::new();
         let mut y = Vec::new();
-        for f in fit.iter() {
+        for f in rated_population.fitness().iter() {
             x.push(f.objectives[0]);
             y.push(f.objectives[1]);
         }
@@ -342,23 +337,23 @@ fn main() {
         }
 
         let mut num_optima = 0;
-        for f in fit.iter() {
+        for f in rated_population.fitness().iter() {
             if config.objectives
-                     .iter()
-                     .enumerate()
-                     .all(|(i, obj)| f.objectives[i] <= obj.threshold) {
-                num_optima += 1;
-            }
+                .iter()
+                    .enumerate()
+                    .all(|(i, obj)| f.objectives[i] <= obj.threshold) {
+                        num_optima += 1;
+                    }
         }
 
         // calculate a min/max/avg value for each objective.
         let stats: Vec<Stat<f32>> = (0..num_objectives)
-                                        .into_iter()
-                                        .map(|i| {
-                                            Stat::from_iter(fit.iter().map(|o| o.objectives[i]))
-                                                .unwrap()
-                                        })
-                                        .collect();
+            .into_iter()
+            .map(|i| {
+                Stat::from_iter(rated_population.fitness().iter().map(|o| o.objectives[i]))
+                    .unwrap()
+            })
+        .collect();
 
         for stat in stats.iter() {
             print!(" | ");
@@ -378,29 +373,25 @@ fn main() {
     println!("===========================================================");
 
     // finally evaluate rank and crowding distance (using select()).
-    let rank_dist = nsga2::select(&fit[..], config.mu, num_objectives);
-    assert!(rank_dist.len() == config.mu);
+    let selected_population = rated_population.select(config.mu, num_objectives);
 
-    let mut best_solutions: Vec<(&Genome, _)> = Vec::new();
+    let mut best_solutions: Vec<(Genome, _)> = Vec::new();
 
-    for rd in rank_dist.iter() {
-        if rd.rank == 0 {
-            let f = fit[rd.idx].clone();
-            if f.objectives[0] < 0.1 && f.objectives[1] < 0.1 {
-                best_solutions.push((&pop[rd.idx], f));
-            }
+    selected_population.all_of_rank(0, &mut |ind, fit| {
+        if fit.objectives[0] < 0.1 && fit.objectives[1] < 0.1 {
+            best_solutions.push((ind.clone(), fit.clone()));
         }
-    }
+    });
 
     println!("Target graph");
     let sexp = graph_to_sexp(&graph::normalize_graph_closed01(&config.graph),
-                             |nw| Some(Sexp::from(nw.get())),
-                             |ew| Some(Sexp::from(ew.get())));
+    |nw| Some(Sexp::from(nw.get())),
+    |ew| Some(Sexp::from(ew.get())));
     println!("{}", pp(&sexp));
 
     let mut solutions: Vec<Sexp> = Vec::new();
 
-    for (_i, &(ind, ref fitness)) in best_solutions.iter().enumerate() {
+    for (_i, &(ref ind, ref fitness)) in best_solutions.iter().enumerate() {
         let genome: Sexp = ind.into();
 
         let edge_ops = ind.to_edge_ops(&toolbox.axiom_args, toolbox.iterations);
@@ -408,25 +399,25 @@ fn main() {
 
         // output as sexp
         let graph_sexp = graph_to_sexp(g.ref_graph(),
-                                 |&nw| Some(Sexp::from(nw)),
-                                 |&ew| Some(Sexp::from(ew)));
+        |&nw| Some(Sexp::from(nw)),
+        |&ew| Some(Sexp::from(ew)));
 
         solutions.push(Sexp::Map(
                 vec![
-                    (Sexp::from("fitness"), Sexp::from((fitness.objectives[0], fitness.objectives[1], fitness.objectives[2]))),
-                    (Sexp::from("genome"), genome),
-                    (Sexp::from("graph"), graph_sexp),
+                (Sexp::from("fitness"), Sexp::from((fitness.objectives[0], fitness.objectives[1], fitness.objectives[2]))),
+                (Sexp::from("genome"), genome),
+                (Sexp::from("graph"), graph_sexp),
                 ]
                 ));
 
         /*
-        draw_graph(g.ref_graph(),
-                   // XXX: name
-                   &format!("edgeop_lsys_g{}_f{}_i{}.svg",
-                            config.ngen,
-                            fitness.objectives[1] as usize,
-                            i));
-                            */
+           draw_graph(g.ref_graph(),
+        // XXX: name
+        &format!("edgeop_lsys_g{}_f{}_i{}.svg",
+        config.ngen,
+        fitness.objectives[1] as usize,
+        i));
+        */
     }
 
     println!("{}", pp(&Sexp::from(("solutions", Sexp::Array(solutions)))));
