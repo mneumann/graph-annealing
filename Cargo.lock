@@ -2,13 +2,14 @@
 name = "graph_annealing"
 version = "0.1.0"
 dependencies = [
- "asexp 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "closed01 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "evo 0.0.1 (git+https://github.com/mneumann/evo-rs.git)",
- "expression 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "expression-closed01 0.2.0 (git+https://github.com/mneumann/expression-closed01-rs.git)",
- "expression-num 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression-closed01 0.2.1 (git+https://github.com/mneumann/expression-closed01-rs.git)",
+ "expression-num 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-edge-evolution 0.1.0 (git+https://github.com/mneumann/graph-edge-evolution.git)",
+ "graph-io-gml 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "graph-layout 0.0.1 (git+https://github.com/mneumann/graph-layout-rs.git)",
  "graph-neighbor-matching 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "lindenmayer-system 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -46,7 +47,7 @@ dependencies = [
 
 [[package]]
 name = "asexp"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -99,29 +100,29 @@ dependencies = [
 
 [[package]]
 name = "expression"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "asexp 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "expression-closed01"
-version = "0.2.0"
-source = "git+https://github.com/mneumann/expression-closed01-rs.git#a833d0dd3d88975feaa818220278183f795a1ff8"
+version = "0.2.1"
+source = "git+https://github.com/mneumann/expression-closed01-rs.git#ff5d4c1ad2ae3ffa7d06392274bcd3cba05ec246"
 dependencies = [
- "asexp 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "closed01 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "expression 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "expression-num"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "asexp 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "expression 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "asexp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -133,6 +134,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "graph-edge-evolution"
 version = "0.1.0"
 source = "git+https://github.com/mneumann/graph-edge-evolution.git#b0c243ece3bafd7246ce28f0315bb8065586ad1f"
+
+[[package]]
+name = "graph-io-gml"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "asexp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "petgraph 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "graph-layout"
@@ -173,7 +183,7 @@ name = "lindenmayer-system"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "expression 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "expression 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "turtle 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -253,7 +263,7 @@ version = "0.1.1"
 source = "git+https://github.com/dgrunwald/rust-cpython.git#67282d2e2343de505f11b64e23545e8556d6e2e7"
 dependencies = [
  "libc 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 0.1.46 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.47 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -278,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "0.1.46"
+version = "0.1.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "aho-corasick 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -3,9 +3,6 @@ extern crate evo;
 extern crate petgraph;
 #[macro_use]
 extern crate graph_annealing;
-//extern crate crossbeam;
-//extern crate simple_parallel;
-//extern crate num_cpus;
 extern crate pcg;
 extern crate triadic_census;
 extern crate time;
@@ -18,6 +15,7 @@ extern crate expression_closed01;
 extern crate matplotlib;
 extern crate rayon;
 extern crate closed01;
+extern crate graph_io_gml;
 
 #[path="genome/genome_edgeop_lsys.rs"]
 pub mod genome;
@@ -42,10 +40,9 @@ use genome::edgeop::{EdgeOp, edgeops_to_graph};
 use genome::expr_op::{FlatExprOp, RecursiveExprOp, EXPR_NAME};
 use std::io::Read;
 use asexp::Sexp;
-use asexp::sexp::prettyprint;
+use asexp::sexp::pp;
 use std::env;
 use std::collections::BTreeMap;
-use petgraph::graph::NodeIndex;
 use std::fmt::Debug;
 use matplotlib::{Env, Plot};
 
@@ -86,149 +83,6 @@ fn graph_to_sexp<N, E, F, G>(g: &Graph<N, E, Directed>,
               (Sexp::from("version"), Sexp::from(1usize)),
               (Sexp::from("nodes"), Sexp::Array(nodes)),
     ])
-}
-
-fn read_graph<R, NodeWeightFn, EdgeWeightFn, NW, EW>
-    (mut rd: R,
-     mut node_weight_fn: NodeWeightFn,
-     mut edge_weight_fn: EdgeWeightFn)
-     -> Result<Graph<NW, EW, Directed>, &'static str>
-    where R: Read,
-          NodeWeightFn: FnMut(Option<&Sexp>) -> Option<NW>,
-          EdgeWeightFn: FnMut(Option<&Sexp>) -> Option<EW>
-{
-    let mut s = String::new();
-    match rd.read_to_string(&mut s) {
-        Err(_) => return Err("failed to read file"),
-        Ok(_) => {}
-    }
-    let sexp = match Sexp::parse_toplevel(&s) {
-        Err(()) => return Err("failed to parse"),
-        Ok(sexp) => sexp,
-    };
-
-    println!("{}", sexp);
-
-    let mut map = match sexp.into_map() {
-        Err(s) => return Err(s),
-        Ok(m) => m,
-    };
-
-    println!("{:?}", map);
-
-    match map["version"].get_uint() {
-        Some(1) => {}
-        _ => return Err("invalid version. Expect 1"),
-    }
-
-    let mut nodes;
-    if let Some(Sexp::Array(v)) = map.remove("nodes") {
-        nodes = Vec::new();
-        for entry in v {
-            nodes.push(entry.into_map().unwrap());
-        }
-    } else {
-        return Err("no nodes given or invalid");
-    }
-
-    println!("{:?}", nodes);
-
-    let mut graph = Graph::new();
-
-    // maps nodes as defined in the graph file to node-ids as used in the graph
-    let mut node_map: BTreeMap<u64, NodeIndex> = BTreeMap::new();
-
-    // iterate once to add all nodes
-    for node_info in nodes.iter() {
-        // XXX: allow other id types
-        if let Some(id) = node_info.get("id").and_then(|i| i.get_uint()) {
-            println!("node-id: {}", id);
-            let weight = match node_weight_fn(node_info.get("weight")) {
-                Some(w) => w,
-                None => {
-                    return Err("invalid node weight");
-                }
-            };
-            let idx = graph.add_node(weight);
-            println!("node-idx: {:?}", idx);
-
-            if let Some(_) = node_map.insert(id, idx) {
-                return Err("duplicate node-id");
-            }
-        } else {
-            return Err("non-existing or invalid non-integer node key");
-        }
-    }
-
-    println!("node_map: {:?}", node_map);
-
-    // iterate again, to add all edges
-    for mut node_info in nodes.into_iter() {
-        // XXX: allow other id types
-        let id = node_info.get("id").and_then(|i| i.get_uint()).unwrap();
-        println!("node-id: {}", id);
-
-        // XXX: set node weight.
-
-        let src_idx = node_map[&id];
-        println!("src-node-idx: {:?}", src_idx);
-
-        if let Some(node_weight) = node_info.remove("weight") {
-            println!("node_weight: {}", node_weight);
-        }
-
-        if let Some(edges) = node_info.remove("edges") {
-            match edges {
-                Sexp::Array(edge_list) => {
-                    for edge_def in edge_list.iter() {
-                        if let Some(target_id) = edge_def.get_uint() {
-                            let dst_idx = node_map[&target_id];
-                            println!("dst-node-idx: {:?}", dst_idx);
-
-                            let weight = match edge_weight_fn(None) {
-                                Some(w) => w,
-                                None => {
-                                    return Err("invalid edge weight");
-                                }
-                            };
-
-                            let _ = graph.add_edge(src_idx, dst_idx, weight);
-                        } else {
-                            let mut valid = false;
-
-                            if let &Sexp::Tuple(ref list) = edge_def {
-                                // (node-id weight) tuple
-                                if list.len() == 2 {
-                                    if let Some(target_id) = list[0].get_uint() {
-                                        let dst_idx = node_map[&target_id];
-                                        println!("dst-node-idx: {:?}", dst_idx);
-
-                                        let weight = match edge_weight_fn(list.get(1)) {
-                                            Some(w) => w,
-                                            None => {
-                                                return Err("invalid edge weight");
-                                            }
-                                        };
-
-                                        let _ = graph.add_edge(src_idx, dst_idx, weight);
-                                        valid = true;
-                                    }
-                                }
-                            }
-                            if !valid {
-                                return Err("invalid edge node id");
-                            }
-                        }
-                    }
-                }
-                _ => {
-                    return Err("Invalid edge list");
-                }
-            }
-        }
-    }
-
-    Ok(graph)
 }
 
 #[derive(Debug)]
@@ -282,7 +136,6 @@ fn parse_ops<T, I>(map: &BTreeMap<String, Sexp>, key: &str) -> Vec<(T, u32)>
         T::uniform_distribution()
     }
 }
-
 
 fn convert_weight(w: Option<&Sexp>) -> Option<f32> {
     match w {
@@ -342,9 +195,17 @@ fn parse_config(sexp: Sexp) -> Config {
     // read graph
     let graph_file = map.get("graph").unwrap().get_str().unwrap();
     println!("Using graph file: {}", graph_file);
-    let graph = read_graph(File::open(graph_file).unwrap(),
-                           convert_weight,
-                           convert_weight)
+
+    let graph_s = {
+        let mut graph_file = File::open(graph_file).unwrap();
+        let mut graph_s = String::new();
+        let _ = graph_file.read_to_string(&mut graph_s).unwrap();
+        graph_s
+    };
+
+    let graph = graph_io_gml::parse_gml(&graph_s,
+                           &convert_weight,
+                           &convert_weight)
                     .unwrap();
     println!("graph: {:?}", graph);
 
@@ -375,12 +236,6 @@ fn parse_config(sexp: Sexp) -> Config {
             prob_terminal: Probability::new(genome_map.get("prob_terminal").and_then(|v| v.get_float()).unwrap() as f32),
         },
     }
-}
-
-fn pp_sexp(s: &Sexp) {
-    let mut st = String::new();
-    let _ = prettyprint(&s, &mut st, 0, false).unwrap();
-    println!("{}", st);
 }
 
 fn main() {
@@ -438,7 +293,7 @@ fn main() {
 
     // output initial population to stdout.
     for ind in initial_population.iter() {
-        pp_sexp(&ind.into());
+        println!("{}", pp(&ind.into()));
     }
 
     // evaluate fitness
@@ -539,7 +394,7 @@ fn main() {
     let sexp = graph_to_sexp(&graph::normalize_graph(&config.graph),
                              |nw| Some(Sexp::from(nw.get())),
                              |ew| Some(Sexp::from(ew.get())));
-    pp_sexp(&sexp);
+    println!("{}", pp(&sexp));
 
     let mut solutions: Vec<Sexp> = Vec::new();
 
@@ -572,7 +427,7 @@ fn main() {
                             */
     }
 
-    pp_sexp(&Sexp::from(("solutions", Sexp::Array(solutions)))); 
+    println!("{}", pp(&Sexp::from(("solutions", Sexp::Array(solutions)))));
 
     //println!("])");
 
