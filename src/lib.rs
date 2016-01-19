@@ -77,3 +77,4 @@ pub mod repr;
 pub mod owned_weighted_choice;
 pub mod stat;
 pub mod graph;
+pub mod update;
