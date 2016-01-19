@@ -5,7 +5,6 @@ extern crate petgraph;
 extern crate graph_annealing;
 extern crate pcg;
 extern crate triadic_census;
-extern crate time;
 extern crate lindenmayer_system;
 extern crate graph_edge_evolution;
 extern crate asexp;
@@ -13,7 +12,6 @@ extern crate expression;
 extern crate expression_num;
 extern crate expression_closed01;
 extern crate matplotlib;
-extern crate rayon;
 extern crate closed01;
 extern crate graph_io_gml;
 extern crate nsga2;
@@ -26,7 +24,7 @@ use rand::{Rng, SeedableRng};
 use rand::os::OsRng;
 use pcg::PcgRng;
 use evo::Probability;
-use nsga2::UnratedPopulation;
+use nsga2::{Driver, DriverConfig};
 use genome::{Genome, Toolbox};
 use graph_annealing::helper::to_weighted_vec;
 use graph_annealing::goal::{FitnessFunction, Goal};
@@ -46,6 +44,22 @@ use std::env;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use matplotlib::{Env, Plot};
+
+struct ReseedRecorder {
+    reseeds: Vec<(u64, u64)>
+}
+
+/*
+impl Reseeder<pcg::RcgRng> for ReseedRecorder {
+    fn reseed(&mut self, rng: &mut pcg::RcgRng) {
+        let mut r = rand::thread_rng();
+        let s1 = r.next_u64(); 
+        let s2 = r.next_u64();
+        self.reseeds.push((s1, s2));
+        rng.reseed([s1, s2]);
+    }
+}
+*/
 
 const MAX_OBJECTIVES: usize = 3;
 
@@ -245,8 +259,6 @@ fn main() {
     println!("Using expr system: {}", EXPR_NAME);
     let env = Env::new();
     let plot = Plot::new(&env);
-    //let ncpus = num_cpus::get();
-    //println!("Using {} CPUs", ncpus);
 
     let mut s = String::new();
     let configfile = env::args().nth(1).unwrap();
@@ -264,7 +276,19 @@ fn main() {
 
     let num_objectives = config.objectives.len();
 
+    let driver_config = DriverConfig {
+        mu: config.mu,
+        lambda: config.lambda,
+        k: config.k,
+        ngen: config.ngen,
+        num_objectives: num_objectives
+    };
+
     let toolbox = Toolbox::new(Goal::new(OptDenseDigraph::from(config.graph.clone())),
+    config.objectives
+    .iter()
+    .map(|o| o.threshold)
+    .collect(),
     config.objectives
     .iter()
     .map(|o| o.fitness_function.clone())
@@ -286,42 +310,18 @@ fn main() {
 
     assert!(config.seed.len() == 2);
     let mut rng: PcgRng = SeedableRng::from_seed([config.seed[0], config.seed[1]]);
+    //let mut rng = rand::thread_rng();
 
-    // create initial random population
-    let initial_population: UnratedPopulation<Genome> = (0..config.mu)
-        .map(|_| toolbox.random_genome(&mut rng))
-        .collect();
-
-    // output initial population to stdout.
-    for ind in initial_population.individuals() {
-        println!("{}", pp(&ind.into()));
-    }
-
-    // evaluate fitness
-    let mut rated_population = initial_population.rate_in_parallel(&|ind| toolbox.fitness(ind), config.weight);
-
-    for iteration in 0..config.ngen {
-        print!("# {:>6}", iteration);
-        let before = time::precise_time_ns();
-        // XXX Would be nice if nsga2::iterate() would return us the
-        // pareto front number. We could use it to color the output.
-
-        let selected_population = rated_population.select(config.mu, num_objectives);
-
-        let rated_offspring = selected_population.reproduce(&mut rng, config.lambda, config.k, 
-                                                            &|rng, p1, p2| toolbox.mate(rng, p1, p2)).rate_in_parallel(
-                                                                &|ind| toolbox.fitness(ind), config.weight);
-
-        rated_population = selected_population.merge(rated_offspring); 
-
-        let duration = time::precise_time_ns() - before;
-
+    let selected_population = toolbox.run(&mut rng, &driver_config, config.weight, &|iteration, duration, num_optima, population| {
         let duration_ms = (duration as f32) / 1_000_000.0;
+        print!("# {:>6}", iteration);
+
+        let fitness_values = population.fitness_to_vec();
 
         // XXX: Assume we have at least two objectives
         let mut x = Vec::new();
         let mut y = Vec::new();
-        for f in rated_population.fitness().iter() {
+        for f in fitness_values.iter() {
             x.push(f.objectives[0]);
             y.push(f.objectives[1]);
         }
@@ -334,21 +334,11 @@ fn main() {
             plot.draw();
         }
 
-        let mut num_optima = 0;
-        for f in rated_population.fitness().iter() {
-            if config.objectives
-                .iter()
-                    .enumerate()
-                    .all(|(i, obj)| f.objectives[i] <= obj.threshold) {
-                        num_optima += 1;
-                    }
-        }
-
         // calculate a min/max/avg value for each objective.
         let stats: Vec<Stat<f32>> = (0..num_objectives)
             .into_iter()
             .map(|i| {
-                Stat::from_iter(rated_population.fitness().iter().map(|o| o.objectives[i]))
+                Stat::from_iter(fitness_values.iter().map(|o| o.objectives[i]))
                     .unwrap()
             })
         .collect();
@@ -365,13 +355,11 @@ fn main() {
 
         if num_optima > 0 {
             println!("Found premature optimum in Iteration {}", iteration);
-            break;
         }
-    }
-    println!("===========================================================");
 
-    // finally evaluate rank and crowding distance (using select()).
-    let selected_population = rated_population.select(config.mu, num_objectives);
+    });
+
+    println!("===========================================================");
 
     let mut best_solutions: Vec<(Genome, _)> = Vec::new();
 

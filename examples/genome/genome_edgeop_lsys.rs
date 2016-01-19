@@ -23,6 +23,7 @@ mod cond_op;
 use evo::prob::{Probability, ProbabilityValue};
 use evo::crossover::linear_2point_crossover_random;
 use nsga2::mo::MultiObjective3;
+use nsga2::Driver;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Weighted};
 use rand::distributions::range::Range;
@@ -203,6 +204,7 @@ impl SymbolGenerator {
 
 pub struct Toolbox<N: Debug, E: Debug> {
     goal: Goal<N, E>,
+    thresholds: Vec<f32>,
     fitness_functions: Vec<FitnessFunction>,
 
     // Variation parameters
@@ -236,19 +238,13 @@ pub struct Toolbox<N: Debug, E: Debug> {
 pub type N = f32;
 pub type E = f32;
 
-impl Toolbox<N, E> {
-
-    // p1 is potentially "better" than p2
-    pub fn mate<R: Rng>(&self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
-        match self.var_op.ind_sample(rng) {
-            VarOp::Copy => p1.clone(),
-            VarOp::Mutate => self.mutate(rng, p1),
-            VarOp::Crossover => self.crossover(rng, p1, p2),
-        }
+impl Driver<Genome, MultiObjective3<f32>> for Toolbox<N, E> {
+    fn random_individual<R: Rng>(&self, rng: &mut R) -> Genome {
+        self.random_genome(rng)
     }
 
     /// Evaluates the fitness of a Genome population.
-    pub fn fitness(&self, ind: &Genome) -> MultiObjective3<f32> {
+    fn fitness(&self, ind: &Genome) -> MultiObjective3<f32> {
         let edge_ops = ind.to_edge_ops(&self.axiom_args, self.iterations);
         let g = edgeops_to_graph(&edge_ops);
         let mut cache = Cache::new();
@@ -262,7 +258,24 @@ impl Toolbox<N, E> {
         }))
     }
 
+    // p1 is potentially "better" than p2
+    fn mate<R: Rng>(&self, rng: &mut R, p1: &Genome, p2: &Genome) -> Genome {
+        match self.var_op.ind_sample(rng) {
+            VarOp::Copy => p1.clone(),
+            VarOp::Mutate => self.mutate(rng, p1),
+            VarOp::Crossover => self.crossover(rng, p1, p2),
+        }
+    }
+
+    fn is_solution(&self, _ind: &Genome, fit: &MultiObjective3<f32>) -> bool {
+        self.thresholds.iter().enumerate().all(|(i, &threshold)| fit.objectives[i] <= threshold)
+    }
+}
+
+impl Toolbox<N, E> {
+
     pub fn new(goal: Goal<N, E>,
+               thresholds: Vec<f32>,
                fitness_functions: Vec<FitnessFunction>,
 
                iterations: usize,
@@ -297,6 +310,7 @@ impl Toolbox<N, E> {
 
             Toolbox {
                 goal: goal,
+                thresholds: thresholds,
                 fitness_functions: fitness_functions,
 
                 var_op: OwnedWeightedChoice::new(var_op),
