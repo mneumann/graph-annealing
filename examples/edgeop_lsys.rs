@@ -288,11 +288,9 @@ fn main() {
     let mut rng: PcgRng = SeedableRng::from_seed([config.seed[0], config.seed[1]]);
 
     // create initial random population
-    let initial_population: Vec<Genome> = (0..config.mu)
+    let initial_population: UnratedPopulation<Genome> = (0..config.mu)
         .map(|_| toolbox.random_genome(&mut rng))
         .collect();
-
-    let initial_population: UnratedPopulation<Genome> = From::from(initial_population);
 
     // output initial population to stdout.
     for ind in initial_population.individuals() {
@@ -311,8 +309,8 @@ fn main() {
         let selected_population = rated_population.select(config.mu, num_objectives);
 
         let rated_offspring = selected_population.reproduce(&mut rng, config.lambda, config.k, 
-                                                            &mut |rng, p1, p2| toolbox.mate(rng, p1, p2)).rate_in_parallel(
-                                                                &mut |ind| toolbox.fitness(ind), config.weight);
+                                                            &|rng, p1, p2| toolbox.mate(rng, p1, p2)).rate_in_parallel(
+                                                                &|ind| toolbox.fitness(ind), config.weight);
 
         rated_population = selected_population.merge(rated_offspring); 
 
